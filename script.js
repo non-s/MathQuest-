@@ -1524,7 +1524,14 @@ async function initAuth() {
 /* ─── Desbloqueio e estrelas ───────────────────────────────────────────── */
 function isUnlocked(phaseId) {
     if (phaseId === 1) return true;
-    return Boolean(state.stars[phaseId - 1]);
+    if (state.stars[phaseId - 1]) return true;
+    // Teste de nivelamento: desbloqueia apenas a 1ª fase da região
+    const phase = PHASES.find(p => p.id === phaseId);
+    if (phase) {
+        const firstInRegion = PHASES.find(p => p.region === phase.region);
+        if (firstInRegion?.id === phaseId && state.achievements.includes(`placement_${phase.region}`)) return true;
+    }
+    return false;
 }
 
 function starsFor(phaseId) {
@@ -1537,6 +1544,52 @@ function totalStars() {
 
 function completedCount() {
     return Object.keys(state.stars).length;
+}
+
+/* ─── Teste de nivelamento ─────────────────────────────────────────────── */
+function buildPlacementTest(regionId) {
+    const regionPhases = PHASES.filter(p => p.region === regionId);
+    const picked = shuffle([...regionPhases]).slice(0, Math.min(5, regionPhases.length));
+    const qs = [];
+    picked.forEach(p => { const all = p.gen(); qs.push(...all.slice(0, 2)); });
+    return shuffle(qs).slice(0, 10);
+}
+
+function startPlacementTest(regionId) {
+    const reg = REGIONS.find(r => r.id === regionId);
+    state.currentPhase = { id: `p_${regionId}`, name: `🧪 Teste: ${reg.name}`, region: regionId, isPlacement: true };
+    state.questions    = buildPlacementTest(regionId);
+    state.qIndex       = 0;
+    state.correct      = 0;
+    state.hearts       = 3;
+    state.earnedXp     = 0;
+    state.answered     = false;
+    $('mapView').style.display = 'none';
+    $('phaseView').style.display = '';
+    renderQuestion();
+}
+
+function endPlacementTest() {
+    const regionId = state.currentPhase.region;
+    const reg      = REGIONS.find(r => r.id === regionId);
+    const total    = state.questions.length;
+    const passed   = state.correct / total >= 0.7;
+
+    if (passed && !state.achievements.includes(`placement_${regionId}`)) {
+        state.achievements.push(`placement_${regionId}`);
+        persist();
+        sndUnlock();
+    }
+
+    $('resultStars').innerHTML = passed ? '🎯' : '📚';
+    $('resultMsg').textContent = passed ? `${reg.name} desbloqueada!` : 'Continue estudando';
+    $('resultDetail').innerHTML = passed
+        ? `Você acertou <b>${state.correct}/${total}</b>. Pode começar em <b>${esc(reg.name)}</b>!`
+        : `Você acertou <b>${state.correct}/${total}</b>. Precisa de pelo menos <b>${Math.ceil(total * 0.7)}/${total}</b> para desbloquear esta região.`;
+    $('btnRetry').textContent = 'Repetir teste';
+    $('resultView').style.display = '';
+    $('phaseView').style.display  = 'none';
+    if (passed) setTimeout(() => toast(`🎉 ${reg.name} desbloqueada!`, 'success'), 400);
 }
 
 /* ─── Renderização: header HUD ─────────────────────────────────────────── */
@@ -1556,21 +1609,28 @@ function renderMap() {
         const phases = PHASES.filter(p => p.region === reg.id);
         const total  = phases.length;
         const got    = phases.filter(p => state.stars[p.id]).length;
+        const firstPhaseId  = phases[0].id;
+        const regionLocked  = !isUnlocked(firstPhaseId);
         const wrap = document.createElement('section');
         wrap.className = 'region';
         wrap.style.setProperty('--rcolor', reg.color);
         wrap.innerHTML = `
             <header class="region-head">
                 <div class="region-icon">${reg.icon}</div>
-                <div>
+                <div class="region-info">
                     <h2>${esc(reg.name)} <small>${reg.year}</small></h2>
                     <p>${esc(reg.desc)}</p>
                 </div>
-                <div class="region-progress">${got}/${total}</div>
+                <div class="region-actions">
+                    ${regionLocked ? `<button class="btn-placement" data-region="${reg.id}" title="Responda 10 questões para ver se você já sabe este nível">🧪 Testar nível</button>` : ''}
+                    <div class="region-progress">${got}/${total}</div>
+                </div>
             </header>
             <div class="phases" id="reg-${reg.id}"></div>
         `;
         root.appendChild(wrap);
+        const placementBtn = wrap.querySelector('.btn-placement');
+        if (placementBtn) placementBtn.addEventListener('click', () => startPlacementTest(reg.id));
         const node = wrap.querySelector('.phases');
         phases.forEach((p, idx) => {
             const unlocked = isUnlocked(p.id);
@@ -1608,9 +1668,14 @@ function startPhase(phase) {
 
 function renderQuestion() {
     const q = state.questions[state.qIndex];
-    $('phaseTitle').textContent = `${state.currentPhase.id}. ${state.currentPhase.name}`;
+    const isPlacement = state.currentPhase?.isPlacement;
+    $('phaseTitle').textContent = isPlacement
+        ? state.currentPhase.name
+        : `${state.currentPhase.id}. ${state.currentPhase.name}`;
     $('phaseProg').textContent  = `${state.qIndex + 1} / ${state.questions.length}`;
-    $('hearts').innerHTML       = '❤'.repeat(state.hearts) + '<span class="lost">❤</span>'.repeat(3 - state.hearts);
+    $('hearts').innerHTML       = isPlacement
+        ? '<span class="placement-label">📊 Diagnóstico</span>'
+        : '❤'.repeat(state.hearts) + '<span class="lost">❤</span>'.repeat(3 - state.hearts);
     $('qStem').innerHTML        = q.stem;
     const opts = $('qOpts'); opts.innerHTML = '';
     q.options.forEach((opt, i) => {
@@ -1628,6 +1693,7 @@ function answer(i) {
     if (state.answered) return;
     state.answered = true;
     const q = state.questions[state.qIndex];
+    const isPlacement = state.currentPhase?.isPlacement;
     const buttons = $('qOpts').querySelectorAll('.opt');
     buttons.forEach((b, idx) => {
         b.disabled = true;
@@ -1636,16 +1702,20 @@ function answer(i) {
     });
     if (i === q.correctIndex) {
         state.correct++;
-        state.earnedXp += 10;
+        if (!isPlacement) state.earnedXp += 10;
         sndCorrect();
         toast('Acertou!', 'success');
     } else {
-        state.hearts--;
         sndWrong();
         toast('Errou.', 'error');
+        if (!isPlacement) {
+            state.hearts--;
+            if (state.hearts <= 0) return setTimeout(() => endPhase(false), 700);
+        }
     }
-    if (state.hearts <= 0) return setTimeout(() => endPhase(false), 700);
-    if (state.qIndex >= state.questions.length - 1) return setTimeout(() => endPhase(true), 700);
+    if (state.qIndex >= state.questions.length - 1) {
+        return setTimeout(() => isPlacement ? endPlacementTest() : endPhase(true), 700);
+    }
     $('btnNext').style.display = '';
 }
 
@@ -1675,6 +1745,7 @@ function endPhase(completed) {
     persist();
     if (stars > 0) sndStar();
 
+    $('btnRetry').textContent = 'Tentar de novo';
     $('resultStars').innerHTML = '★'.repeat(stars) + '☆'.repeat(3 - stars);
     $('resultMsg').textContent = stars >= 3 ? 'Perfeito!' : stars >= 2 ? 'Muito bem!' : stars >= 1 ? 'Boa!' : 'Tente de novo!';
     $('resultDetail').innerHTML = `
@@ -1698,8 +1769,12 @@ function backToMap() {
 }
 
 function retryPhase() {
-    startPhase(state.currentPhase);
     $('resultView').style.display = 'none';
+    if (state.currentPhase?.isPlacement) {
+        startPlacementTest(state.currentPhase.region);
+    } else {
+        startPhase(state.currentPhase);
+    }
 }
 
 /* ─── Conquistas ───────────────────────────────────────────────────────── */
@@ -1831,7 +1906,12 @@ document.addEventListener('DOMContentLoaded', () => {
     $('btnStart')      .addEventListener('click', startGame);
     $('nickInput')     .addEventListener('keydown', e => e.key === 'Enter' && startGame());
     $('btnNext')       .addEventListener('click', nextQuestion);
-    $('btnBackMap')    .addEventListener('click', () => { if (confirm('Sair da fase? O progresso desta tentativa será perdido.')) backToMap(); });
+    $('btnBackMap')    .addEventListener('click', () => {
+        const msg = state.currentPhase?.isPlacement
+            ? 'Sair do teste de nivelamento? Seu progresso neste teste será perdido.'
+            : 'Sair da fase? O progresso desta tentativa será perdido.';
+        if (confirm(msg)) backToMap();
+    });
     $('btnBackFromRes').addEventListener('click', backToMap);
     $('btnRetry')      .addEventListener('click', retryPhase);
     $('btnMute')       .addEventListener('click', () => {
