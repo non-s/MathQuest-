@@ -2825,7 +2825,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Service Worker
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
-    init();
+    if (new URLSearchParams(location.search).get('view') !== 'teacher') init();
 });
 
 
