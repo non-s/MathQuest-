@@ -188,6 +188,76 @@
             .t-header { flex-direction: column; align-items: flex-start; }
             .t-table th:nth-child(4), .t-table td:nth-child(4) { display: none; }
         }
+
+        /* ── Exportar CSV ─────────────────────────────────────────────────── */
+        .t-export-btn {
+            background: var(--bg-soft); border: 1px solid var(--border);
+            color: var(--text); padding: .35rem .75rem;
+            border-radius: 8px; font-size: .85rem; cursor: pointer;
+            display: flex; align-items: center; gap: .35rem;
+            transition: border-color .15s;
+        }
+        .t-export-btn:hover { border-color: var(--accent); }
+
+        /* ── Contador de turma no topo do roster ─────────────────────────── */
+        .t-roster-stats {
+            font-size: .82rem; color: var(--accent-2);
+            font-weight: 500; margin-top: .25rem;
+        }
+
+        /* ── Alunos travados ──────────────────────────────────────────────── */
+        .t-stuck-section {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 1rem 1.25rem;
+            margin-top: 1rem;
+        }
+        .t-stuck-section h3 {
+            font-size: 1rem; margin-bottom: .65rem;
+            color: var(--warning, #f0a419);
+        }
+        .t-stuck-list { list-style: none; padding: 0; margin: 0; }
+        .t-stuck-list li {
+            padding: .4rem 0; border-bottom: 1px solid var(--border);
+            font-size: .88rem; display: flex; justify-content: space-between;
+        }
+        .t-stuck-list li:last-child { border-bottom: none; }
+        .t-stuck-list .days { color: var(--danger); font-weight: 600; }
+        .t-stuck-ok { color: var(--success, #7dd3a8); font-size: .88rem; }
+
+        /* ── Gráfico de barras ─────────────────────────────────────────────── */
+        .t-chart-section {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 1rem 1.25rem;
+            margin-top: 1rem;
+        }
+        .t-chart-section h3 { font-size: 1rem; margin-bottom: .75rem; }
+        .t-bar-chart { display: flex; flex-direction: column; gap: .45rem; }
+        .t-bar-row { display: flex; align-items: center; gap: .6rem; font-size: .82rem; }
+        .t-bar-label { width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-dim); flex-shrink: 0; }
+        .t-bar-wrap { flex: 1; background: var(--bg-soft); border-radius: 4px; height: 18px; overflow: hidden; }
+        .t-bar-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+        .t-bar-val { width: 48px; text-align: right; color: var(--text-dim); flex-shrink: 0; }
+
+        /* ── Desbloquear região (dentro do modal do aluno) ─────────────────── */
+        .t-unlock-row {
+            display: flex; gap: .5rem; align-items: center;
+            margin-top: 1rem; padding-top: 1rem;
+            border-top: 1px solid var(--border); flex-wrap: wrap;
+        }
+        .t-unlock-row label { font-size: .85rem; color: var(--text-dim); }
+        .t-unlock-row select {
+            padding: .35rem .6rem; border-radius: 8px;
+            border: 1px solid var(--border); background: var(--bg-soft);
+            color: var(--text); font-size: .85rem; font-family: inherit;
+        }
+        .t-unlock-btn {
+            background: var(--accent); color: var(--bg);
+            border: none; border-radius: 8px; padding: .35rem .85rem;
+            font-size: .85rem; font-weight: 600; cursor: pointer;
+            transition: opacity .15s;
+        }
+        .t-unlock-btn:hover { opacity: .85; }
+        .t-unlock-btn:disabled { opacity: .5; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -242,7 +312,9 @@
                     <div id="rosterMeta" class="meta"></div>
                     <div id="lastSync" class="t-last-sync"></div>
                 </div>
+                <div id="rosterStats" class="t-roster-stats"></div>
                 <div class="t-roster-actions">
+                    <button id="btnExportCSV" class="t-export-btn" title="Baixar dados da turma em CSV">📥 Exportar CSV</button>
                     <button id="btnRefreshRoster" class="t-refresh-btn" title="Atualizar agora"><span>↻</span> Atualizar</button>
                     <button id="rosterCode" class="t-code-pill" title="Clique para copiar">Código</button>
                 </div>
@@ -263,6 +335,18 @@
                 <p>Nenhum aluno entrou ainda.</p>
                 <p>Passe o código da turma pra eles digitarem na primeira tela do jogo. O painel atualiza sozinho a cada 5 segundos.</p>
             </div>
+        </div>
+
+        <!-- Alunos parados -->
+        <div id="stuckSection" class="t-stuck-section" style="display:none">
+            <h3>⚠️ Alunos parados há +3 dias</h3>
+            <div id="stuckContent"></div>
+        </div>
+
+        <!-- Gráfico top 10 por XP -->
+        <div id="chartSection" class="t-chart-section" style="display:none">
+            <h3>🏆 Top 10 alunos por XP</h3>
+            <div id="barChart" class="t-bar-chart"></div>
         </div>
     </div>
 
@@ -325,6 +409,21 @@
             <button class="t-modal-close" data-close="studentModal">✕</button>
         </div>
         <div id="studentSummary" class="t-class-meta" style="margin-bottom: 1rem"></div>
+        <div class="t-unlock-row">
+            <label for="unlockRegionSelect">Desbloquear região:</label>
+            <select id="unlockRegionSelect">
+                <option value="1">1 — Vila dos Números</option>
+                <option value="2">2 — Bosque das Operações</option>
+                <option value="3">3 — Vale das Tabuadas</option>
+                <option value="4">4 — Caverna das Frações</option>
+                <option value="5">5 — Lago dos Decimais</option>
+                <option value="6">6 — Montanha dos Inteiros</option>
+                <option value="7">7 — Deserto das Equações</option>
+                <option value="8">8 — Templo das Potências</option>
+                <option value="9">9 — Cidadela do Mestre</option>
+            </select>
+            <button id="btnUnlockRegion" class="t-unlock-btn">Desbloquear</button>
+        </div>
         <div id="studentDrill"></div>
     </div>
 </div>
@@ -591,6 +690,7 @@
     let currentClass = null;
     let rosterInterval = null;
     let lastRosterUserIds = new Set();
+    let roster = [];  // cache dos dados carregados, usado pelo CSV e outros módulos
 
     function stopRosterPolling() {
         if (rosterInterval) { clearInterval(rosterInterval); rosterInterval = null; }
@@ -700,6 +800,17 @@
         if (justArrived.length && lastRosterUserIds.size > 0) {
             toast(`${justArrived.length} aluno${justArrived.length === 1 ? ' entrou' : 's entraram'} agora!`, 'success');
         }
+        // Enriquece rows com campos calculados e salva no cache global
+        roster = rows.map(r => {
+            const phases = Object.keys(r.stars).length;
+            const totalStars = Object.values(r.stars).reduce((a, b) => a + b, 0);
+            return { ...r, phases, totalStars, last: r.updated_at };
+        });
+
+        updateRosterStats();
+        renderStuckStudents();
+        renderBarChart();
+
         lastRosterUserIds = newIds;
         $('lastSync').textContent = 'Atualizado agora';
         // Marca "atualizado há X" enquanto o próximo poll não chega.
@@ -708,8 +819,132 @@
         $('lastSync')._t = setTimeout(() => showAge(Math.round(ROSTER_REFRESH_MS / 1000 / 2)), 2500);
     }
 
+    /* ─── 1. Exportar CSV ─────────────────────────────────────────────────── */
+    function exportCSV() {
+        if (!roster.length) { toast('Nenhum aluno para exportar.', 'error'); return; }
+        const header = ['Apelido','Fases','Estrelas','XP','Última atividade'];
+        const rows = roster.map(s => [
+            s.nickname || '(sem apelido)',
+            s.phases,
+            s.totalStars,
+            s.xp,
+            s.last ? new Date(s.last).toLocaleDateString('pt-BR') : '—'
+        ]);
+        const csv = [header, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob(['﻿' + csv], {type: 'text/csv;charset=utf-8'}));
+        a.download = `turma-${Date.now()}.csv`;
+        a.click();
+        toast('CSV exportado!', 'success');
+    }
+
+    $('btnExportCSV').addEventListener('click', exportCSV);
+
+    /* ─── 5. Contador de turma no topo ───────────────────────────────────── */
+    function updateRosterStats() {
+        const el = $('rosterStats');
+        if (!roster.length) { el.textContent = ''; return; }
+        const total = roster.length;
+        const avgFases = Math.round(roster.reduce((s, r) => s + r.phases, 0) / total);
+        const avgStars = Math.round(roster.reduce((s, r) => s + r.totalStars, 0) / total);
+        el.textContent = `${total} aluno${total === 1 ? '' : 's'} · média ${avgFases} fases · média ${avgStars}★`;
+    }
+
+    /* ─── 2. Alunos parados há +3 dias ──────────────────────────────────── */
+    function renderStuckStudents() {
+        const section = $('stuckSection');
+        const content = $('stuckContent');
+        const now = Date.now();
+        const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+        const stuck = roster.filter(r => {
+            if (r.phases >= 181) return false;
+            if (!r.last) return false;
+            return (now - new Date(r.last).getTime()) > THREE_DAYS_MS;
+        }).map(r => {
+            const days = Math.floor((now - new Date(r.last).getTime()) / (24 * 60 * 60 * 1000));
+            return { ...r, daysAgo: days };
+        }).sort((a, b) => b.daysAgo - a.daysAgo);
+
+        section.style.display = '';
+        if (!stuck.length) {
+            content.innerHTML = '<p class="t-stuck-ok">✅ Todos ativos!</p>';
+            return;
+        }
+        const items = stuck.map(r =>
+            `<li>
+                <span>${esc(r.nickname || '(sem apelido)')}</span>
+                <span class="days">parado há ${r.daysAgo} dia${r.daysAgo === 1 ? '' : 's'}</span>
+            </li>`
+        ).join('');
+        content.innerHTML = `<ul class="t-stuck-list">${items}</ul>`;
+    }
+
+    /* ─── 4. Gráfico de barras (top 10 por XP) ───────────────────────────── */
+    function renderBarChart() {
+        const section = $('chartSection');
+        const chart = $('barChart');
+        if (!roster.length) { section.style.display = 'none'; return; }
+        section.style.display = '';
+        const top10 = [...roster]
+            .filter(r => r.nickname)
+            .sort((a, b) => b.xp - a.xp)
+            .slice(0, 10);
+        if (!top10.length) { chart.innerHTML = '<p style="color:var(--text-dim);font-size:.85rem">Nenhum aluno com progresso ainda.</p>'; return; }
+        const maxXP = top10[0].xp || 1;
+        // Cores da paleta das regiões para variar as barras
+        const paleta = ['#7dd3a8','#69b8e5','#f0c75e','#e88c4a','#5fc8c8','#a78bdc','#c89669','#e26d6d','#f0c419','#7dd3a8'];
+        chart.innerHTML = top10.map((r, i) => {
+            const pct = Math.max(4, Math.round((r.xp / maxXP) * 100));
+            return `<div class="t-bar-row">
+                <div class="t-bar-label" title="${esc(r.nickname)}">${esc(r.nickname)}</div>
+                <div class="t-bar-wrap">
+                    <div class="t-bar-fill" style="width:${pct}%;background:${paleta[i % paleta.length]}"></div>
+                </div>
+                <div class="t-bar-val">${r.xp} XP</div>
+            </div>`;
+        }).join('');
+    }
+
+    /* ─── 3. Desbloquear região ──────────────────────────────────────────── */
+    let currentStudentData = null;
+
+    $('btnUnlockRegion').addEventListener('click', async () => {
+        if (!currentStudentData) return;
+        const regionNum = parseInt($('unlockRegionSelect').value, 10);
+        const key = `placement_${regionNum}`;
+        const btn = $('btnUnlockRegion');
+        btn.disabled = true;
+        btn.textContent = 'Desbloqueando…';
+        try {
+            // Lê achievements atuais
+            const { data: prog, error: e1 } = await sb.from('mathquest_progress')
+                .select('achievements')
+                .eq('user_id', currentStudentData.user_id)
+                .single();
+            if (e1 && e1.code !== 'PGRST116') throw e1;
+            const current = (prog && prog.achievements) ? prog.achievements : [];
+            if (current.includes(key)) {
+                toast(`Região ${regionNum} já está desbloqueada para este aluno.`, 'info');
+                return;
+            }
+            const updated = [...current, key];
+            const { error: e2 } = await sb.from('mathquest_progress')
+                .upsert({ user_id: currentStudentData.user_id, achievements: updated }, { onConflict: 'user_id' });
+            if (e2) throw e2;
+            toast(`Região ${regionNum} desbloqueada para ${currentStudentData.nickname || 'aluno'}!`, 'success');
+            // Atualiza o cache local do aluno
+            currentStudentData.achievements = updated;
+        } catch (err) {
+            toast('Erro ao desbloquear: ' + (err.message || err), 'error');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = 'Desbloquear';
+        }
+    });
+
     /* ─── Drill-down do aluno ──────────────────────────────────────────── */
     function openStudent(r) {
+        currentStudentData = r;
         $('studentName').textContent = r.nickname || 'Aluno (sem apelido ainda)';
         $('studentSummary').innerHTML = `
             <b>${Object.keys(r.stars).length}</b> fases concluídas ·
