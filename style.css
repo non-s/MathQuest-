@@ -573,6 +573,42 @@ input { font-family: inherit; }
     .ob-year-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
+/* ─── Modal de logout ─────────────────────────────────────────── */
+.logout-modal {
+    position: fixed; inset: 0; z-index: 60;
+    background: rgba(0,0,0,.55);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1rem;
+    animation: fadeIn .15s ease-out;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.logout-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem 1.75rem;
+    max-width: 360px; width: 100%;
+    text-align: center;
+    box-shadow: var(--shadow);
+    animation: slideUp .2s ease-out;
+}
+.logout-icon { font-size: 2.5rem; margin-bottom: .75rem; }
+.logout-card h3 { font-size: 1.2rem; margin-bottom: .5rem; }
+.logout-card p { color: var(--text-dim); font-size: .875rem; line-height: 1.5; margin-bottom: 1.5rem; }
+.logout-actions { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; }
+.btn-danger {
+    background: var(--danger);
+    color: #fff;
+    padding: .85rem 1.5rem;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 1rem;
+    font-family: inherit;
+    transition: opacity .15s;
+}
+.btn-danger:hover { opacity: .85; }
+.btn-danger:disabled { opacity: .5; cursor: default; }
+
 /* ─── Acessibilidade — foco visível ───────────────────────────── */
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
