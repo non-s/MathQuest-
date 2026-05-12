@@ -19,10 +19,15 @@
         .num { font-size: 4rem; color: #f0883e; font-weight: 700; line-height: 1; }
         h1 { margin: 1rem 0 .5rem; font-size: 1.2rem; }
         p { color: #8b949e; margin-bottom: 1.5rem; }
+        .links { display: grid; gap: .5rem; }
         a {
             display: inline-block; padding: .65rem 1.25rem;
             background: #f0883e; color: #0d1117; border-radius: 10px;
             text-decoration: none; font-weight: 600;
+        }
+        a.secondary {
+            background: #161b22; color: #e6edf3;
+            border: 1px solid #30363d;
         }
     </style>
 </head>
@@ -31,7 +36,10 @@
         <div class="num">404</div>
         <h1>Esta fase ainda não existe</h1>
         <p>Talvez o mapa não chegue até aqui. Volte e tente outro caminho.</p>
-        <a href="./">← Voltar ao mapa</a>
+        <div class="links">
+            <a href="./">← Voltar ao jogo</a>
+            <a href="teacher.html" class="secondary">Sou professor(a)</a>
+        </div>
     </div>
 </body>
 </html>

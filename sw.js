@@ -1,7 +1,8 @@
-const CACHE = 'mathquest-v2';
+const CACHE = 'mathquest-v3';
 
-// Assets pré-cacheados na instalação.  Caminhos network-first (HTML, script.js)
-// buscam versão fresca a cada visita mas usam estes como fallback offline.
+// Assets pré-cacheados na instalação.  Caminhos network-first (HTML, script.js,
+// teacher.html) buscam versão fresca a cada visita mas usam estes como
+// fallback offline.
 const ASSETS = [
     './',
     './index.html',
@@ -9,6 +10,9 @@ const ASSETS = [
     './script.js',
     './icon.svg',
     './manifest.json',
+    './teacher.html',
+    './privacy.html',
+    './404.html',
     'https://unpkg.com/@supabase/supabase-js@2',
     'https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Fira+Code:wght@500;700&display=swap',
 ];
