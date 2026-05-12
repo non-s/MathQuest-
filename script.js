@@ -104,7 +104,8 @@ const Q = (count, fn) => () => Array.from({ length: count }, fn);
 const g_count = (min, max) => Q(5, () => {
     const n = rand(min, max);
     return { stem: `Quantas bolinhas você vê?<div class="dots">${'<span>●</span>'.repeat(n)}</div>`,
-             ...makeChoice(n, nearDistr(n, 3)) };
+             ...makeChoice(n, nearDistr(n, 3)),
+             explain: `Para contar: conte um a um. O último número que você falar é a resposta!` };
 });
 
 const g_zero = () => Q(5, () => {
@@ -126,7 +127,8 @@ const g_zero = () => Q(5, () => {
         { stem: 'Quantas bocas tem um sapato?', ans: 0 },
     ];
     const it = pick(items);
-    return { stem: it.stem, ...makeChoice(it.ans, it.d || [1, 2, 3]) };
+    return { stem: it.stem, ...makeChoice(it.ans, it.d || [1, 2, 3]),
+             explain: 'Zero (0) significa <b>nenhum</b>! É o número que representa ausência de quantidade.' };
 });
 
 const g_compare = (min, max) => Q(5, () => {
@@ -134,7 +136,8 @@ const g_compare = (min, max) => Q(5, () => {
     const sym = a > b ? '>' : a < b ? '<' : '=';
     const opts = ['>', '<', '='];
     return { stem: `Qual sinal completa? &nbsp; <b>${a} ☐ ${b}</b>`,
-             options: opts, correctIndex: opts.indexOf(sym) };
+             options: opts, correctIndex: opts.indexOf(sym),
+             explain: 'Dica: o bico do sinal aponta para o <b>menor</b> número. <b>></b> maior que, <b>&lt;</b> menor que, <b>=</b> igual.' };
 });
 
 const g_pattern = (low, step) => Q(5, () => {
@@ -142,7 +145,8 @@ const g_pattern = (low, step) => Q(5, () => {
     const seq = [s0, s0 + step, s0 + 2 * step, s0 + 3 * step];
     const next = s0 + 4 * step;
     return { stem: `Qual número vem a seguir? <b>${seq.join(', ')}, ?</b>`,
-             ...makeChoice(next, nearDistr(next, step + 2)) };
+             ...makeChoice(next, nearDistr(next, step + 2)),
+             explain: `Sequência: descubra quanto soma de um número ao próximo e aplique para achar o seguinte!` };
 });
 
 const g_orderAsc = (min, max) => Q(5, () => {
@@ -153,7 +157,8 @@ const g_orderAsc = (min, max) => Q(5, () => {
                           [...nums].sort((a, b) => b - a).join(', '),
                           nums.join(', ')]);
     return { stem: `Coloque em ordem <b>crescente</b>: ${nums.join(', ')}`,
-             options: opts, correctIndex: opts.indexOf(sorted) };
+             options: opts, correctIndex: opts.indexOf(sorted),
+             explain: '<b>Crescente</b>: do menor para o maior (como ir crescendo!). Coloque os números em fila do menor para o maior.' };
 });
 
 const g_orderDesc = (min, max) => Q(5, () => {
@@ -164,17 +169,20 @@ const g_orderDesc = (min, max) => Q(5, () => {
                           nums.join(', '),
                           [...nums].reverse().join(', ')]);
     return { stem: `Coloque em ordem <b>decrescente</b>: ${nums.join(', ')}`,
-             options: opts, correctIndex: opts.indexOf(sorted) };
+             options: opts, correctIndex: opts.indexOf(sorted),
+             explain: '<b>Decrescente</b>: do maior para o menor. É o contrário da ordem crescente!' };
 });
 
 const g_before = (min, max) => Q(5, () => {
     const n = rand(min + 1, max);
-    return { stem: `Qual número vem <b>antes</b> de ${n}?`, ...makeChoice(n - 1, nearDistr(n - 1, 3)) };
+    return { stem: `Qual número vem <b>antes</b> de ${n}?`, ...makeChoice(n - 1, nearDistr(n - 1, 3)),
+             explain: `O número <b>anterior</b> é um a menos. Antes de ${n} vem ${n - 1}.` };
 });
 
 const g_after = (min, max) => Q(5, () => {
     const n = rand(min, max - 1);
-    return { stem: `Qual número vem <b>depois</b> de ${n}?`, ...makeChoice(n + 1, nearDistr(n + 1, 3)) };
+    return { stem: `Qual número vem <b>depois</b> de ${n}?`, ...makeChoice(n + 1, nearDistr(n + 1, 3)),
+             explain: `O número <b>posterior</b> é um a mais. Depois de ${n} vem ${n + 1}.` };
 });
 
 const g_shapes = () => Q(5, () => {
@@ -200,7 +208,8 @@ const g_shapes = () => Q(5, () => {
         { stem: 'Polígono que NÃO existe (todo lado curvo):', ans: 'Círculo', d: ['Triângulo', 'Octógono', 'Hexágono'] },
     ];
     const it = pick(items);
-    return { stem: it.stem, ...makeChoice(it.ans, it.d) };
+    return { stem: it.stem, ...makeChoice(it.ans, it.d),
+             explain: 'Dica: <b>triângulo</b>=3 lados, <b>quadrado</b>=4 lados iguais, <b>retângulo</b>=4 lados (2 pares), <b>pentágono</b>=5, <b>hexágono</b>=6, <b>círculo</b>=sem lados.' };
 });
 
 const g_dezena = () => Q(5, () => {
@@ -221,49 +230,57 @@ const g_dezena = () => Q(5, () => {
         { stem: 'Em 75, quantas dezenas?', ans: 7, d: [5, 50, 75] },
     ];
     const it = pick(items);
-    return { stem: it.stem, ...makeChoice(it.ans, it.d) };
+    return { stem: it.stem, ...makeChoice(it.ans, it.d),
+             explain: 'Uma <b>dezena</b> = 10 unidades. No número 35: 3 dezenas e 5 unidades. O algarismo da esquerda é o das dezenas!' };
 });
 
 /* ── 2º ano — Bosque das Operações ─────────────────────────────────────── */
 const g_add = (maxA, maxB, minA = 1, minB = 1) => Q(5, () => {
     const a = rand(minA, maxA), b = rand(minB, maxB);
     const c = a + b;
-    return { stem: `<b>${a} + ${b}</b> = ?`, ...makeChoice(c, nearDistr(c, Math.max(3, Math.ceil(c / 4)))) };
+    return { stem: `<b>${a} + ${b}</b> = ?`, ...makeChoice(c, nearDistr(c, Math.max(3, Math.ceil(c / 4)))),
+             explain: `Adição: <b>${a} + ${b} = ${c}</b>. Junte as quantidades. Pode contar nos dedos ou na reta numérica!` };
 });
 
 const g_sub = (maxA, maxB, minA = 2) => Q(5, () => {
     let a = rand(minA, maxA), b = rand(1, Math.min(a - 1, maxB));
     const c = a - b;
-    return { stem: `<b>${a} − ${b}</b> = ?`, ...makeChoice(c, nearDistr(c, 3)) };
+    return { stem: `<b>${a} − ${b}</b> = ?`, ...makeChoice(c, nearDistr(c, 3)),
+             explain: `Subtração: <b>${a} − ${b} = ${c}</b>. Tire do maior. Quantas sobram?` };
 });
 
 const g_parity = () => Q(5, () => {
     const n = rand(1, 99);
     const opts = ['Par', 'Ímpar'];
-    return { stem: `O número <b>${n}</b> é par ou ímpar?`, options: opts, correctIndex: n % 2 ? 1 : 0 };
+    return { stem: `O número <b>${n}</b> é par ou ímpar?`, options: opts, correctIndex: n % 2 ? 1 : 0,
+             explain: `<b>${n % 2 === 0 ? 'Par' : 'Ímpar'}</b>: olhe o último algarismo. Termina em 0,2,4,6,8 → par. Termina em 1,3,5,7,9 → ímpar.` };
 });
 
 const g_double = (max = 50) => Q(5, () => {
     const n = rand(1, max);
-    return { stem: `Qual é o <b>dobro</b> de ${n}?`, ...makeChoice(n * 2, nearDistr(n * 2, 4)) };
+    return { stem: `Qual é o <b>dobro</b> de ${n}?`, ...makeChoice(n * 2, nearDistr(n * 2, 4)),
+             explain: `Dobro = vezes 2 = somar o número com ele mesmo. Dobro de ${n} = ${n} + ${n} = <b>${n * 2}</b>.` };
 });
 
 const g_half = (max = 50) => Q(5, () => {
     const n = rand(1, max) * 2;
-    return { stem: `Qual é a <b>metade</b> de ${n}?`, ...makeChoice(n / 2, nearDistr(n / 2, 4)) };
+    return { stem: `Qual é a <b>metade</b> de ${n}?`, ...makeChoice(n / 2, nearDistr(n / 2, 4)),
+             explain: `Metade = dividir por 2. Metade de ${n} = ${n} ÷ 2 = <b>${n / 2}</b>.` };
 });
 
 const g_add3 = (max) => Q(5, () => {
     const a = rand(1, max), b = rand(1, max), c = rand(1, max);
     const r = a + b + c;
-    return { stem: `<b>${a} + ${b} + ${c}</b> = ?`, ...makeChoice(r, nearDistr(r, 4)) };
+    return { stem: `<b>${a} + ${b} + ${c}</b> = ?`, ...makeChoice(r, nearDistr(r, 4)),
+             explain: `Some em etapas: primeiro ${a}+${b}=${a+b}, depois ${a+b}+${c}=<b>${r}</b>.` };
 });
 
 const g_seqStep = (step) => Q(5, () => {
     const s0 = rand(step, step * 10);
     const seq = [s0, s0 + step, s0 + 2 * step, s0 + 3 * step];
     const next = s0 + 4 * step;
-    return { stem: `Sequência de ${step} em ${step}: ${seq.join(', ')}, ?`, ...makeChoice(next, nearDistr(next, step + 2)) };
+    return { stem: `Sequência de ${step} em ${step}: ${seq.join(', ')}, ?`, ...makeChoice(next, nearDistr(next, step + 2)),
+             explain: `O padrão é somar <b>${step}</b> a cada vez. O próximo é ${seq[3]} + ${step} = <b>${next}</b>.` };
 });
 
 const g_decomp = () => Q(5, () => {
@@ -274,7 +291,8 @@ const g_decomp = () => Q(5, () => {
     const d2 = `${d + 1} dezenas e ${u} unidades`;
     const d3 = `${d} dezenas e ${(u + 1) % 10} unidades`;
     const opts = shuffle([ans, d1, d2, d3]);
-    return { stem: `Decomponha o número <b>${n}</b>:`, options: opts, correctIndex: opts.indexOf(ans) };
+    return { stem: `Decomponha o número <b>${n}</b>:`, options: opts, correctIndex: opts.indexOf(ans),
+             explain: `<b>${n}</b> = ${d} dezenas + ${u} unidades. Lembre: 1 dezena = 10 unidades.` };
 });
 
 const g_wordSimple = () => Q(5, () => {
@@ -293,7 +311,8 @@ const g_wordSimple = () => Q(5, () => {
         () => { const a = rand(20, 50); return { s: `Sou ${a} anos mais velho que meu irmão de 2 anos. Quantos anos tenho?`, r: a + 2 }; },
     ];
     const it = pick(items)();
-    return { stem: it.s, ...makeChoice(it.r, nearDistr(it.r, 4)) };
+    return { stem: it.s, ...makeChoice(it.r, nearDistr(it.r, 4)),
+             explain: 'Leia com atenção: o que você tem, o que acontece. Junte (+) ou tire (−)?' };
 });
 
 /* ── 3º ano — Vale das Tabuadas ────────────────────────────────────────── */
@@ -301,33 +320,38 @@ const g_addCarry = () => Q(5, () => {
     let a, b;
     do { a = rand(10, 99); b = rand(10, 99); } while ((a % 10) + (b % 10) < 10);
     const c = a + b;
-    return { stem: `<b>${a} + ${b}</b> = ?  <small>(com reserva)</small>`, ...makeChoice(c, nearDistr(c, 5)) };
+    return { stem: `<b>${a} + ${b}</b> = ?  <small>(com reserva)</small>`, ...makeChoice(c, nearDistr(c, 5)),
+             explain: `<b>Reserva (vai um):</b> quando a soma das unidades passa de 9, leve 1 para as dezenas. Verifique: ${a}+${b}=${c}.` };
 });
 
 const g_subBorrow = () => Q(5, () => {
     let a, b;
     do { a = rand(30, 99); b = rand(10, a - 1); } while ((a % 10) >= (b % 10));
     const c = a - b;
-    return { stem: `<b>${a} − ${b}</b> = ?  <small>(com empréstimo)</small>`, ...makeChoice(c, nearDistr(c, 5)) };
+    return { stem: `<b>${a} − ${b}</b> = ?  <small>(com empréstimo)</small>`, ...makeChoice(c, nearDistr(c, 5)),
+             explain: `<b>Empréstimo:</b> quando o dígito de baixo é maior, peça 1 dezena (=10) emprestada da coluna da esquerda. ${a}−${b}=${c}.` };
 });
 
 const g_table = (n) => Q(5, () => {
     const k = rand(1, 10);
     const c = n * k;
-    return { stem: `<b>${n} × ${k}</b> = ?`, ...makeChoice(c, nearDistr(c, Math.max(3, n + 2))) };
+    return { stem: `<b>${n} × ${k}</b> = ?`, ...makeChoice(c, nearDistr(c, Math.max(3, n + 2))),
+             explain: `Tabuada: <b>${n} × ${k} = ${c}</b>. Você pode calcular somando ${n} exatamente ${k} vezes!` };
 });
 
 const g_tableMix = (low, high) => Q(5, () => {
     const a = rand(low, high), b = rand(1, 10);
     const c = a * b;
-    return { stem: `<b>${a} × ${b}</b> = ?`, ...makeChoice(c, nearDistr(c, Math.max(3, a + 2))) };
+    return { stem: `<b>${a} × ${b}</b> = ?`, ...makeChoice(c, nearDistr(c, Math.max(3, a + 2))),
+             explain: `Multiplicação: <b>${a} × ${b} = ${c}</b>. Lembre: é como somar ${a} exatamente ${b} vezes.` };
 });
 
 const g_divExact = (divisorMax) => Q(5, () => {
     const b = rand(2, divisorMax);
     const q = rand(2, 10);
     const a = b * q;
-    return { stem: `<b>${a} ÷ ${b}</b> = ?`, ...makeChoice(q, nearDistr(q, 3)) };
+    return { stem: `<b>${a} ÷ ${b}</b> = ?`, ...makeChoice(q, nearDistr(q, 3)),
+             explain: `Divisão: <b>${a} ÷ ${b} = ${q}</b>. Use a tabuada do ${b}: ${b}×${q}=${a}. ✓` };
 });
 
 const g_money = () => Q(5, () => {
@@ -344,7 +368,8 @@ const g_money = () => Q(5, () => {
         () => { const total = rand(30, 80); return { s: `Uma compra de R$ ${total},00 paga com nota de R$ 100,00. Troco?`, r: `R$ ${100 - total},00`, d: [`R$ ${total},00`, `R$ ${100 + total},00`, `R$ ${100 - total + 1},00`] }; },
     ];
     const it = pick(items)();
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
+    return { stem: it.s, ...makeChoice(it.r, it.d),
+             explain: 'Com dinheiro: <b>+</b> para ganhar/comprar juntos, <b>−</b> para gastar/troco. Troco = pago − preço.' };
 });
 
 /* ── 4º ano — Caverna das Frações ─────────────────────────────────────── */
@@ -352,19 +377,22 @@ const g_mult10 = () => Q(5, () => {
     const n = rand(2, 999);
     const k = pick([10, 100, 1000]);
     const c = n * k;
-    return { stem: `<b>${n} × ${k}</b> = ?`, ...makeChoice(c, nearDistr(c, k * 2)) };
+    return { stem: `<b>${n} × ${k}</b> = ?`, ...makeChoice(c, nearDistr(c, k * 2)),
+             explain: `Multiplicar por <b>${k}</b>: acrescente ${String(k).length-1} zero(s) ao número. ${n}×${k}=<b>${c}</b>.` };
 });
 
 const g_mult2x1 = () => Q(5, () => {
     const a = rand(11, 99), b = rand(2, 9);
     const c = a * b;
-    return { stem: `<b>${a} × ${b}</b> = ?`, ...makeChoice(c, nearDistr(c, 8)) };
+    return { stem: `<b>${a} × ${b}</b> = ?`, ...makeChoice(c, nearDistr(c, 8)),
+             explain: `Multiplique em partes: ${a}×${b} = (${Math.floor(a/10)*10}×${b}) + (${a%10}×${b}) = ${Math.floor(a/10)*10*b} + ${(a%10)*b} = <b>${c}</b>.` };
 });
 
 const g_mult2x2 = () => Q(5, () => {
     const a = rand(11, 30), b = rand(11, 30);
     const c = a * b;
-    return { stem: `<b>${a} × ${b}</b> = ?`, ...makeChoice(c, nearDistr(c, 20)) };
+    return { stem: `<b>${a} × ${b}</b> = ?`, ...makeChoice(c, nearDistr(c, 20)),
+             explain: `Para multiplicar ${a}×${b}, decomponha: ${a}×${Math.floor(b/10)*10} + ${a}×${b%10} = ${a*Math.floor(b/10)*10} + ${a*(b%10)} = <b>${c}</b>.` };
 });
 
 const g_divRest = () => Q(5, () => {
@@ -373,7 +401,8 @@ const g_divRest = () => Q(5, () => {
     const ans = `${q} resto ${r}`;
     const d = [`${q + 1} resto ${r}`, `${q} resto ${r + 1}`, `${q - 1} resto ${b - r}`];
     const opts = shuffle([ans, ...d]);
-    return { stem: `<b>${a} ÷ ${b}</b> = ? (com resto)`, options: opts, correctIndex: opts.indexOf(ans) };
+    return { stem: `<b>${a} ÷ ${b}</b> = ? (com resto)`, options: opts, correctIndex: opts.indexOf(ans),
+             explain: `Divisão com resto: <b>${a} ÷ ${b} = ${q} resto ${r}</b>. Verifique: ${b}×${q}+${r}=${b*q+r}=<b>${a}</b>. ✓ O resto é sempre menor que o divisor.` };
 });
 
 const g_div2dig = () => Q(5, () => {
