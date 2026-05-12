@@ -94,6 +94,7 @@ const REGIONS = [
     { id: 7, name: 'Deserto das Equações',  year: '7º ano', color: '#c89669', icon: '🏜️',  desc: 'X dos dois lados, razão e proporção.' },
     { id: 8, name: 'Templo das Potências',  year: '8º ano', color: '#e26d6d', icon: '🏛️',  desc: 'Potências, raízes e álgebra.' },
     { id: 9, name: 'Cidadela do Mestre',    year: '9º ano', color: '#f0c419', icon: '🏰',  desc: 'Funções, Bhaskara e Pitágoras.' },
+    { id: 10, name: 'Arena do Vestibular',  year: 'ENEM/Vestibular', color: '#ff6b9d', icon: '🏟️',  desc: 'ENEM, FUVEST, UNICAMP: matemática de alto nível.' },
 ];
 
 /* ─── Geradores de questões ───────────────────────────────────────────────
@@ -1378,9 +1379,191 @@ const g_master = () => () => {
     return qs;
 };
 
-/* ─── 181 fases ──────────────────────────────────────────────────────────
+/* ── 10 — Arena do Vestibular ─────────────────────────────────────── */
+const g_progressAritm = () => Q(5, () => {
+    const a1 = rand(2, 20), r = rand(2, 10);
+    const n  = rand(5, 15);
+    const an = a1 + (n - 1) * r;
+    const sn = n * (a1 + an) / 2;
+    const items = [
+        { s: `PA: a₁=${a1}, r=${r}. Qual é o ${n}º termo?`, ans: an, d: nearDistr(an, 8) },
+        { s: `PA: a₁=${a1}, r=${r}, n=${n}. Qual é a soma Sₙ?`, ans: sn, d: nearDistr(sn, 20) },
+    ];
+    const it = pick(items);
+    return { stem: it.s, ...makeChoice(it.ans, it.d),
+        explain: `<b>PA (Progressão Aritmética):</b> aₙ = a₁ + (n−1)·r. Sₙ = n·(a₁+aₙ)/2. Aqui: a${n} = ${a1}+(${n}-1)·${r} = <b>${an}</b>.` };
+});
+
+const g_progressGeom = () => Q(5, () => {
+    const a1 = pick([2, 3, 4, 5, 6]);
+    const q  = pick([2, 3]);
+    const n  = rand(3, 6);
+    const an = a1 * Math.pow(q, n - 1);
+    return { stem: `PG: a₁=${a1}, q=${q}. Qual é o ${n}º termo?`,
+             ...makeChoice(an, nearDistr(an, Math.max(5, an / 4))),
+        explain: `<b>PG (Progressão Geométrica):</b> aₙ = a₁·qⁿ⁻¹. Aqui: a${n} = ${a1}·${q}^${n-1} = <b>${an}</b>.` };
+});
+
+const g_logBasic = () => Q(5, () => {
+    const bases = [[2,8,3],[2,16,4],[2,32,5],[3,9,2],[3,27,3],[10,100,2],[10,1000,3],[5,25,2],[5,125,3]];
+    const [b, x, r] = pick(bases);
+    return { stem: `log<sub>${b}</sub>${x} = ?`,
+             ...makeChoice(r, nearDistr(r, 2)),
+        explain: `Logaritmo: log<sub>${b}</sub>${x} = <b>${r}</b> porque ${b}<sup>${r}</sup> = ${x}. Logaritmo é o <b>expoente</b> que a base precisa ter para resultar no logaritmando.` };
+});
+
+const g_logProp = () => Q(5, () => {
+    const items = [
+        { s: 'log(a·b) = ?', r: 'log a + log b', d: ['log a − log b', 'log a · log b', 'log(a+b)'],
+          e: '<b>Produto:</b> log(a·b) = log a + log b. Logaritmo transforma multiplicação em soma!' },
+        { s: 'log(a/b) = ?', r: 'log a − log b', d: ['log a + log b', 'log b − log a', 'log a / log b'],
+          e: '<b>Quociente:</b> log(a/b) = log a − log b.' },
+        { s: 'log(aⁿ) = ?', r: 'n · log a', d: ['log a + n', 'log(na)', 'log a / n'],
+          e: '<b>Potência:</b> log(aⁿ) = n · log a. O expoente vira fator multiplicativo!' },
+        { s: 'log₁₀ 1 = ?', r: '0', d: ['1', '10', '-1'],
+          e: 'log de 1 em qualquer base = <b>0</b>, pois a⁰ = 1 para qualquer base a.' },
+        { s: 'log₂ 2 = ?', r: '1', d: ['0', '2', '4'],
+          e: 'logₐ a = <b>1</b> sempre, pois a¹ = a.' },
+    ];
+    const it = pick(items);
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
+});
+
+const g_combinatoria = () => Q(5, () => {
+    const items = [
+        { s: 'C(5,2) = ?', r: 10, d: [20, 6, 15],
+          e: 'Combinação: C(n,k) = n!/(k!·(n-k)!). C(5,2) = 5!/(2!·3!) = 120/12 = <b>10</b>.' },
+        { s: 'C(6,3) = ?', r: 20, d: [15, 30, 6],
+          e: 'C(6,3) = 6!/(3!·3!) = 720/36 = <b>20</b>. Número de grupos de 3 em 6 elementos.' },
+        { s: 'P(4) = 4! = ?', r: 24, d: [12, 16, 20],
+          e: 'Permutação simples: P(n) = n! = n×(n-1)×...×1. P(4) = 4×3×2×1 = <b>24</b>.' },
+        { s: 'A(5,2) = ?', r: 20, d: [10, 25, 15],
+          e: 'Arranjo: A(n,k) = n!/(n-k)!. A(5,2) = 5×4 = <b>20</b>. Ordem importa!' },
+        { s: 'C(7,7) = ?', r: 1, d: [7, 0, 49],
+          e: 'C(n,n) = 1 sempre — só existe <b>um jeito</b> de escolher todos.' },
+        { s: 'C(10,1) = ?', r: 10, d: [1, 9, 100],
+          e: 'C(n,1) = n. Há <b>n</b> jeitos de escolher 1 elemento de n.' },
+    ];
+    const it = pick(items);
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
+});
+
+const g_probCondicional = () => Q(5, () => {
+    const items = [
+        { s: 'Uma urna tem 5 bolas (3 vermelhas, 2 azuis). Retira-se 1 vermelha (sem repor). Prob. de sair azul na 2ª?',
+          r: '2/4', d: ['2/5', '1/2', '1/3'],
+          e: 'Sem reposição: restam 4 bolas (2V, 2A). P(azul) = 2/4 = <b>1/2</b>. Probabilidade condicional muda o espaço amostral!' },
+        { s: 'Dois dados lançados. P(soma = 7) = ?', r: '6/36', d: ['7/36', '1/6', '5/36'],
+          e: 'Pares que somam 7: (1,6)(2,5)(3,4)(4,3)(5,2)(6,1) = 6 casos. P = 6/36 = <b>1/6</b>.' },
+        { s: 'Baralho 52 cartas. P(ás ou copas) = ?', r: '16/52', d: ['17/52', '1/4', '4/52'],
+          e: 'P(ás ∪ copas) = P(ás) + P(copas) − P(ás de copas) = 4/52 + 13/52 − 1/52 = <b>16/52</b>.' },
+    ];
+    const it = pick(items);
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
+});
+
+const g_geometriaAnalitica = () => Q(5, () => {
+    const x1 = rand(-5, 5), y1 = rand(-5, 5), x2 = rand(-5, 5), y2 = rand(-5, 5);
+    const dist = Math.sqrt((x2-x1)**2 + (y2-y1)**2);
+    const distRound = Math.round(dist * 10) / 10;
+    const items = [
+        { s: `Distância entre (${x1},${y1}) e (${x2},${y2}):`,
+          ans: distRound,
+          d: nearDistr(Math.round(distRound), 3).map(x => Math.abs(x) || 1),
+          e: `d = √[(${x2}−${x1})² + (${y2}−${y1})²] = √[${(x2-x1)**2}+${(y2-y1)**2}] ≈ <b>${distRound}</b>. Teorema de Pitágoras no plano!` },
+        { s: `Ponto médio de (${x1},${y1}) e (${x2},${y2}):`,
+          ans: `(${(x1+x2)/2}, ${(y1+y2)/2})`,
+          d: [`(${x1+x2}, ${y1+y2})`, `(${(x1-x2)/2}, ${(y1-y2)/2})`, `(${x1}, ${y2})`],
+          e: `Ponto médio: M = ((x₁+x₂)/2, (y₁+y₂)/2) = <b>(${(x1+x2)/2}, ${(y1+y2)/2})</b>.` },
+    ];
+    const it = pick(items);
+    return { stem: it.s, ...makeChoice(it.ans, it.d), explain: it.e };
+});
+
+const g_trigAvancado = () => Q(5, () => {
+    const items = [
+        { s: 'sen²x + cos²x = ?', r: '1', d: ['0', '2', 'tg x'],
+          e: '<b>Identidade fundamental:</b> sen²x + cos²x = 1. Decorre do Teorema de Pitágoras no círculo trigonométrico.' },
+        { s: 'tg x = ?', r: 'sen x / cos x', d: ['cos x / sen x', 'sen x · cos x', '1/cos x'],
+          e: 'Tangente: tg x = sen x / cos x. Coeficiente angular da reta tangente ao círculo.' },
+        { s: 'sen(30°) = ?', r: '1/2', d: ['√2/2', '√3/2', '1'],
+          e: 'Valores especiais: sen 30° = 1/2, sen 45° = √2/2, sen 60° = √3/2.' },
+        { s: 'cos(60°) = ?', r: '1/2', d: ['√3/2', '√2/2', '0'],
+          e: 'cos 60° = 1/2. Lembre: cos 30° = √3/2, cos 45° = √2/2, cos 90° = 0.' },
+        { s: 'A lei dos senos diz que a/sen A = ?', r: 'b/sen B = c/sen C', d: ['b·sen B', 'c/cos C', 'R'],
+          e: '<b>Lei dos senos:</b> a/senA = b/senB = c/senC = 2R (R = raio da circunferência circunscrita).' },
+        { s: 'sen(π/2) = ?', r: '1', d: ['0', '√2/2', '-1'],
+          e: 'sen(π/2) = sen(90°) = <b>1</b>. No círculo trigonométrico, 90° aponta para cima (y=1).' },
+    ];
+    const it = pick(items);
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
+});
+
+const g_matrizBasica = () => Q(5, () => {
+    const items = [
+        { s: 'Determinante de [[1,2],[3,4]]:', r: -2, d: [2, 10, 14],
+          e: 'det[[a,b],[c,d]] = ad − bc = 1×4 − 2×3 = 4 − 6 = <b>−2</b>.' },
+        { s: 'Determinante de [[2,0],[0,3]]:', r: 6, d: [5, 0, -6],
+          e: 'Matriz diagonal: determinante = produto da diagonal. 2×3 = <b>6</b>.' },
+        { s: 'Determinante de [[1,0],[0,1]] (identidade):', r: 1, d: [0, 2, -1],
+          e: 'Matriz identidade sempre tem det = <b>1</b>.' },
+        { s: 'Uma matriz 2×3 tem quantos elementos?', r: 6, d: [5, 8, 2],
+          e: 'Elementos = linhas × colunas = 2×3 = <b>6</b>.' },
+        { s: 'Matriz transposta de [[1,2],[3,4]] é:', r: '[[1,3],[2,4]]', d: ['[[4,2],[3,1]]', '[[1,2],[3,4]]', '[[3,1],[4,2]]'],
+          e: '<b>Transposta:</b> troca linhas por colunas. (Aᵀ)ᵢⱼ = Aⱼᵢ.' },
+    ];
+    const it = pick(items);
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
+});
+
+const g_funcExponencial = () => Q(5, () => {
+    const items = [
+        { s: '2ˣ = 8. x = ?', r: 3, d: [2, 4, 6],
+          e: '2ˣ = 8 = 2³ → mesma base, iguale os expoentes: <b>x = 3</b>.' },
+        { s: '3ˣ = 27. x = ?', r: 3, d: [2, 9, 4],
+          e: '3ˣ = 27 = 3³ → <b>x = 3</b>.' },
+        { s: 'f(x) = 2ˣ. f(0) = ?', r: 1, d: [0, 2, -1],
+          e: 'f(0) = 2⁰ = <b>1</b>. Toda exponencial passa por (0,1).' },
+        { s: 'Função exponencial crescente quando base:', r: 'maior que 1', d: ['menor que 1', 'igual a 1', 'negativa'],
+          e: 'Base > 1 → crescente. 0 < base < 1 → decrescente. Base = 1 → constante.' },
+        { s: '5ˣ = 1. x = ?', r: 0, d: [1, 5, -1],
+          e: '5ˣ = 1 = 5⁰ → <b>x = 0</b>. Qualquer base elevada a 0 é 1.' },
+    ];
+    const it = pick(items);
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
+});
+
+const g_geometriaEspacial = () => Q(5, () => {
+    const items = [
+        () => { const l = rand(2,8); const v = l*l*l; return { s: `Volume de cubo de aresta ${l} cm:`, r: `${v} cm³`, d: nearDistr(v,15).map(x=>`${x} cm³`) }; },
+        () => { const r2 = rand(2,8), h = rand(3,10); const v = Math.round(3.14*r2*r2*h); return { s: `Volume do cilindro r=${r2}, h=${h} (π≈3,14):`, r: `${v} cm³`, d: nearDistr(v,30).map(x=>`${x} cm³`) }; },
+        () => { const r2 = rand(2,6); const v = Math.round(4/3*3.14*r2**3); return { s: `Volume da esfera de raio ${r2} (π≈3,14):`, r: `${v} cm³`, d: nearDistr(v,40).map(x=>`${x} cm³`) }; },
+    ];
+    const it = pick(items)();
+    return { stem: it.s, ...makeChoice(it.r, it.d),
+        explain: 'Sólidos: Cubo V=a³ · Cilindro V=πr²h · Esfera V=4πr³/3 · Cone V=πr²h/3. ENEM adora esses!' };
+});
+
+const g_enunciado = () => Q(5, () => {
+    const items = [
+        { s: '(ENEM) Uma torneira perde 1 gota a cada 5s. Cada gota = 0,05 mL. Litros desperdiçados em 1 dia?', r: '0,864', d: ['1,44', '0,432', '0,5'],
+          e: 'Gotas/dia = 86400/5 = 17280. Volume = 17280 × 0,05 mL = 864 mL = <b>0,864 L</b>. Regra de 3 direta.' },
+        { s: '(FUVEST) Quantos números inteiros x satisfazem |x − 3| < 2?', r: '3', d: ['4', '2', '5'],
+          e: '|x−3|<2 → −2<x−3<2 → 1<x<5. Inteiros: 2, 3, 4 → <b>3 números</b>.' },
+        { s: '(UNICAMP) Sequência: 1, 1, 2, 3, 5, 8... Qual o próximo?', r: '13', d: ['11', '12', '16'],
+          e: 'Sequência de Fibonacci: cada termo = soma dos dois anteriores. 5+8 = <b>13</b>.' },
+        { s: '(ENEM) Poupança R$1000, 1% ao mês. Montante após 3 meses (juros compostos)?', r: 'R$ 1030,30', d: ['R$ 1030,00', 'R$ 1031,00', 'R$ 1003,00'],
+          e: 'M = C·(1+i)ⁿ = 1000·(1,01)³ = 1000·1,030301 = <b>R$1030,30</b>. Juros compostos: capitaliza sobre o montante!' },
+        { s: '(ENEM) Gráfico de f(x) = x² passa por qual ponto com certeza?', r: '(0, 0)', d: ['(1, 0)', '(0, 1)', '(-1, 0)'],
+          e: 'f(0) = 0² = 0 → ponto <b>(0,0)</b>. O vértice da parábola y=x² é a origem.' },
+    ];
+    const it = pick(items);
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
+});
+
+/* ─── 201 fases ──────────────────────────────────────────────────────────
  * Cada fase: { id, region, name, gen }.
- * region indica a região no mapa (1..9).
+ * region indica a região no mapa (1..10).
  * ───────────────────────────────────────────────────────────────────────── */
 const PHASES = [
     // ── 1º ano — Vila dos Números (1-20) ──
@@ -1581,6 +1764,28 @@ const PHASES = [
     { id: 179, region: 9, name: 'Equações irracionais',  gen: g_irrational() },
     { id: 180, region: 9, name: 'Mistura final',         gen: () => shuffle([...g_bhaskaraRoots()(), ...g_pythCat()(), ...g_trigSpecial()()]).slice(0, 6) },
     { id: 181, region: 9, name: '🏆 Desafio Mestre',     gen: g_master() },
+
+    // ── 10 — Arena do Vestibular (182-201) ──
+    { id: 182, region: 10, name: 'Progressão Aritmética', gen: g_progressAritm() },
+    { id: 183, region: 10, name: 'Progressão Geométrica', gen: g_progressGeom() },
+    { id: 184, region: 10, name: 'Logaritmo básico',      gen: g_logBasic() },
+    { id: 185, region: 10, name: 'Propriedades do log',   gen: g_logProp() },
+    { id: 186, region: 10, name: 'Combinatória',          gen: g_combinatoria() },
+    { id: 187, region: 10, name: 'Probabilidade avançada',gen: g_probCondicional() },
+    { id: 188, region: 10, name: 'Geometria analítica',   gen: g_geometriaAnalitica() },
+    { id: 189, region: 10, name: 'Trigonometria avançada',gen: g_trigAvancado() },
+    { id: 190, region: 10, name: 'Matrizes e determinantes', gen: g_matrizBasica() },
+    { id: 191, region: 10, name: 'Função exponencial',    gen: g_funcExponencial() },
+    { id: 192, region: 10, name: 'Geometria espacial',    gen: g_geometriaEspacial() },
+    { id: 193, region: 10, name: 'Questões ENEM/Vestibular', gen: g_enunciado() },
+    { id: 194, region: 10, name: 'PA e PG mistas',        gen: () => shuffle([...g_progressAritm()(), ...g_progressGeom()()]).slice(0,5) },
+    { id: 195, region: 10, name: 'Log e exponencial',     gen: () => shuffle([...g_logBasic()(), ...g_funcExponencial()()]).slice(0,5) },
+    { id: 196, region: 10, name: 'Combinatória aplicada', gen: () => shuffle([...g_combinatoria()(), ...g_probCondicional()()]).slice(0,5) },
+    { id: 197, region: 10, name: 'Geometria completa',    gen: () => shuffle([...g_geometriaAnalitica()(), ...g_geometriaEspacial()()]).slice(0,5) },
+    { id: 198, region: 10, name: 'Álgebra avançada',      gen: () => shuffle([...g_matrizBasica()(), ...g_trigAvancado()()]).slice(0,5) },
+    { id: 199, region: 10, name: 'Simulado ENEM I',       gen: () => shuffle([...g_enunciado()(), ...g_combinatoria()(), ...g_logBasic()()]).slice(0,5) },
+    { id: 200, region: 10, name: 'Simulado ENEM II',      gen: () => shuffle([...g_progressAritm()(), ...g_funcExponencial()(), ...g_trigAvancado()()]).slice(0,5) },
+    { id: 201, region: 10, name: '🏆 Desafio Vestibular', gen: () => shuffle([...g_enunciado()(), ...g_probCondicional()(), ...g_matrizBasica()(), ...g_geometriaAnalitica()()]).slice(0,5) },
 ];
 
 /* ─── Conquistas ────────────────────────────────────────────────────────── */
@@ -1589,7 +1794,7 @@ const ACHIEVEMENTS = [
     { id: 'ten_phases',   name: 'Aquecido',               desc: '10 fases concluídas',             check: s => Object.keys(s.stars).length >= 10 },
     { id: 'thirty_phases', name: 'Em chamas',             desc: '30 fases concluídas',             check: s => Object.keys(s.stars).length >= 30 },
     { id: 'hundred_phases', name: 'Caminho longo',        desc: '100 fases concluídas',            check: s => Object.keys(s.stars).length >= 100 },
-    { id: 'all_phases',   name: 'Mestre da matemática',   desc: 'Todas as 181 fases',              check: s => Object.keys(s.stars).length >= 181 },
+    { id: 'all_phases',   name: 'Mestre da matemática',   desc: 'Todas as 201 fases',              check: s => Object.keys(s.stars).length >= 201 },
     { id: 'perfectionist', name: 'Perfeccionista',        desc: '10 fases com 3 estrelas',         check: s => Object.values(s.stars).filter(x => x === 3).length >= 10 },
     { id: 'star_collector', name: 'Coletor de estrelas',  desc: '300 estrelas no total',           check: s => Object.values(s.stars).reduce((a, b) => a + b, 0) >= 300 },
     { id: 'all_stars',    name: 'Brilhantíssimo',         desc: 'Todas as estrelas (543)',         check: s => Object.values(s.stars).reduce((a, b) => a + b, 0) >= 543 },
@@ -1597,6 +1802,28 @@ const ACHIEVEMENTS = [
     { id: 'region_9',     name: 'Coroado',                desc: 'Conclua toda a Cidadela',         check: s => PHASES.filter(p => p.region === 9).every(p => s.stars[p.id]) },
     { id: 'xp_1000',      name: 'Mil XP',                 desc: 'Acumule 1000 XP',                 check: s => s.xp >= 1000 },
     { id: 'xp_5000',      name: '5K XP',                  desc: 'Acumule 5000 XP',                 check: s => s.xp >= 5000 },
+    // Novas conquistas — Região 10 e Especiais
+    { id: 'region_10',    name: 'Veterano',              desc: 'Conclua a Arena do Vestibular',     check: s => PHASES.filter(p => p.region === 10).every(p => s.stars[p.id]) },
+    { id: 'vestibular',   name: 'Pré-vestibulando',      desc: 'Complete 5 fases da região 10',     check: s => PHASES.filter(p => p.region === 10 && s.stars[p.id]).length >= 5 },
+    { id: 'streak_3',     name: 'Em sequência',          desc: '3 dias seguidos jogando',           check: s => (s.streak || 0) >= 3 },
+    { id: 'streak_7',     name: 'Semana dedicada',       desc: '7 dias seguidos jogando',           check: s => (s.streak || 0) >= 7 },
+    { id: 'streak_30',    name: 'Mês de estudo',         desc: '30 dias seguidos jogando',          check: s => (s.streak || 0) >= 30 },
+    { id: 'all_regions',  name: 'Explorador total',      desc: 'Complete pelo menos 1 fase em cada região', check: s => REGIONS.every(r => PHASES.filter(p => p.region === r.id).some(p => s.stars[p.id])) },
+    { id: 'speed_demon',  name: 'Relâmpago',             desc: 'Acerte 5 questões seguidas sem errar', check: s => (s._correctStreak || 0) >= 5 },
+    { id: 'centurion',    name: 'Centurião',             desc: '100 fases com pelo menos 1 estrela', check: s => Object.keys(s.stars).length >= 100 },
+    { id: 'xp_10000',     name: '10K XP',                desc: 'Acumule 10.000 XP',                 check: s => s.xp >= 10000 },
+    { id: 'xp_50000',     name: 'XP Máster',             desc: 'Acumule 50.000 XP',                 check: s => s.xp >= 50000 },
+    { id: 'all_3star_r1', name: 'Perfeito no começo',    desc: '3 estrelas em todas as fases do 1º ano', check: s => PHASES.filter(p => p.region === 1).every(p => s.stars[p.id] === 3) },
+    { id: 'training_10',  name: 'Estudioso',             desc: 'Complete 10 sessões em Modo Treino', check: s => (s._trainingSessions || 0) >= 10 },
+    { id: 'missions_7',   name: 'Missão cumprida',       desc: 'Complete missões por 7 dias diferentes', check: s => (s._missionDays || 0) >= 7 },
+    { id: 'secret_zero',  name: '??? Zero',              desc: 'Secreta — descubra acertando 0 na questão do zero', check: s => s.achievements.includes('secret_zero') },
+    { id: 'region_2',     name: 'Operador',              desc: 'Conclua o Bosque das Operações',    check: s => PHASES.filter(p => p.region === 2).every(p => s.stars[p.id]) },
+    { id: 'region_3',     name: 'Multiplicador',         desc: 'Conclua o Vale das Tabuadas',       check: s => PHASES.filter(p => p.region === 3).every(p => s.stars[p.id]) },
+    { id: 'region_4',     name: 'Fracionista',           desc: 'Conclua a Caverna das Frações',     check: s => PHASES.filter(p => p.region === 4).every(p => s.stars[p.id]) },
+    { id: 'region_5',     name: 'Decimais mestre',       desc: 'Conclua o Lago dos Decimais',       check: s => PHASES.filter(p => p.region === 5).every(p => s.stars[p.id]) },
+    { id: 'region_6',     name: 'Alpinista',             desc: 'Conclua a Montanha dos Inteiros',   check: s => PHASES.filter(p => p.region === 6).every(p => s.stars[p.id]) },
+    { id: 'region_7',     name: 'Equacionista',          desc: 'Conclua o Deserto das Equações',    check: s => PHASES.filter(p => p.region === 7).every(p => s.stars[p.id]) },
+    { id: 'region_8',     name: 'Potência máxima',       desc: 'Conclua o Templo das Potências',    check: s => PHASES.filter(p => p.region === 8).every(p => s.stars[p.id]) },
 ];
 
 /* ─── Persistência ─────────────────────────────────────────────────────── */
@@ -1767,7 +1994,7 @@ function renderHud() {
     $('hudNick').textContent      = state.nickname || 'Aluno(a)';
     $('hudXp').textContent        = state.xp;
     $('hudStars').textContent     = totalStars();
-    $('hudPhases').textContent    = `${completedCount()}/181`;
+    $('hudPhases').textContent    = `${completedCount()}/201`;
     $('btnMute').textContent      = state.muted ? '🔇' : '🔊';
     if ($('avatarEmoji')) $('avatarEmoji').textContent = state.avatar || '🎓';
     const streakBadge = $('hudStreakBadge');
@@ -2073,7 +2300,7 @@ function endPhase(completed) {
     `;
     $('resultView').style.display = '';
     $('phaseView').style.display  = 'none';
-    if (completed && stars > 0 && state.currentPhase.id < 181 && !state.stars[state.currentPhase.id + 1]) {
+    if (completed && stars > 0 && state.currentPhase.id < 201 && !state.stars[state.currentPhase.id + 1]) {
         setTimeout(() => { sndUnlock(); toast('Nova fase desbloqueada!', 'success'); }, 800);
     }
 }

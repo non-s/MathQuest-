@@ -1,4 +1,4 @@
-const CACHE = 'mathquest-v6';
+const CACHE = 'mathquest-v7';
 
 // Assets pré-cacheados na instalação.  Caminhos network-first (HTML, script.js,
 // teacher.html) buscam versão fresca a cada visita mas usam estes como
@@ -11,6 +11,7 @@ const ASSETS = [
     './icon.svg',
     './manifest.json',
     './teacher.html',
+    './game-extras2.js',
     './privacy.html',
     './404.html',
     'https://unpkg.com/@supabase/supabase-js@2',
