@@ -1,4 +1,7 @@
-const CACHE = 'mathquest-v1';
+const CACHE = 'mathquest-v2';
+
+// Assets pré-cacheados na instalação.  Caminhos network-first (HTML, script.js)
+// buscam versão fresca a cada visita mas usam estes como fallback offline.
 const ASSETS = [
     './',
     './index.html',
@@ -22,19 +25,47 @@ self.addEventListener('activate', e => {
     self.clients.claim();
 });
 
+// Network-first: entry points que mudam a cada deploy (HTML + game engine).
+// Aluno sempre pega versão nova quando online; cai pro cache só se offline.
+const networkFirst = req => fetch(req)
+    .then(res => {
+        if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then(c => c.put(req, copy));
+        }
+        return res;
+    })
+    .catch(() => caches.match(req).then(hit => hit || caches.match('./index.html')));
+
+// Cache-first: assets estáveis (CSS, fontes, ícones, SDK de CDN).
+const cacheFirst = req => caches.match(req).then(hit => hit || fetch(req).then(res => {
+    if (res.ok) {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(req, copy));
+    }
+    return res;
+}).catch(() => caches.match('./index.html')));
+
 self.addEventListener('fetch', e => {
     const req = e.request;
     if (req.method !== 'GET') return;
-    // Network-first para o Supabase (precisa estar fresco), cache-first para o resto
-    if (req.url.includes('supabase.co')) {
-        e.respondWith(fetch(req).catch(() => new Response('{}', { headers: { 'Content-Type': 'application/json' } })));
+    const url = new URL(req.url);
+
+    // Supabase: sempre fresco; fallback JSON vazio quando offline.
+    if (url.hostname.includes('supabase.co')) {
+        e.respondWith(fetch(req).catch(() =>
+            new Response('{}', { headers: { 'Content-Type': 'application/json' } })
+        ));
         return;
     }
-    e.respondWith(
-        caches.match(req).then(hit => hit || fetch(req).then(res => {
-            const copy = res.clone();
-            if (res.ok) caches.open(CACHE).then(c => c.put(req, copy));
-            return res;
-        }).catch(() => caches.match('./index.html')))
-    );
+
+    // Network-first: páginas e o script que muda a cada deploy.
+    const path = url.pathname;
+    if (path.endsWith('/') || path.endsWith('.html') || path.endsWith('/script.js')) {
+        e.respondWith(networkFirst(req));
+        return;
+    }
+
+    // Cache-first: tudo o mais.
+    e.respondWith(cacheFirst(req));
 });

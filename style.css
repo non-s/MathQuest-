@@ -418,3 +418,32 @@ input { font-family: inherit; }
 /* ─── Animação de "subir" da pergunta ────────────────────────── */
 .qcard { animation: slideUp .25s ease-out; }
 @keyframes slideUp { from { transform: translateY(12px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ─── Fallback para browsers sem color-mix() (Chrome <111, Android Go) ───
+ * As regras acima usam color-mix() para mesclar var(--rcolor) com transparência
+ * ou com --border. Em browsers antigos, essas declarações individuais são
+ * descartadas pelo parser e o elemento fica sem cor de região. Aqui aplicamos
+ * fallbacks sólidos (mais saturados, mas pelo menos visíveis) usando @supports
+ * not—browsers modernos ignoram este bloco.
+ * ─────────────────────────────────────────────────────────────── */
+@supports not (color: color-mix(in srgb, red, blue)) {
+    .region {
+        background: var(--bg-soft);
+        border-color: var(--rcolor);
+    }
+    .region-icon {
+        box-shadow: 0 0 16px rgba(255, 255, 255, .06);
+    }
+    .phase.done {
+        box-shadow: 0 0 0 1px var(--rcolor);
+    }
+    .phase.unlocked:not(.done) {
+        border-color: var(--rcolor);
+    }
+    @keyframes pulse {
+        0%, 100% { box-shadow: 0 0 0 0 var(--rcolor); }
+        50%      { box-shadow: 0 0 0 8px transparent; }
+    }
+    .opt.correct { background: rgba(63, 185, 80, .18); }
+    .opt.wrong   { background: rgba(248, 81, 73, .18); }
+}
