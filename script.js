@@ -1754,7 +1754,6 @@ function autoExpandRegion() {
     // Use school year preference if set
     const schoolYear = parseInt(localStorage.getItem('mq_school_year') || '0');
     if (schoolYear >= 1 && schoolYear <= 9) {
-        // Find the right region for this year, preferring one with unlocked phases
         const targetReg = REGIONS.find(r => r.id === schoolYear);
         if (targetReg) return targetReg.id;
     }
