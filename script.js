@@ -113,9 +113,19 @@ const g_zero = () => Q(5, () => {
         { stem: 'Quantos números vêm antes do 1?', ans: 0 },
         { stem: 'Um saco vazio tem quantas bolas?', ans: 0 },
         { stem: 'Quantos meses do ano têm 32 dias?', ans: 0 },
+        { stem: 'Quanto é 7 − 7?', ans: 0 },
+        { stem: 'Quanto é 4 + 0?', ans: 4, d: [0, 1, 5] },
+        { stem: 'Quantas patas tem um peixe?', ans: 0 },
+        { stem: 'Quantas vezes o número 0 cabe em 8?', ans: 0 },
+        { stem: 'Quantos dias da semana começam com a letra K?', ans: 0 },
+        { stem: 'Quantos cachorros voam pela janela?', ans: 0 },
+        { stem: 'Quanto é 10 − 10?', ans: 0 },
+        { stem: 'Uma caixa fechada e vazia tem quantos brinquedos?', ans: 0 },
+        { stem: 'Quanto é 5 × 0?', ans: 0 },
+        { stem: 'Quantas bocas tem um sapato?', ans: 0 },
     ];
     const it = pick(items);
-    return { stem: it.stem, ...makeChoice(it.ans, [1, 2, 3]) };
+    return { stem: it.stem, ...makeChoice(it.ans, it.d || [1, 2, 3]) };
 });
 
 const g_compare = (min, max) => Q(5, () => {
@@ -175,6 +185,18 @@ const g_shapes = () => Q(5, () => {
         { stem: 'Quantos lados tem um hexágono?', ans: 6, d: [4, 5, 7] },
         { stem: 'Quantos lados tem um quadrado?', ans: 4, d: [3, 5, 6] },
         { stem: 'Quantos lados tem um triângulo?', ans: 3, d: [4, 2, 5] },
+        { stem: 'Quantos lados tem um retângulo?', ans: 4, d: [3, 5, 6] },
+        { stem: 'Quantos lados tem um octógono?', ans: 8, d: [6, 7, 9] },
+        { stem: 'Quantos lados tem um decágono?', ans: 10, d: [8, 9, 12] },
+        { stem: 'Quantos vértices (cantos) tem um triângulo?', ans: 3, d: [4, 2, 5] },
+        { stem: 'Quantos vértices tem um quadrado?', ans: 4, d: [3, 5, 6] },
+        { stem: 'Quantos vértices tem um pentágono?', ans: 5, d: [3, 4, 6] },
+        { stem: 'Qual forma tem 4 lados, mas só 2 pares iguais?', ans: 'Retângulo', d: ['Quadrado', 'Triângulo', 'Pentágono'] },
+        { stem: 'Qual forma é redonda como uma roda?', ans: 'Círculo', d: ['Quadrado', 'Triângulo', 'Estrela'] },
+        { stem: 'Quantos lados tem um triângulo equilátero?', ans: 3, d: [4, 5, 6] },
+        { stem: 'Forma de 6 lados parecida com favo de mel?', ans: 'Hexágono', d: ['Pentágono', 'Octógono', 'Quadrado'] },
+        { stem: 'Forma de 5 lados?', ans: 'Pentágono', d: ['Hexágono', 'Quadrilátero', 'Triângulo'] },
+        { stem: 'Polígono que NÃO existe (todo lado curvo):', ans: 'Círculo', d: ['Triângulo', 'Octógono', 'Hexágono'] },
     ];
     const it = pick(items);
     return { stem: it.stem, ...makeChoice(it.ans, it.d) };
@@ -187,6 +209,15 @@ const g_dezena = () => Q(5, () => {
         { stem: 'Em 47, quantas unidades há (algarismo das unidades)?', ans: 7, d: [4, 40, 47] },
         { stem: 'Quanto é 3 dezenas + 5 unidades?', ans: 35, d: [8, 53, 30] },
         { stem: 'Quanto é 7 dezenas?', ans: 70, d: [7, 17, 77] },
+        { stem: 'Em 56, quantas dezenas há?', ans: 5, d: [6, 50, 60] },
+        { stem: 'Em 89, qual o algarismo das unidades?', ans: 9, d: [8, 80, 89] },
+        { stem: 'Quanto é 4 dezenas + 2 unidades?', ans: 42, d: [6, 24, 40] },
+        { stem: 'Quanto é 6 dezenas + 0 unidades?', ans: 60, d: [6, 16, 66] },
+        { stem: 'Quantas dezenas há em 100?', ans: 10, d: [1, 100, 11] },
+        { stem: 'Em 30, quantas unidades soltas (algarismo)?', ans: 0, d: [3, 30, 13] },
+        { stem: 'Quanto vale 9 dezenas?', ans: 90, d: [9, 19, 99] },
+        { stem: 'Quanto é 2 dezenas + 8 unidades?', ans: 28, d: [10, 82, 26] },
+        { stem: 'Em 75, quantas dezenas?', ans: 7, d: [5, 50, 75] },
     ];
     const it = pick(items);
     return { stem: it.stem, ...makeChoice(it.ans, it.d) };
@@ -251,6 +282,14 @@ const g_wordSimple = () => Q(5, () => {
         () => { const a = rand(5, 20), b = rand(1, 4); return { s: `Tinha ${a} pássaros, ${b} voaram. Quantos restaram?`, r: a - b }; },
         () => { const a = rand(2, 9), b = rand(2, 5); return { s: `${b} caixas com ${a} maçãs cada. Total de maçãs?`, r: a * b }; },
         () => { const b = rand(2, 5), q = rand(2, 6); const a = b * q; return { s: `${a} doces divididos igualmente entre ${b} amigos. Quantos cada um recebe?`, r: q }; },
+        () => { const a = rand(3, 12), b = rand(2, 8); return { s: `João tem ${a} figurinhas. Comprou mais ${b}. Quantas tem agora?`, r: a + b }; },
+        () => { const a = rand(8, 25), b = rand(2, 6); return { s: `Uma cesta tem ${a} laranjas. ${b} foram tiradas. Quantas restaram?`, r: a - b }; },
+        () => { const a = rand(2, 7), b = rand(3, 6); return { s: `${a} pacotes de figurinhas. Cada um tem ${b} figurinhas. Total?`, r: a * b }; },
+        () => { const k = rand(2, 6), q = rand(3, 8); const a = k * q; return { s: `${a} bolinhas em ${k} potes iguais. Quantas em cada pote?`, r: q }; },
+        () => { const a = rand(5, 15), b = rand(2, 5); return { s: `Maria tinha ${a} reais. Gastou ${b}. Quanto sobrou?`, r: a - b }; },
+        () => { const a = rand(4, 9); return { s: `Cada aluno recebe ${a} lápis. Em 3 alunos, quantos lápis no total?`, r: a * 3 }; },
+        () => { const a = rand(2, 6); return { s: `Uma caixa traz ${a} pares de meias. Quantas meias soltas?`, r: a * 2 }; },
+        () => { const a = rand(20, 50); return { s: `Sou ${a} anos mais velho que meu irmão de 2 anos. Quantos anos tenho?`, r: a + 2 }; },
     ];
     const it = pick(items)();
     return { stem: it.s, ...makeChoice(it.r, nearDistr(it.r, 4)) };
@@ -295,6 +334,13 @@ const g_money = () => Q(5, () => {
         () => { const a = rand(2, 9), b = rand(1, 9); return { s: `R$ ${a},00 + R$ ${b},00 = ?`, r: `R$ ${a + b},00`, d: [`R$ ${a + b + 1},00`, `R$ ${a + b - 1},00`, `R$ ${a * b},00`] }; },
         () => { const a = rand(5, 20), b = rand(1, a - 1); return { s: `Paguei R$ ${a},00 num produto de R$ ${b},00. Troco?`, r: `R$ ${a - b},00`, d: [`R$ ${a + b},00`, `R$ ${b - 1},00`, `R$ ${a - b + 1},00`] }; },
         () => { const c = rand(2, 9), v = rand(2, 5); return { s: `${c} pacotes de R$ ${v},00. Quanto pagar?`, r: `R$ ${c * v},00`, d: [`R$ ${c + v},00`, `R$ ${c * v + 1},00`, `R$ ${c * v - 2},00`] }; },
+        () => { const a = rand(10, 50), b = rand(5, 9); return { s: `Uma bola custa R$ ${a},00 e uma raquete R$ ${b},00. Total?`, r: `R$ ${a + b},00`, d: [`R$ ${a - b},00`, `R$ ${a + b + 2},00`, `R$ ${a * b},00`] }; },
+        () => { const a = rand(3, 9); return { s: `${a} chocolates de R$ 2,00 cada. Total?`, r: `R$ ${a * 2},00`, d: [`R$ ${a + 2},00`, `R$ ${a * 2 + 1},00`, `R$ ${a},00`] }; },
+        () => { const t = rand(15, 40), p = rand(5, 12); return { s: `Tinha R$ ${t},00, comprei algo por R$ ${p},00. Sobrou:`, r: `R$ ${t - p},00`, d: [`R$ ${t + p},00`, `R$ ${t - p + 1},00`, `R$ ${p},00`] }; },
+        () => { const a = rand(2, 6), v = pick([5, 10, 20]); return { s: `${a} notas de R$ ${v},00. Quanto tenho?`, r: `R$ ${a * v},00`, d: [`R$ ${a + v},00`, `R$ ${a * v - v},00`, `R$ ${v},00`] }; },
+        () => { const a = rand(20, 50); return { s: `R$ ${a},00 dividido entre 2 pessoas. Cada uma recebe:`, r: `R$ ${a / 2},00`, d: [`R$ ${a},00`, `R$ ${a / 2 + 1},00`, `R$ ${a - 2},00`] }; },
+        () => { const c = rand(2, 5), p = rand(3, 9); return { s: `${c} camisetas a R$ ${p},00 cada. Total da compra?`, r: `R$ ${c * p},00`, d: [`R$ ${c + p},00`, `R$ ${c * p + 1},00`, `R$ ${p},00`] }; },
+        () => { const total = rand(30, 80); return { s: `Uma compra de R$ ${total},00 paga com nota de R$ 100,00. Troco?`, r: `R$ ${100 - total},00`, d: [`R$ ${total},00`, `R$ ${100 + total},00`, `R$ ${100 - total + 1},00`] }; },
     ];
     const it = pick(items)();
     return { stem: it.s, ...makeChoice(it.r, it.d) };
@@ -356,6 +402,15 @@ const g_fracTerm = () => Q(5, () => {
         { s: 'Que fração é "meio"?', r: '1/2', d: ['2/1', '1/4', '2/2'] },
         { s: 'Que fração é "um terço"?', r: '1/3', d: ['3/1', '1/2', '2/3'] },
         { s: 'Que fração é "três quartos"?', r: '3/4', d: ['4/3', '1/4', '2/4'] },
+        { s: 'Que fração é "um quinto"?', r: '1/5', d: ['5/1', '1/4', '2/5'] },
+        { s: 'Que fração é "dois terços"?', r: '2/3', d: ['3/2', '1/3', '2/6'] },
+        { s: 'Em 5/8, qual o numerador?', r: 5, d: [8, 3, 13] },
+        { s: 'Em 5/8, qual o denominador?', r: 8, d: [5, 3, 13] },
+        { s: 'Que fração é "um quarto"?', r: '1/4', d: ['4/1', '1/2', '2/4'] },
+        { s: 'Que fração é "metade"?', r: '1/2', d: ['1/3', '2/2', '1/4'] },
+        { s: 'Em 7/10, qual número está embaixo?', r: 10, d: [7, 3, 17] },
+        { s: 'Quando o numerador é 0, a fração vale:', r: '0', d: ['1', 'o denominador', 'indefinido'] },
+        { s: 'Fração "cinco oitavos" escreve-se:', r: '5/8', d: ['8/5', '5,8', '5x8'] },
     ];
     const it = pick(items);
     return { stem: it.s, ...makeChoice(it.r, it.d) };
@@ -393,6 +448,15 @@ const g_units = () => Q(5, () => {
         { s: 'Quantos gramas em 1 quilograma?', r: 1000, d: [100, 10, 10000] },
         { s: '2,5 metros em centímetros:', r: 250, d: [25, 2500, 2050] },
         { s: '3 km em metros:', r: 3000, d: [300, 30, 30000] },
+        { s: 'Quantos miligramas em 1 grama?', r: 1000, d: [100, 10, 10000] },
+        { s: 'Quantos mililitros em 1 litro?', r: 1000, d: [100, 10, 10000] },
+        { s: '1,5 km em metros:', r: 1500, d: [150, 15000, 105] },
+        { s: '500 g em quilogramas:', r: '0,5 kg', d: ['5 kg', '0,05 kg', '50 kg'] },
+        { s: '250 cm em metros:', r: '2,5 m', d: ['25 m', '0,25 m', '2,05 m'] },
+        { s: '0,5 L em mililitros:', r: 500, d: [50, 5000, 5] },
+        { s: '2 toneladas em quilogramas:', r: 2000, d: [200, 20000, 20] },
+        { s: 'Qual unidade mede massa?', r: 'grama', d: ['metro', 'litro', 'segundo'] },
+        { s: 'Qual unidade mede volume?', r: 'litro', d: ['metro', 'grama', 'segundo'] },
     ];
     const it = pick(items);
     return { stem: it.s, ...makeChoice(it.r, it.d) };
@@ -417,6 +481,16 @@ const g_time = () => Q(5, () => {
         { s: 'Quantos meses em 1 ano?', r: 12, d: [10, 30, 365] },
         { s: '90 minutos = quantas horas?', r: '1h30', d: ['1h09', '9h', '90h'] },
         { s: '2 horas = quantos minutos?', r: 120, d: [60, 200, 180] },
+        { s: 'Quantos dias em 1 ano (não bissexto)?', r: 365, d: [360, 366, 30] },
+        { s: 'Quantos dias em fevereiro (ano normal)?', r: 28, d: [30, 29, 31] },
+        { s: '3 horas = quantos minutos?', r: 180, d: [60, 90, 300] },
+        { s: '120 segundos = quantos minutos?', r: 2, d: [1, 60, 120] },
+        { s: '1 semana = quantas horas?', r: 168, d: [24, 60, 70] },
+        { s: 'Quantos trimestres tem 1 ano?', r: 4, d: [3, 6, 12] },
+        { s: '1 hora e meia em minutos:', r: 90, d: [60, 130, 150] },
+        { s: 'Quantas estações tem 1 ano?', r: 4, d: [2, 12, 7] },
+        { s: '4 décadas = quantos anos?', r: 40, d: [4, 14, 400] },
+        { s: '1 século = quantos anos?', r: 100, d: [10, 1000, 50] },
     ];
     const it = pick(items);
     return { stem: it.s, ...makeChoice(it.r, it.d) };
@@ -430,6 +504,15 @@ const g_fracProperImproper = () => Q(5, () => {
         { s: 'A fração 4/4 é:', r: 'aparente', d: ['própria', 'imprópria', 'mista'] },
         { s: 'A fração 7/2 é:', r: 'imprópria', d: ['própria', 'aparente', 'mista'] },
         { s: 'Fração própria significa:', r: 'numerador menor que denominador', d: ['numerador maior', 'iguais', 'sempre 1'] },
+        { s: 'A fração 3/8 é:', r: 'própria', d: ['imprópria', 'aparente', 'mista'] },
+        { s: 'A fração 9/4 é:', r: 'imprópria', d: ['própria', 'aparente', 'mista'] },
+        { s: 'A fração 6/6 é:', r: 'aparente', d: ['própria', 'imprópria', 'mista'] },
+        { s: 'Fração aparente equivale a:', r: 'um número inteiro', d: ['zero', 'uma metade', 'um décimo'] },
+        { s: 'A fração 11/3 é:', r: 'imprópria', d: ['própria', 'aparente', 'mista'] },
+        { s: 'A fração 7/7 vale:', r: '1', d: ['0', '7', '1/7'] },
+        { s: 'Fração imprópria significa:', r: 'numerador maior ou igual ao denominador', d: ['numerador menor', 'denominador zero', 'sempre 1'] },
+        { s: '4/4 vale:', r: '1', d: ['4', '0', '1/4'] },
+        { s: '1 + 1/2 (forma mista) equivale a fração:', r: '3/2', d: ['2/3', '1/2', '11/2'] },
     ];
     const it = pick(items);
     return { stem: it.s, ...makeChoice(it.r, it.d) };
@@ -442,6 +525,16 @@ const g_decRead = () => Q(5, () => {
         { s: 'O número 1,5 está entre:', r: '1 e 2', d: ['0 e 1', '5 e 6', '10 e 15'] },
         { s: 'Qual é maior: 0,7 ou 0,69?', r: '0,7', d: ['0,69', 'iguais', 'depende'] },
         { s: 'Qual é maior: 0,3 ou 0,30?', r: 'iguais', d: ['0,3', '0,30', 'nenhum'] },
+        { s: 'Como se lê <b>0,1</b>?', r: 'um décimo', d: ['um centésimo', 'uma unidade', 'dez'] },
+        { s: 'Como se lê <b>0,01</b>?', r: 'um centésimo', d: ['um décimo', 'um milésimo', 'zero e um'] },
+        { s: 'O número 2,5 é igual a:', r: '2 + 0,5', d: ['25', '2,05', '0,25'] },
+        { s: 'Quanto é "três décimos" em decimal?', r: '0,3', d: ['0,03', '3,0', '3'] },
+        { s: 'Quanto é "quinze centésimos" em decimal?', r: '0,15', d: ['1,5', '0,015', '15'] },
+        { s: 'Qual é maior: 1,2 ou 1,19?', r: '1,2', d: ['1,19', 'iguais', '0,2'] },
+        { s: 'O número 0,8 está mais perto de:', r: '1', d: ['0', '8', '0,5'] },
+        { s: 'Quantas casas decimais tem 3,14?', r: '2', d: ['3', '1', '4'] },
+        { s: 'Qual é menor: 0,4 ou 0,40?', r: 'iguais', d: ['0,4', '0,40', 'nenhum'] },
+        { s: '4,9 está entre quais inteiros?', r: '4 e 5', d: ['3 e 4', '5 e 6', '9 e 10'] },
     ];
     const it = pick(items);
     return { stem: it.s, ...makeChoice(it.r, it.d) };
@@ -533,6 +626,15 @@ const g_probSimple = () => Q(5, () => {
         { s: 'Num dado, chance de sair número par?', r: '1/2', d: ['1/3', '1/6', '2/3'] },
         { s: '20 bolas, 5 vermelhas. Chance de tirar vermelha?', r: '1/4', d: ['1/5', '5/15', '1/20'] },
         { s: 'Probabilidade do evento certo:', r: '1', d: ['0', '1/2', 'depende'] },
+        { s: 'Probabilidade do evento impossível:', r: '0', d: ['1', '1/2', 'depende'] },
+        { s: 'Num dado, chance de sair número maior que 4?', r: '1/3', d: ['1/2', '2/3', '1/6'] },
+        { s: 'Numa moeda, chance de cair coroa?', r: '1/2', d: ['1/4', '1/3', '0'] },
+        { s: '10 bolas, 2 azuis. Chance de azul?', r: '1/5', d: ['2/10', '1/2', '1/10'] },
+        { s: 'Num dado, chance de sair 7?', r: '0', d: ['1/6', '1/7', '1'] },
+        { s: 'Num dado, chance de sair 1, 2 ou 3?', r: '1/2', d: ['1/3', '3/6', '1/6'] },
+        { s: '52 cartas, 4 ases. Chance de tirar ás?', r: '1/13', d: ['4/52', '1/52', '1/4'] },
+        { s: 'Numa urna com 3 bolas brancas e 1 preta, chance de preta?', r: '1/4', d: ['3/4', '1/3', '1/2'] },
+        { s: 'Num dado, chance de NÃO sair 6?', r: '5/6', d: ['1/6', '6/6', '1/2'] },
     ];
     const it = pick(items);
     return { stem: it.s, ...makeChoice(it.r, it.d) };
@@ -547,6 +649,14 @@ const g_negLine = () => Q(5, () => {
         { s: 'O oposto de 4 é:', r: -4, d: [4, 0, 14] },
         { s: 'Módulo de -8 é:', r: 8, d: [-8, 0, 18] },
         { s: 'Qual é o menor: -10, -3, 0, 5?', r: -10, d: [-3, 0, 5] },
+        { s: 'O oposto de -7 é:', r: 7, d: [-7, 0, 14] },
+        { s: 'Módulo de 12 é:', r: 12, d: [-12, 0, 24] },
+        { s: 'Qual fica mais à direita na reta: -2 ou -8?', r: '-2', d: ['-8', 'iguais', '0'] },
+        { s: 'Qual é maior: 0 ou -3?', r: '0', d: ['-3', 'iguais', 'depende'] },
+        { s: 'O oposto de 0 é:', r: 0, d: [1, -1, 10] },
+        { s: 'Qual é o maior: -10, -3, 0, 5?', r: 5, d: [-10, 0, -3] },
+        { s: 'Módulo de -100 é:', r: 100, d: [-100, 0, 200] },
+        { s: 'Entre -4 e -1, qual é maior?', r: '-1', d: ['-4', 'iguais', '0'] },
     ];
     const it = pick(items);
     return { stem: it.s, ...makeChoice(it.r, it.d) };
@@ -728,11 +838,21 @@ const g_angles = () => Q(5, () => {
     const items = [
         { s: 'Ângulo de 90° é:', r: 'reto', d: ['agudo', 'obtuso', 'raso'] },
         { s: 'Ângulo menor que 90°:', r: 'agudo', d: ['reto', 'obtuso', 'raso'] },
+        { s: 'Ângulo entre 90° e 180°:', r: 'obtuso', d: ['agudo', 'reto', 'raso'] },
         { s: 'Ângulo de 180°:', r: 'raso', d: ['reto', 'obtuso', 'agudo'] },
         { s: 'Soma dos ângulos internos de um triângulo:', r: '180°', d: ['90°', '360°', '270°'] },
         { s: 'Soma dos ângulos de um quadrilátero:', r: '360°', d: ['180°', '270°', '90°'] },
         { s: 'Dois ângulos somando 90° são:', r: 'complementares', d: ['suplementares', 'opostos', 'iguais'] },
         { s: 'Dois ângulos somando 180° são:', r: 'suplementares', d: ['complementares', 'opostos', 'paralelos'] },
+        { s: 'Complemento de 30°:', r: '60°', d: ['150°', '90°', '30°'] },
+        { s: 'Suplemento de 120°:', r: '60°', d: ['90°', '180°', '240°'] },
+        { s: 'Ângulo de 45° é:', r: 'agudo', d: ['reto', 'obtuso', 'raso'] },
+        { s: 'Ângulo de 135° é:', r: 'obtuso', d: ['agudo', 'reto', 'raso'] },
+        { s: 'Em um triângulo retângulo, um ângulo é:', r: '90°', d: ['180°', '60°', '45°'] },
+        { s: 'Soma dos ângulos internos do pentágono:', r: '540°', d: ['360°', '720°', '180°'] },
+        { s: 'Complemento de 45°:', r: '45°', d: ['90°', '135°', '0°'] },
+        { s: 'Suplemento de 90°:', r: '90°', d: ['180°', '45°', '270°'] },
+        { s: 'Ângulo de 360° é:', r: 'volta completa', d: ['raso', 'reto', 'agudo'] },
     ];
     const it = pick(items);
     return { stem: it.s, ...makeChoice(it.r, it.d) };
@@ -781,6 +901,15 @@ const g_powerProp = () => Q(5, () => {
         { s: 'x⁰ = ?', r: '1', d: ['0', 'x', 'indefinido'] },
         { s: '2³ × 2⁴ = ?', r: '2⁷', d: ['2¹²', '4⁷', '2¹'] },
         { s: '(2³)² = ?', r: '2⁶', d: ['2⁵', '4³', '6'] },
+        { s: 'a⁴ × a² = ?', r: 'a⁶', d: ['a⁸', 'a²', '2a⁶'] },
+        { s: 'b⁵ ÷ b² = ?', r: 'b³', d: ['b⁷', 'b¹⁰', 'b²·⁵'] },
+        { s: '(x³)² = ?', r: 'x⁶', d: ['x⁵', 'x⁹', 'x'] },
+        { s: '5⁰ = ?', r: '1', d: ['0', '5', '50'] },
+        { s: '3² × 3³ = ?', r: '3⁵', d: ['3⁶', '9⁵', '3¹'] },
+        { s: 'a⁻¹ = ?', r: '1/a', d: ['-a', '0', 'a'] },
+        { s: '(ab)² = ?', r: 'a²b²', d: ['ab²', 'a²b', '2ab'] },
+        { s: '10⁻² = ?', r: '0,01', d: ['-100', '100', '-0,01'] },
+        { s: 'a⁵ ÷ a⁵ = ?', r: '1', d: ['0', 'a', 'a¹⁰'] },
     ];
     const it = pick(items);
     return { stem: it.s, ...makeChoice(it.r, it.d) };
@@ -1009,6 +1138,14 @@ const g_trigSpecial = () => Q(5, () => {
         { s: 'tg 45° = ?', r: '1', d: ['0', '√2', '√3'] },
         { s: 'sen 90° = ?', r: '1', d: ['0', '1/2', '√3/2'] },
         { s: 'cos 0° = ?', r: '1', d: ['0', '1/2', '√2/2'] },
+        { s: 'sen 0° = ?', r: '0', d: ['1', '1/2', '√2/2'] },
+        { s: 'cos 90° = ?', r: '0', d: ['1', '1/2', '√3/2'] },
+        { s: 'cos 45° = ?', r: '√2/2', d: ['1/2', '√3/2', '1'] },
+        { s: 'sen 60° = ?', r: '√3/2', d: ['1/2', '√2/2', '1'] },
+        { s: 'tg 30° = ?', r: '√3/3', d: ['1/2', '√3', '√3/2'] },
+        { s: 'tg 60° = ?', r: '√3', d: ['1/2', '√3/2', '1'] },
+        { s: 'sen²x + cos²x = ?', r: '1', d: ['0', 'x', '2'] },
+        { s: 'tg x = sen x / ?', r: 'cos x', d: ['sen x', '1', 'x'] },
     ];
     const it = pick(items);
     return { stem: it.s, ...makeChoice(it.r, it.d) };
@@ -1596,6 +1733,25 @@ async function startGame() {
     state.nickname = nick;
     persist();
     hideWelcome();
+    // Primeiro acesso: mostra tutorial antes do mapa.  Depois disso a flag fica
+    // em localStorage e o aluno vai direto pro mapa nas próximas visitas.
+    if (!localStorage.getItem('mq_onboarded')) {
+        showOnboarding();
+    } else {
+        renderMap();
+    }
+}
+
+/* ─── Onboarding (primeira visita) ─────────────────────────────────────── */
+function showOnboarding() {
+    $('onboarding').style.display = '';
+    $('app').style.display        = 'none';
+}
+
+function finishOnboarding() {
+    localStorage.setItem('mq_onboarded', '1');
+    $('onboarding').style.display = 'none';
+    $('app').style.display        = '';
     renderMap();
 }
 
@@ -1637,6 +1793,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const n = prompt('Novo nome:', state.nickname);
         if (n && n.trim()) { state.nickname = n.trim().slice(0, 30); persist(); renderHud(); }
     });
+    $('btnOnboardingDone')?.addEventListener('click', finishOnboarding);
     // Service Worker
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
     init();
