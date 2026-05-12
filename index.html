@@ -455,6 +455,12 @@
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
+(function() {
+    const $ = window.$;
+    const esc = window.esc;
+    const REGIONS = window.REGIONS || [];
+    const sb = window.sb;
+
     /* ─── Configuração ─────────────────────────────────────────────────── */
     const ROSTER_REFRESH_MS = 5000;  // auto-refresh do roster a cada 5s enquanto aberto
 
@@ -899,6 +905,8 @@
         });
         analysisEl.innerHTML = `<h3 style="margin-bottom:.75rem">📊 Alcance por região</h3>` + regionData.map(r => { const pct = r.total ? Math.round(r.started / r.total * 100) : 0; const color = pct >= 70 ? '#3fb950' : pct >= 40 ? '#d29922' : '#f85149'; return `<div style="margin-bottom:.5rem"><div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:.2rem"><span>${esc(r.name)}</span><span style="color:${color}">${r.started}/${r.total} alunos (${pct}%)</span></div><div style="height:6px;background:#161b22;border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:width .4s"></div></div></div>`; }).join('');
     }
+
+})();
 </script>
 </div>
 <script>
