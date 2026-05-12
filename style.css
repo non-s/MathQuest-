@@ -494,6 +494,66 @@ input { font-family: inherit; }
 .toast.error   { border-color: var(--danger); }
 .toast.warn    { border-color: var(--warn); }
 
+/* ─── Número do módulo e contagem de estrelas ─────────────────────── */
+.region-num {
+    display: inline-block;
+    font-size: .7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    background: color-mix(in srgb, var(--rcolor) 18%, transparent);
+    color: var(--rcolor);
+    padding: .1rem .5rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--rcolor) 40%, transparent);
+    flex-shrink: 0;
+}
+.region-stars-count {
+    font-size: .75rem;
+    font-weight: 500;
+    color: #f0c419;
+    opacity: .85;
+    margin-left: .25rem;
+}
+
+/* ─── Celebração nivelamento ──────────────────────────────────────── */
+@keyframes bounce-in {
+    0%   { transform: scale(.5) rotate(-10deg); opacity: 0; }
+    60%  { transform: scale(1.15) rotate(3deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0deg); }
+}
+.result-stars.placement-pass {
+    animation: bounce-in .55s cubic-bezier(.34, 1.56, .64, 1) forwards;
+    font-size: 5rem;
+}
+
+/* ─── Seletor de ano escolar (onboarding) ─────────────────────────── */
+.ob-year-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: .5rem;
+    margin-bottom: 1rem;
+}
+.ob-year-btn {
+    padding: .55rem .25rem;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--bg-soft);
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: .9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: border-color .15s, background .15s, color .15s;
+}
+.ob-year-btn:hover   { border-color: var(--accent); color: var(--text); }
+.ob-year-btn.selected {
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent) 15%, transparent);
+    color: var(--accent);
+    font-weight: 700;
+}
+
 /* ─── Responsivo ──────────────────────────────────────────────────── */
 @media (max-width: 520px) {
     .hud { padding: .5rem .75rem; gap: .5rem; }
@@ -503,8 +563,14 @@ input { font-family: inherit; }
     .opt { font-size: .95rem; }
     .welcome-card { padding: 2rem 1.25rem; }
     .welcome-logo { font-size: 2rem; }
-    .region-icon { width: 52px; height: 52px; font-size: 2rem; }
-    .region-progress { font-size: .8rem; padding: .25rem .55rem; }
+    /* Cabeçalho de região: empilha actions abaixo em telas muito pequenas */
+    .region-head { gap: .6rem; }
+    .region-icon { width: 48px; height: 48px; font-size: 1.8rem; }
+    .region-head h2 { font-size: 1rem; }
+    .region-actions { flex-direction: row; flex-wrap: wrap; justify-content: flex-end; gap: .3rem; }
+    .region-progress { font-size: .78rem; padding: .2rem .5rem; }
+    .btn-placement { font-size: .72rem; padding: .25rem .6rem; }
+    .ob-year-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
 /* ─── Acessibilidade — foco visível ───────────────────────────── */
