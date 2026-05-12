@@ -1996,18 +1996,31 @@ function renderAchievements() {
 }
 
 /* ─── Sair (trocar aluno) ──────────────────────────────────────────────── */
-async function logout() {
-    const ok = confirm(
-        'Sair do MathQuest?\n\n' +
-        'Seu progresso está salvo no servidor. ' +
-        'Para recuperá-lo, use o mesmo dispositivo ou entre em contato com seu professor.'
-    );
-    if (!ok) return;
-    try { await sb.auth.signOut(); } catch (_) {}
-    // Limpa apenas dados de sessão; mantém preferências gerais
-    ['mq_localuid', 'mq_class_code'].forEach(k => localStorage.removeItem(k));
-    Object.keys(localStorage).filter(k => k.startsWith('mq_progress_')).forEach(k => localStorage.removeItem(k));
-    location.reload();
+function logout() {
+    const modal = document.createElement('div');
+    modal.className = 'logout-modal';
+    modal.innerHTML = `
+        <div class="logout-card">
+            <div class="logout-icon">⏻</div>
+            <h3>Sair do MathQuest?</h3>
+            <p>Seu progresso está salvo. Para voltar, entre no mesmo dispositivo ou peça o código pro professor.</p>
+            <div class="logout-actions">
+                <button class="btn-secondary" id="btnLogoutCancel">Cancelar</button>
+                <button class="btn-danger" id="btnLogoutConfirm">Sair</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    $('btnLogoutCancel').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', e => { if (e.target === modal) modal.remove(); });
+    $('btnLogoutConfirm').addEventListener('click', async () => {
+        $('btnLogoutConfirm').textContent = '…';
+        $('btnLogoutConfirm').disabled = true;
+        try { await sb.auth.signOut(); } catch (_) {}
+        ['mq_localuid', 'mq_class_code'].forEach(k => localStorage.removeItem(k));
+        Object.keys(localStorage).filter(k => k.startsWith('mq_progress_')).forEach(k => localStorage.removeItem(k));
+        location.reload();
+    });
 }
 
 /* ─── Boas-vindas (cadastra apelido) ───────────────────────────────────── */
