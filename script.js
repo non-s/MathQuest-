@@ -1873,6 +1873,21 @@ function renderAchievements() {
     });
 }
 
+/* ─── Sair (trocar aluno) ──────────────────────────────────────────────── */
+async function logout() {
+    const ok = confirm(
+        'Sair do MathQuest?\n\n' +
+        'Seu progresso está salvo no servidor. ' +
+        'Para recuperá-lo, use o mesmo dispositivo ou entre em contato com seu professor.'
+    );
+    if (!ok) return;
+    try { await sb.auth.signOut(); } catch (_) {}
+    // Limpa apenas dados de sessão; mantém preferências gerais
+    ['mq_localuid', 'mq_class_code'].forEach(k => localStorage.removeItem(k));
+    Object.keys(localStorage).filter(k => k.startsWith('mq_progress_')).forEach(k => localStorage.removeItem(k));
+    location.reload();
+}
+
 /* ─── Boas-vindas (cadastra apelido) ───────────────────────────────────── */
 function showWelcome() {
     $('welcome').style.display = '';
@@ -1989,6 +2004,7 @@ document.addEventListener('DOMContentLoaded', () => {
         localStorage.setItem('mq_muted', state.muted ? '1' : '0');
         renderHud();
     });
+    $('btnLogout')     .addEventListener('click', logout);
     $('btnAch')        .addEventListener('click', () => {
         renderAchievements();
         $('achDrawer').classList.toggle('open');
