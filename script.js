@@ -1666,35 +1666,65 @@ function renderHud() {
 }
 
 /* ─── Renderização: mapa ───────────────────────────────────────────────── */
+function autoExpandRegion() {
+    const saved = parseInt(localStorage.getItem('mq_expanded_region') || '0');
+    if (saved) return saved;
+    // Abre automaticamente a região onde está a próxima fase desbloqueada
+    for (const reg of REGIONS) {
+        const rPhases = PHASES.filter(p => p.region === reg.id);
+        if (rPhases.some(p => isUnlocked(p.id) && !state.stars[p.id])) return reg.id;
+    }
+    return 1;
+}
+
 function renderMap() {
     const root = $('map');
     root.innerHTML = '';
+    const expandId = autoExpandRegion();
     REGIONS.forEach(reg => {
         const phases = PHASES.filter(p => p.region === reg.id);
         const total  = phases.length;
         const got    = phases.filter(p => state.stars[p.id]).length;
-        const firstPhaseId  = phases[0].id;
-        const regionLocked  = !isUnlocked(firstPhaseId);
+        const pct    = Math.round((got / total) * 100);
+        const firstPhaseId = phases[0].id;
+        const regionLocked = !isUnlocked(firstPhaseId);
+        const isExpanded   = reg.id === expandId;
         const wrap = document.createElement('section');
-        wrap.className = 'region';
+        wrap.className = `region${isExpanded ? '' : ' collapsed'}`;
         wrap.style.setProperty('--rcolor', reg.color);
         wrap.innerHTML = `
-            <header class="region-head">
+            <header class="region-head" role="button" tabindex="0" aria-expanded="${isExpanded}">
                 <div class="region-icon">${reg.icon}</div>
                 <div class="region-info">
                     <h2>${esc(reg.name)} <small>${reg.year}</small></h2>
                     <p>${esc(reg.desc)}</p>
+                    <div class="region-bar"><div class="region-bar-fill" style="width:${pct}%"></div></div>
                 </div>
                 <div class="region-actions">
                     ${regionLocked ? `<button class="btn-placement" data-region="${reg.id}" title="Responda 10 questões para ver se você já sabe este nível">🧪 Testar nível</button>` : ''}
                     <div class="region-progress">${got}/${total}</div>
                 </div>
+                <div class="region-chevron" aria-hidden="true">›</div>
             </header>
             <div class="phases" id="reg-${reg.id}"></div>
         `;
         root.appendChild(wrap);
+
+        // Toggle colapso ao clicar no cabeçalho (exceto nos botões internos)
+        const head = wrap.querySelector('.region-head');
+        const toggle = () => {
+            const nowExpanded = wrap.classList.toggle('collapsed') === false;
+            head.setAttribute('aria-expanded', nowExpanded);
+            if (nowExpanded) localStorage.setItem('mq_expanded_region', reg.id);
+            else if (parseInt(localStorage.getItem('mq_expanded_region')) === reg.id)
+                localStorage.removeItem('mq_expanded_region');
+        };
+        head.addEventListener('click', e => { if (!e.target.closest('.btn-placement')) toggle(); });
+        head.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); } });
+
         const placementBtn = wrap.querySelector('.btn-placement');
         if (placementBtn) placementBtn.addEventListener('click', () => startPlacementTest(reg.id));
+
         const node = wrap.querySelector('.phases');
         phases.forEach((p, idx) => {
             const unlocked = isUnlocked(p.id);
@@ -1833,8 +1863,10 @@ function backToMap() {
     $('resultView').style.display = 'none';
     $('phaseView').style.display  = 'none';
     $('mapView').style.display    = '';
+    if (state.currentPhase?.region)
+        localStorage.setItem('mq_expanded_region', state.currentPhase.region);
     renderMap();
-    const next = $(`reg-${state.currentPhase.region}`);
+    const next = $(`reg-${state.currentPhase?.region}`);
     if (next) next.parentElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 

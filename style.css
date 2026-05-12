@@ -154,7 +154,7 @@ input { font-family: inherit; }
 
 /* ─── Mapa ─────────────────────────────────────────────────────────── */
 .map-view { padding: 1rem; padding-bottom: 4rem; }
-.map { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 2.5rem; }
+.map { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 1rem; }
 
 .region {
     position: relative;
@@ -163,12 +163,42 @@ input { font-family: inherit; }
         transparent 70%);
     border: 1px solid color-mix(in srgb, var(--rcolor) 35%, var(--border));
     border-radius: 20px;
-    padding: 1.25rem 1rem 2rem;
+    padding: 1.1rem 1rem;
+    transition: padding .25s;
 }
+.region:not(.collapsed) { padding-bottom: 2rem; }
+
+/* Cabeçalho clicável */
 .region-head {
     display: flex; align-items: center; gap: .85rem;
-    margin-bottom: 1.25rem;
     flex-wrap: wrap;
+    cursor: pointer;
+    user-select: none;
+}
+.region:not(.collapsed) .region-head { margin-bottom: 1.25rem; }
+
+/* Chevron */
+.region-chevron {
+    font-size: 1.4rem; color: var(--text-dim);
+    transition: transform .25s;
+    flex-shrink: 0; line-height: 1;
+    margin-left: auto;
+}
+.region:not(.collapsed) .region-chevron { transform: rotate(90deg); }
+
+/* Fases ocultas quando colapsado */
+.region.collapsed .phases { display: none; }
+
+/* Barra de progresso mini */
+.region-bar {
+    height: 4px; border-radius: 2px;
+    background: var(--bg-soft);
+    margin-top: .5rem; overflow: hidden;
+}
+.region-bar-fill {
+    height: 100%; border-radius: 2px;
+    background: var(--rcolor);
+    transition: width .4s ease;
 }
 .region-icon {
     font-size: 2.4rem;
