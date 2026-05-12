@@ -1,4 +1,4 @@
-const CACHE = 'mathquest-v5';
+const CACHE = 'mathquest-v6';
 
 // Assets pré-cacheados na instalação.  Caminhos network-first (HTML, script.js,
 // teacher.html) buscam versão fresca a cada visita mas usam estes como

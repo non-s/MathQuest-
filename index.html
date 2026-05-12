@@ -163,7 +163,7 @@
     <header class="hud">
         <div class="hud-left">
             <button id="btnSwapName" class="hud-nick" title="Mudar nome">
-                <span class="avatar">🎓</span>
+                <span class="avatar" id="avatarEmoji">🎓</span>
                 <span id="hudNick">Aluno(a)</span>
             </button>
         </div>
@@ -171,8 +171,17 @@
             <div class="stat" title="XP total"><span>⚡</span><b id="hudXp">0</b></div>
             <div class="stat" title="Estrelas"><span>⭐</span><b id="hudStars">0</b></div>
             <div class="stat" title="Fases concluídas"><span>🗺️</span><b id="hudPhases">0/181</b></div>
+            <div class="stat streak-badge" title="Dias seguidos" id="hudStreakBadge" style="display:none">🔥<b id="hudStreak">0</b></div>
         </div>
         <div class="hud-right">
+            <div class="a11y-bar">
+                <button id="btnContrast" class="a11y-btn" title="Alto contraste">🌓</button>
+                <button id="btnFontUp"   class="a11y-btn" title="Fonte maior">A+</button>
+                <button id="btnFontDown" class="a11y-btn" title="Fonte menor">A-</button>
+            </div>
+            <button id="btnLeaderboard" class="hud-btn" title="Ranking">🏆</button>
+            <button id="btnMissions"    class="hud-btn" title="Missões do dia">🎯</button>
+            <button id="btnRevision"    class="hud-btn" title="Revisar fases">📖</button>
             <button id="btnInstall" class="hud-btn" title="Instalar como app" style="display:none">📲</button>
             <button id="btnAch"  class="hud-btn" title="Conquistas">🏅</button>
             <button id="btnMute" class="hud-btn" title="Som">🔊</button>
@@ -210,6 +219,17 @@
         </section>
     </main>
 
+    <!-- Tela: revisão -->
+    <main id="revisionView" style="display:none">
+        <div class="revision-view">
+            <div class="revision-header">
+                <button id="btnBackRevision" class="iconbtn">←</button>
+                <h2>📖 Revisar fases</h2>
+            </div>
+            <div id="revisionGrid" class="revision-grid"></div>
+        </div>
+    </main>
+
     <!-- Tela: resultado -->
     <main id="resultView" class="result-view" style="display:none">
         <div class="result-card">
@@ -222,6 +242,24 @@
             </div>
         </div>
     </main>
+
+    <!-- Drawer: missões -->
+    <aside id="missionsDrawer" class="missions-drawer">
+        <header>
+            <h3>🎯 Missões de hoje</h3>
+            <button id="btnCloseMissions" class="iconbtn">✕</button>
+        </header>
+        <div id="missionsList" class="missions-list"></div>
+    </aside>
+
+    <!-- Drawer: leaderboard -->
+    <aside id="lbDrawer" class="leaderboard-drawer">
+        <header>
+            <h3>🏆 Ranking da turma</h3>
+            <button id="btnCloseLb" class="iconbtn">✕</button>
+        </header>
+        <div id="lbList" class="lb-list"></div>
+    </aside>
 
     <!-- Drawer: conquistas -->
     <aside id="achDrawer" class="ach-drawer">

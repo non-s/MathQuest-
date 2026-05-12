@@ -23,6 +23,12 @@ const state = {
     earnedXp:      0,
     muted:         localStorage.getItem('mq_muted') === '1',
     classCode:     localStorage.getItem('mq_class_code') || '',
+    streak:        0,
+    lastPlayDate:  '',
+    trainingMode:  false,
+    wrongCount:    0,
+    failStreak:    {},
+    avatar:        '🎓',
 };
 
 /* ─── Utilitários ───────────────────────────────────────────────────────── */
@@ -58,10 +64,24 @@ function beep(freq = 440, duration = 0.15, type = 'sine', vol = 0.12) {
     g.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
     o.stop(audioCtx.currentTime + duration + 0.02);
 }
-const sndCorrect = () => { beep(660, 0.08); setTimeout(() => beep(880, 0.15), 80); };
-const sndWrong   = () => beep(180, 0.22, 'square', .08);
-const sndStar    = () => { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => beep(f, 0.18, 'triangle', .1), i * 90)); };
-const sndUnlock  = () => { [392, 523, 659].forEach((f, i) => setTimeout(() => beep(f, 0.15, 'sine', .1), i * 100)); };
+const sndCorrect = () => {
+    beep(523, 0.06, 'sine', .1);
+    setTimeout(() => beep(659, 0.06, 'sine', .1), 60);
+    setTimeout(() => beep(784, 0.12, 'sine', .12), 120);
+};
+const sndWrong = () => {
+    beep(220, 0.1, 'square', .08);
+    setTimeout(() => beep(180, 0.18, 'square', .06), 90);
+};
+const sndStar = () => {
+    [523,659,784,1046,1318].forEach((f,i) => setTimeout(() => beep(f, 0.15, 'triangle', .1), i*80));
+};
+const sndUnlock = () => {
+    [392,494,587,659,784].forEach((f,i) => setTimeout(() => beep(f, 0.12, 'sine', .09), i*90));
+};
+const sndStreak = () => {
+    [659,784,1046,784,1046,1318].forEach((f,i) => setTimeout(() => beep(f, 0.1, 'triangle', .08), i*70));
+};
 
 /* ─── Regiões (mapa) ────────────────────────────────────────────────────── */
 const REGIONS = [
@@ -1586,6 +1606,7 @@ function saveLocal() {
     if (!state.userId) return;
     localStorage.setItem(localKey(state.userId), JSON.stringify({
         nickname: state.nickname, xp: state.xp, stars: state.stars, achievements: state.achievements,
+        streak: state.streak, lastPlayDate: state.lastPlayDate, avatar: state.avatar,
     }));
 }
 
@@ -1598,6 +1619,9 @@ function loadLocal() {
         state.xp           = d.xp           || 0;
         state.stars        = d.stars        || {};
         state.achievements = d.achievements || [];
+        state.streak       = d.streak       || 0;
+        state.lastPlayDate = d.lastPlayDate || '';
+        state.avatar       = d.avatar       || '🎓';
         return true;
     } catch { return false; }
 }
@@ -1745,6 +1769,16 @@ function renderHud() {
     $('hudStars').textContent     = totalStars();
     $('hudPhases').textContent    = `${completedCount()}/181`;
     $('btnMute').textContent      = state.muted ? '🔇' : '🔊';
+    if ($('avatarEmoji')) $('avatarEmoji').textContent = state.avatar || '🎓';
+    const streakBadge = $('hudStreakBadge');
+    if (streakBadge) {
+        if (state.streak >= 2) {
+            $('hudStreak').textContent = state.streak;
+            streakBadge.style.display = '';
+        } else {
+            streakBadge.style.display = 'none';
+        }
+    }
 }
 
 /* ─── Renderização: mapa ───────────────────────────────────────────────── */
@@ -1838,30 +1872,63 @@ function renderMap() {
 
 /* ─── Tela de fase ─────────────────────────────────────────────────────── */
 function startPhase(phase) {
-    state.currentPhase = phase;
-    state.questions    = phase.gen();
-    state.qIndex       = 0;
-    state.correct      = 0;
-    state.hearts       = 3;
-    state.earnedXp     = 0;
-    state.answered     = false;
-    $('mapView').style.display = 'none';
-    $('phaseView').style.display = '';
-    renderQuestion();
+    // Mostra modal de escolha de modo
+    const modal = document.createElement('div');
+    modal.className = 'phase-start-modal';
+    modal.innerHTML = `
+        <div class="phase-start-card">
+            <h3>${phase.name}</h3>
+            <p>Como você quer jogar?</p>
+            <div class="phase-mode-grid">
+                <button class="btn-mode btn-mode-normal" id="btnModeNormal">⚔️ Normal<br><small>3 vidas, XP</small></button>
+                <button class="btn-mode btn-mode-train"  id="btnModeTrain">📚 Treino<br><small>Sem pressão</small></button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    const launch = (training) => {
+        modal.remove();
+        state.trainingMode = training;
+        state.currentPhase = phase;
+        state.questions    = phase.gen();
+        state.qIndex       = 0;
+        state.correct      = 0;
+        state.hearts       = 3;
+        state.earnedXp     = 0;
+        state.answered     = false;
+        $('mapView').style.display = 'none';
+        $('phaseView').style.display = '';
+        renderQuestion();
+    };
+    $('btnModeNormal').addEventListener('click', () => launch(false));
+    $('btnModeTrain').addEventListener('click',  () => launch(true));
 }
 
 function renderQuestion() {
     const q = state.questions[state.qIndex];
     const isPlacement = state.currentPhase?.isPlacement;
+    state.wrongCount = 0;
     $('phaseTitle').textContent = isPlacement
         ? state.currentPhase.name
         : `${state.currentPhase.id}. ${state.currentPhase.name}`;
     $('phaseProg').textContent  = `${state.qIndex + 1} / ${state.questions.length}`;
-    $('hearts').innerHTML       = isPlacement
-        ? '<span class="placement-label">📊 Diagnóstico</span>'
-        : '❤'.repeat(state.hearts) + '<span class="lost">❤</span>'.repeat(3 - state.hearts);
+    if (state.trainingMode) {
+        $('hearts').innerHTML = '<span class="training-badge">📚 Treino</span>';
+    } else {
+        $('hearts').innerHTML = isPlacement
+            ? '<span class="placement-label">📊 Diagnóstico</span>'
+            : '❤'.repeat(state.hearts) + '<span class="lost">❤</span>'.repeat(3 - state.hearts);
+    }
     $('qStem').innerHTML        = q.stem;
     $('qExplain').style.display = 'none';
+    // TTS button
+    if (window.speechSynthesis) {
+        const ttsBtn = document.createElement('button');
+        ttsBtn.className = 'tts-btn'; ttsBtn.title = 'Ouvir pergunta'; ttsBtn.textContent = '🔊';
+        ttsBtn.addEventListener('click', speakQuestion);
+        $('qStem').style.position = 'relative';
+        $('qStem').appendChild(ttsBtn);
+    }
     const opts = $('qOpts'); opts.innerHTML = '';
     q.options.forEach((opt, i) => {
         const b = document.createElement('button');
@@ -1887,13 +1954,20 @@ function answer(i) {
     });
     if (i === q.correctIndex) {
         state.correct++;
-        if (!isPlacement) state.earnedXp += 10;
+        if (!isPlacement && !state.trainingMode) state.earnedXp += 10;
         sndCorrect();
+        haptic('success');
         toast('Acertou!', 'success');
     } else {
         sndWrong();
+        haptic('error');
         toast('Errou.', 'error');
-        if (!isPlacement) {
+        state.wrongCount = (state.wrongCount || 0) + 1;
+        if (state.wrongCount === 1 && q.explain && !isPlacement) {
+            const hint = q.explain.replace(/<[^>]+>/g,'').slice(0, 80);
+            setTimeout(() => toast(`💡 Dica: ${hint}…`, 'info'), 800);
+        }
+        if (!isPlacement && !state.trainingMode) {
             state.hearts--;
             if (state.hearts <= 0) return setTimeout(() => endPhase(false), 700);
         }
@@ -1919,11 +1993,26 @@ function endPhase(completed) {
     const pct   = state.correct / total;
     let stars = 0;
     if (completed) {
-        if (pct >= 1)    stars = 3;
+        if (pct >= 1)        stars = 3;
         else if (pct >= 0.8) stars = 2;
         else if (pct >= 0.5) stars = 1;
-        else stars = 0;
+        else                 stars = 0;
     }
+
+    // Modo treino: não salva, não ganha XP
+    if (state.trainingMode) {
+        $('btnRetry').textContent = 'Tentar de novo';
+        $('resultStars').innerHTML = '★'.repeat(stars) + '☆'.repeat(3 - stars);
+        $('resultMsg').textContent = stars >= 3 ? 'Perfeito! (Treino)' : stars >= 2 ? 'Muito bem! (Treino)' : stars >= 1 ? 'Boa! (Treino)' : 'Tente de novo!';
+        $('resultDetail').innerHTML = `
+            Acertos: <b>${state.correct}/${total}</b> ·
+            <span style="color:var(--text-dim)">Modo Treino — Sem XP</span>
+        `;
+        $('resultView').style.display = '';
+        $('phaseView').style.display  = 'none';
+        return;
+    }
+
     // mantém o melhor desempenho histórico da fase
     const prev = state.stars[state.currentPhase.id] || 0;
     if (stars > prev) state.stars[state.currentPhase.id] = stars;
@@ -1934,6 +2023,46 @@ function endPhase(completed) {
     checkAchievements();
     persist();
     if (stars > 0) sndStar();
+
+    // Missões
+    if (stars > 0) {
+        updateMissions('phases');
+        updateMissions('stars', stars);
+        updateMissions('correct', state.correct);
+        if (stars === 3) updateMissions('perfect');
+    } else {
+        updateMissions('correct', state.correct);
+    }
+
+    // Gap detector (falha)
+    if (!completed) {
+        const pid = state.currentPhase.id;
+        state.failStreak[pid] = (state.failStreak[pid] || 0) + 1;
+        if (state.failStreak[pid] >= 2) {
+            const phase = PHASES.find(p => p.id === pid);
+            if (phase && phase.region > 1) {
+                const prevReg = REGIONS.find(r => r.id === phase.region - 1);
+                if (prevReg) {
+                    setTimeout(() => {
+                        const gt = document.createElement('div');
+                        gt.className = 'gap-toast show';
+                        gt.innerHTML = `Dificuldade aqui? <b>Revise ${prevReg.name}</b> antes!
+                            <button onclick="this.parentElement.remove();localStorage.setItem('mq_expanded_region',${prevReg.id});backToMap()">Ir revisar</button>`;
+                        document.body.appendChild(gt);
+                        setTimeout(() => gt.remove(), 8000);
+                    }, 1500);
+                }
+            }
+        }
+    } else {
+        // Resetar failStreak ao passar
+        if (state.currentPhase.id) delete state.failStreak[state.currentPhase.id];
+    }
+
+    // Confetti ao 3 estrelas
+    if (stars === 3) {
+        setTimeout(fireConfetti, 300);
+    }
 
     $('btnRetry').textContent = 'Tentar de novo';
     $('resultStars').innerHTML = '★'.repeat(stars) + '☆'.repeat(3 - stars);
@@ -2111,6 +2240,7 @@ async function init() {
     await initAuth();
     const remote = await loadRemote();
     if (!remote) loadLocal();
+    updateStreak();
     if (!state.nickname) {
         $('loader').style.display = 'none';
         showWelcome();
@@ -2119,6 +2249,240 @@ async function init() {
         renderMap();
         $('loader').style.display = 'none';
     }
+}
+
+/* ─── Streak ────────────────────────────────────────────────────────────── */
+function updateStreak() {
+    const today = new Date().toISOString().slice(0, 10);
+    const last  = localStorage.getItem('mq_last_play') || '';
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    if (last === today) return;
+    if (last === yesterday) {
+        state.streak = (state.streak || 0) + 1;
+    } else if (last !== today) {
+        state.streak = 1;
+    }
+    localStorage.setItem('mq_last_play', today);
+    saveLocal();
+}
+
+/* ─── Missões diárias ───────────────────────────────────────────────────── */
+const MISSIONS_DEFS = [
+    { id: 'play3',    name: 'Jogar 3 fases',          target: 3,  reward: 50,  icon: '🎮', track: 'phases' },
+    { id: 'stars5',   name: 'Ganhar 5 estrelas',       target: 5,  reward: 75,  icon: '⭐', track: 'stars' },
+    { id: 'correct10',name: '10 respostas certas',     target: 10, reward: 60,  icon: '✅', track: 'correct' },
+    { id: 'play5',    name: 'Jogar 5 fases',           target: 5,  reward: 100, icon: '🎯', track: 'phases' },
+    { id: 'noerror',  name: 'Fase perfeita (3★)',       target: 1,  reward: 80,  icon: '💎', track: 'perfect' },
+    { id: 'region',   name: 'Complete uma região',     target: 1,  reward: 150, icon: '🗺️', track: 'region' },
+    { id: 'play1',    name: 'Jogue pelo menos 1 fase', target: 1,  reward: 25,  icon: '👟', track: 'phases' },
+    { id: 'stars3',   name: 'Ganhar 3 estrelas',       target: 3,  reward: 45,  icon: '🌟', track: 'stars' },
+];
+
+function getDailyMissions() {
+    const today = new Date().toISOString().slice(0, 10);
+    const saved = localStorage.getItem('mq_missions_date');
+    if (saved === today) {
+        try { return JSON.parse(localStorage.getItem('mq_missions')); } catch { }
+    }
+    const seed  = today.replace(/-/g,'');
+    const idx   = [parseInt(seed) % MISSIONS_DEFS.length,
+                   (parseInt(seed) + 3) % MISSIONS_DEFS.length,
+                   (parseInt(seed) + 5) % MISSIONS_DEFS.length];
+    const missions = idx.map(i => ({ ...MISSIONS_DEFS[i], progress: 0, done: false }));
+    localStorage.setItem('mq_missions_date', today);
+    localStorage.setItem('mq_missions', JSON.stringify(missions));
+    return missions;
+}
+
+function updateMissions(track, amount = 1) {
+    const today = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem('mq_missions_date') !== today) getDailyMissions();
+    let missions = getDailyMissions();
+    let changed = false;
+    missions.forEach(m => {
+        if (m.done || m.track !== track) return;
+        m.progress = Math.min(m.target, (m.progress || 0) + amount);
+        if (m.progress >= m.target && !m.done) {
+            m.done = true;
+            state.xp += m.reward;
+            toast(`✅ Missão "${m.name}" completa! +${m.reward} XP`, 'success');
+            changed = true;
+        }
+    });
+    localStorage.setItem('mq_missions', JSON.stringify(missions));
+    if (changed) persist();
+    renderMissions();
+}
+
+function renderMissions() {
+    const list = $('missionsList');
+    if (!list) return;
+    const missions = getDailyMissions();
+    list.innerHTML = missions.map(m => `
+        <div class="mission-item ${m.done ? 'done' : ''}">
+            <div class="mission-top">
+                <span class="mission-name">${m.icon} ${m.name}</span>
+                <span class="mission-reward">+${m.reward} XP</span>
+            </div>
+            <div class="mission-bar">
+                <div class="mission-bar-fill" style="width:${Math.min(100,(m.progress||0)/m.target*100)}%"></div>
+            </div>
+            <div class="mission-progress">${m.progress||0}/${m.target} ${m.done ? '✓' : ''}</div>
+        </div>
+    `).join('');
+}
+
+/* ─── Confetti ──────────────────────────────────────────────────────────── */
+function fireConfetti() {
+    const colors = ['#f0c419','#f0883e','#3fb950','#d2a8ff','#79c0ff','#ff7b72'];
+    const container = document.createElement('div');
+    container.className = 'confetti-container';
+    document.body.appendChild(container);
+    for (let i = 0; i < 60; i++) {
+        const piece = document.createElement('div');
+        piece.className = 'confetti-piece';
+        piece.style.cssText = `
+            left:${Math.random()*100}%;
+            background:${colors[Math.floor(Math.random()*colors.length)]};
+            width:${6+Math.random()*8}px;
+            height:${6+Math.random()*8}px;
+            --dx:${(Math.random()-0.5)*200}px;
+            animation-duration:${1.5+Math.random()*2}s;
+            animation-delay:${Math.random()*0.5}s;
+            border-radius:${Math.random()>0.5?'50%':'2px'};
+        `;
+        container.appendChild(piece);
+    }
+    setTimeout(() => container.remove(), 4000);
+}
+
+/* ─── Haptic ────────────────────────────────────────────────────────────── */
+const haptic = (type = 'light') => {
+    if (!navigator.vibrate) return;
+    if (type === 'success') navigator.vibrate([30, 20, 60]);
+    else if (type === 'error') navigator.vibrate([80]);
+    else navigator.vibrate(20);
+};
+
+/* ─── Swipe ─────────────────────────────────────────────────────────────── */
+function initSwipe(el) {
+    let startX = 0;
+    el.addEventListener('touchstart', e => { startX = e.touches[0].clientX; }, {passive:true});
+    el.addEventListener('touchend', e => {
+        const dx = e.changedTouches[0].clientX - startX;
+        if (dx < -60 && state.answered && $('btnNext').style.display !== 'none') nextQuestion();
+    }, {passive:true});
+}
+
+/* ─── TTS ───────────────────────────────────────────────────────────────── */
+function speakQuestion() {
+    if (!window.speechSynthesis) return;
+    const text = $('qStem').textContent;
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.lang = 'pt-BR'; utt.rate = 0.9;
+    window.speechSynthesis.cancel();
+    window.speechSynthesis.speak(utt);
+}
+
+/* ─── Leaderboard ───────────────────────────────────────────────────────── */
+async function loadLeaderboard() {
+    if (!state.classCode) {
+        $('lbList').innerHTML = '<p class="lb-empty">Entre em uma turma para ver o ranking.</p>';
+        return;
+    }
+    const list = $('lbList');
+    list.innerHTML = '<p class="lb-empty">Carregando…</p>';
+    try {
+        const { data: members } = await sb.from('class_members')
+            .select('user_id').eq('class_code', state.classCode);
+        if (!members?.length) { list.innerHTML = '<p class="lb-empty">Nenhum aluno na turma.</p>'; return; }
+        const ids = members.map(m => m.user_id);
+        const { data: rows } = await sb.from('mathquest_progress')
+            .select('nickname,xp,stars').in('user_id', ids)
+            .order('xp', { ascending: false }).limit(50);
+        if (!rows?.length) { list.innerHTML = '<p class="lb-empty">Sem dados ainda.</p>'; return; }
+        const medals = ['🥇','🥈','🥉'];
+        const rankClasses = ['gold','silver','bronze'];
+        list.innerHTML = rows.map((r, i) => {
+            const totalStarsLb = Object.values(r.stars||{}).reduce((a,b)=>a+b,0);
+            const isMe = r.nickname === state.nickname;
+            return `<div class="lb-row ${isMe?'me':''}">
+                <span class="lb-rank ${rankClasses[i]||''}">${medals[i] || (i+1)}</span>
+                <span class="lb-name">${r.nickname||'?'}${isMe?' 👈':''}</span>
+                <span class="lb-stars">★${totalStarsLb}</span>
+                <span class="lb-xp">⚡${r.xp}</span>
+            </div>`;
+        }).join('');
+    } catch(e) {
+        list.innerHTML = '<p class="lb-empty">Erro ao carregar.</p>';
+    }
+}
+
+/* ─── Revisão ───────────────────────────────────────────────────────────── */
+function showRevision() {
+    const view = $('revisionView');
+    if (!view) return;
+    $('mapView').style.display = 'none';
+    view.style.display = '';
+    const needsWork = Object.entries(state.stars)
+        .filter(([,s]) => s < 3)
+        .sort(([,a],[,b]) => a - b)
+        .slice(0, 20)
+        .map(([id]) => PHASES.find(p => p.id === parseInt(id)))
+        .filter(Boolean);
+    const grid = $('revisionGrid');
+    if (!needsWork.length) {
+        grid.innerHTML = '<p style="text-align:center;color:var(--text-dim);padding:2rem">Parabéns! Todas as fases têm 3 estrelas! 🏆</p>';
+        return;
+    }
+    grid.innerHTML = needsWork.map(p => `
+        <div class="revision-phase" data-id="${p.id}">
+            <div class="revision-stars">${'★'.repeat(state.stars[p.id]||0)}${'☆'.repeat(3-(state.stars[p.id]||0))}</div>
+            <div class="revision-info">
+                <b>${p.name}</b>
+                <small>Fase ${p.id} · Região ${p.region}</small>
+            </div>
+            <span>→</span>
+        </div>
+    `).join('');
+    grid.querySelectorAll('.revision-phase').forEach(el => {
+        el.addEventListener('click', () => {
+            view.style.display = 'none';
+            $('mapView').style.display = '';
+            const p = PHASES.find(ph => ph.id === parseInt(el.dataset.id));
+            if (p) startPhase(p);
+        });
+    });
+}
+
+function hideRevision() {
+    const view = $('revisionView');
+    if (view) view.style.display = 'none';
+    $('mapView').style.display = '';
+}
+
+/* ─── Avatar Picker ─────────────────────────────────────────────────────── */
+const AVATARS = ['🎓','🦊','🐼','🚀','⚡','🌟','🦁','🐉','🎯','🏆','🌈','🎸','🤖','🦄','🐺','🎪','🌊','🔥','💎','🧙'];
+
+function showAvatarPicker() {
+    const modal = document.createElement('div');
+    modal.className = 'avatar-modal';
+    modal.innerHTML = `<div class="avatar-card">
+        <h3>Escolha seu avatar</h3>
+        <div class="avatar-grid">${AVATARS.map(a=>`<button class="avatar-opt ${a===state.avatar?'selected':''}" data-a="${a}">${a}</button>`).join('')}</div>
+        <button class="btn-secondary" id="btnAvatarClose" style="width:100%">Fechar</button>
+    </div>`;
+    document.body.appendChild(modal);
+    modal.querySelectorAll('.avatar-opt').forEach(btn => {
+        btn.addEventListener('click', () => {
+            state.avatar = btn.dataset.a;
+            persist();
+            renderHud();
+            modal.remove();
+        });
+    });
+    $('btnAvatarClose').addEventListener('click', () => modal.remove());
+    modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -2148,6 +2512,7 @@ document.addEventListener('DOMContentLoaded', () => {
     $('btnSwapName')   .addEventListener('click', () => {
         const n = prompt('Novo nome:', state.nickname);
         if (n && n.trim()) { state.nickname = n.trim().slice(0, 30); persist(); renderHud(); }
+        showAvatarPicker();
     });
     $('btnOnboardingDone')?.addEventListener('click', finishOnboarding);
 
@@ -2180,6 +2545,56 @@ document.addEventListener('DOMContentLoaded', () => {
         deferredInstall = null;
         $('btnInstall').style.display = 'none';
     });
+
+    // Missions drawer
+    $('btnMissions')?.addEventListener('click', () => {
+        renderMissions();
+        $('missionsDrawer')?.classList.toggle('open');
+    });
+    $('btnCloseMissions')?.addEventListener('click', () => {
+        $('missionsDrawer')?.classList.remove('open');
+    });
+
+    // Leaderboard drawer
+    $('btnLeaderboard')?.addEventListener('click', () => {
+        loadLeaderboard();
+        $('lbDrawer')?.classList.toggle('open');
+    });
+    $('btnCloseLb')?.addEventListener('click', () => {
+        $('lbDrawer')?.classList.remove('open');
+    });
+
+    // Revision
+    $('btnRevision')?.addEventListener('click', showRevision);
+    $('btnBackRevision')?.addEventListener('click', hideRevision);
+
+    // High contrast
+    $('btnContrast')?.addEventListener('click', () => {
+        document.body.classList.toggle('high-contrast');
+        localStorage.setItem('mq_hc', document.body.classList.contains('high-contrast') ? '1' : '0');
+    });
+
+    // Font size
+    $('btnFontUp')?.addEventListener('click', () => {
+        const cur = parseFloat(localStorage.getItem('mq_font') || '1');
+        const next = Math.min(1.4, cur + 0.1);
+        document.documentElement.style.setProperty('--font-scale', next);
+        localStorage.setItem('mq_font', next);
+    });
+    $('btnFontDown')?.addEventListener('click', () => {
+        const cur = parseFloat(localStorage.getItem('mq_font') || '1');
+        const next = Math.max(0.8, cur - 0.1);
+        document.documentElement.style.setProperty('--font-scale', next);
+        localStorage.setItem('mq_font', next);
+    });
+
+    // Swipe
+    initSwipe($('phaseView'));
+
+    // Restore preferences
+    if (localStorage.getItem('mq_hc') === '1') document.body.classList.add('high-contrast');
+    const savedFont = localStorage.getItem('mq_font');
+    if (savedFont) document.documentElement.style.setProperty('--font-scale', savedFont);
 
     // Service Worker
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
