@@ -3138,3 +3138,8 @@ window.addGems     = addGems;
 window.startMarathon = startMarathon;
 window.showQRCode  = showQRCode;
 window.getCurrentWeeklyEvent = getCurrentWeeklyEvent;
+window.$ = $;
+window.esc = esc;
+window.REGIONS = REGIONS;
+window.sb = sb;
+
