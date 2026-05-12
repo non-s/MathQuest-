@@ -275,7 +275,7 @@
 <script src="script.js"></script>
 <div id="teacherPage" style="display:none">
 <!-- Loader -->
-<div id="loader" class="loader">
+<div id="t-loader" class="loader">
     <div class="loader-dots"><span></span><span></span><span></span></div>
     <p>Carregando o painel…</p>
 </div>
@@ -567,13 +567,13 @@
     function showLogin() {
         $('loginView').style.display = '';
         $('dashView').style.display = 'none';
-        $('loader').style.display = 'none';
+        $('t-loader').style.display = 'none';
     }
 
     async function showDash() {
         $('loginView').style.display = 'none';
         $('dashView').style.display = '';
-        $('loader').style.display = 'none';
+        $('t-loader').style.display = 'none';
         const { data: { user } } = await sb.auth.getUser();
         $('hdrEmail').textContent = user?.email || '';
         await loadClasses();
