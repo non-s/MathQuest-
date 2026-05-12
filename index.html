@@ -1,1 +1,930 @@
-PLACEHOLDER_INDEX
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <title>MathQuest — Aprenda matemática jogando</title>
+    <meta name="description" content="Jogo educacional de matemática em mundo aberto. Do 1º ao 9º ano: 181 fases do básico ao avançado.">
+    <meta name="theme-color" content="#0d1117">
+    <meta property="og:title" content="MathQuest — Aprenda matemática jogando">
+    <meta property="og:description" content="Do zero à senioridade em matemática: 181 fases, mundo aberto, do 1º ao 9º ano.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Fira+Code:wght@500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* Onboarding inline para não conflitar com Wave A no style.css. Refatorar
+           pra style.css em PR de cleanup depois que Wave A mergear. */
+        .onboarding {
+            position: fixed; inset: 0; display: flex;
+            align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #1a2030 0%, #0d1117 100%);
+            padding: 1rem; z-index: 55;
+            overflow-y: auto;
+        }
+        .onboarding-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem 1.75rem;
+            max-width: 520px; width: 100%;
+            box-shadow: var(--shadow);
+        }
+        .ob-title {
+            font-size: 1.5rem; text-align: center; margin-bottom: 1.25rem;
+        }
+        .ob-grid {
+            display: grid; gap: .85rem; margin-bottom: 1.5rem;
+        }
+        .ob-item {
+            display: flex; gap: .85rem; align-items: flex-start;
+            padding: .85rem;
+            background: var(--bg-soft);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+        .ob-emoji { font-size: 1.8rem; flex-shrink: 0; line-height: 1; }
+        .ob-item-text h3 {
+            font-size: 1rem; margin-bottom: .25rem;
+        }
+        .ob-item-text p {
+            font-size: .85rem; color: var(--text-dim); line-height: 1.4; margin: 0;
+        }
+        @media (max-width: 520px) {
+            .onboarding-card { padding: 1.5rem 1rem; }
+            .ob-title { font-size: 1.2rem; }
+            .ob-item { padding: .65rem; }
+            .ob-emoji { font-size: 1.5rem; }
+            .ob-item-text h3 { font-size: .95rem; }
+            .ob-item-text p { font-size: .8rem; }
+        }
+        /* Código de turma: input em maiusculas, monoespaçado pra não confundir 0/O */
+        #classCodeInput {
+            font-family: 'Fira Code', monospace;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+        }
+        /* Link discreto pro painel do professor na welcome */
+        .welcome-teacher-link {
+            display: block; margin-top: 1.25rem;
+            color: var(--text-dim); font-size: .8rem;
+            text-decoration: none;
+        }
+        .welcome-teacher-link:hover { color: var(--accent); }
+    </style>
+</head>
+<body>
+
+<!-- Loader -->
+<div id="loader" class="loader">
+    <div class="loader-dots"><span></span><span></span><span></span></div>
+    <p>Carregando o mundo…</p>
+</div>
+
+<!-- Boas-vindas: pede um apelido (e código de turma opcional) -->
+<div id="welcome" class="welcome" style="display:none">
+    <div class="welcome-card">
+        <div class="welcome-logo">∑ MathQuest</div>
+        <h1>Bem-vindo, aventureiro!</h1>
+        <p class="welcome-sub">Você vai sair do zero até o avançado em matemática. 9 regiões, 181 fases, do 1º ao 9º ano.</p>
+        <input id="nickInput" class="field" placeholder="Como devemos te chamar?" maxlength="30" autocomplete="off">
+        <input id="classCodeInput" class="field" placeholder="Código da turma (opcional)" maxlength="10" autocomplete="off">
+        <button id="btnStart" class="btn-primary">Começar a jornada</button>
+        <p id="welcomeError" class="welcome-error"></p>
+        <p class="welcome-tip">Tem código do(a) professor(a)? Digite aí. Senão, é só seguir.</p>
+        <a href="?view=teacher" class="welcome-teacher-link">Sou professor(a) →</a>
+    </div>
+</div>
+
+<!-- Onboarding: 1ª visita explica regiões / estrelas / vidas -->
+<div id="onboarding" class="onboarding" style="display:none">
+    <div class="onboarding-card">
+        <h2 class="ob-title">Como o jogo funciona</h2>
+        <div class="ob-grid">
+            <div class="ob-item">
+                <div class="ob-emoji">🗺️</div>
+                <div class="ob-item-text">
+                    <h3>9 regiões, 181 fases</h3>
+                    <p>Cada região do mapa é um ano escolar — do 1º ao 9º. Você avança desbloqueando uma fase por vez.</p>
+                </div>
+            </div>
+            <div class="ob-item">
+                <div class="ob-emoji">⭐</div>
+                <div class="ob-item-text">
+                    <h3>Ganhe até 3 estrelas</h3>
+                    <p>Acertar tudo dá 3 estrelas. Pelo menos 1 estrela já desbloqueia a próxima fase. Pode voltar e tentar de novo pra melhorar.</p>
+                </div>
+            </div>
+            <div class="ob-item">
+                <div class="ob-emoji">❤️</div>
+                <div class="ob-item-text">
+                    <h3>Você tem 3 vidas por fase</h3>
+                    <p>Errou 3 vezes? A fase reinicia. Mas pode tentar quantas vezes quiser — ninguém perde nada errando.</p>
+                </div>
+            </div>
+            <div class="ob-item">
+                <div class="ob-emoji">📱</div>
+                <div class="ob-item-text">
+                    <h3>Instale como app</h3>
+                    <p>No celular ou Chromebook, abra o menu do navegador e escolha <b>"Adicionar à tela inicial"</b>. Funciona offline depois da primeira vez.</p>
+                </div>
+            </div>
+        </div>
+        <div class="ob-item" style="background:color-mix(in srgb,var(--accent) 6%,transparent);border-color:color-mix(in srgb,var(--accent) 30%,var(--border))">
+            <div class="ob-emoji">🎓</div>
+            <div class="ob-item-text">
+                <h3>Qual é o seu ano escolar?</h3>
+                <p>Vamos abrir direto o módulo certo para você!</p>
+                <div class="ob-year-grid" style="margin-top:.65rem">
+                    <button class="ob-year-btn" data-year="1">1º ano</button>
+                    <button class="ob-year-btn" data-year="2">2º ano</button>
+                    <button class="ob-year-btn" data-year="3">3º ano</button>
+                    <button class="ob-year-btn" data-year="4">4º ano</button>
+                    <button class="ob-year-btn" data-year="5">5º ano</button>
+                    <button class="ob-year-btn" data-year="6">6º ano</button>
+                    <button class="ob-year-btn" data-year="7">7º ano</button>
+                    <button class="ob-year-btn" data-year="8">8º ano</button>
+                    <button class="ob-year-btn" data-year="9">9º ano</button>
+                </div>
+            </div>
+        </div>
+        <button id="btnOnboardingDone" class="btn-primary">Bora começar!</button>
+    </div>
+</div>
+
+<!-- App -->
+<div id="app" class="app" style="display:none">
+
+    <!-- HUD topo -->
+    <header class="hud">
+        <div class="hud-left">
+            <button id="btnSwapName" class="hud-nick" title="Mudar nome">
+                <span class="avatar" id="avatarEmoji">🎓</span>
+                <span id="hudNick">Aluno(a)</span>
+            </button>
+        </div>
+        <div class="hud-stats">
+            <div class="stat" title="XP total"><span>⚡</span><b id="hudXp">0</b></div>
+            <div class="stat" title="Estrelas"><span>⭐</span><b id="hudStars">0</b></div>
+            <div class="stat" title="Fases concluídas"><span>🗺️</span><b id="hudPhases">0/181</b></div>
+            <div class="stat streak-badge" title="Dias seguidos" id="hudStreakBadge" style="display:none">🔥<b id="hudStreak">0</b></div>
+        </div>
+        <div class="hud-right">
+            <div class="a11y-bar">
+                <button id="btnContrast" class="a11y-btn" title="Alto contraste">🌓</button>
+                <button id="btnFontUp"   class="a11y-btn" title="Fonte maior">A+</button>
+                <button id="btnFontDown" class="a11y-btn" title="Fonte menor">A-</button>
+            </div>
+            <button id="btnLeaderboard" class="hud-btn" title="Ranking">🏆</button>
+            <button id="btnMissions"    class="hud-btn" title="Missões do dia">🎯</button>
+            <button id="btnRevision"    class="hud-btn" title="Revisar fases">📖</button>
+            <button id="btnInstall" class="hud-btn" title="Instalar como app" style="display:none">📲</button>
+            <button id="btnAch"  class="hud-btn" title="Conquistas">🏅</button>
+            <button id="btnMute" class="hud-btn" title="Som">🔊</button>
+            <button id="btnLogout" class="hud-btn hud-btn-exit" title="Sair">⏻</button>
+        </div>
+    </header>
+
+    <!-- Tela: mapa -->
+    <main id="mapView" class="map-view">
+        <div id="map" class="map"></div>
+        <footer class="map-foot">
+            Estude. Erre. Tente de novo. Cada estrela é um pedaço de cérebro mais forte.
+        </footer>
+    </main>
+
+    <!-- Tela: fase -->
+    <main id="phaseView" class="phase-view" style="display:none">
+        <div class="phase-top">
+            <button id="btnBackMap" class="iconbtn" title="Voltar">←</button>
+            <div class="phase-title-wrap">
+                <div id="phaseTitle" class="phase-title">—</div>
+                <div class="phase-meta">
+                    <span id="phaseProg" class="prog">1 / 5</span>
+                    <span id="hearts" class="hearts">❤❤❤</span>
+                </div>
+            </div>
+        </div>
+        <section class="qcard">
+            <div id="qStem" class="q-stem"></div>
+            <div id="qOpts" class="q-opts"></div>
+            <div id="qExplain" class="q-explain" style="display:none"></div>
+            <div class="qfoot">
+                <button id="btnNext" class="btn-primary" style="display:none">Próxima →</button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Tela: revisão -->
+    <main id="revisionView" style="display:none">
+        <div class="revision-view">
+            <div class="revision-header">
+                <button id="btnBackRevision" class="iconbtn">←</button>
+                <h2>📖 Revisar fases</h2>
+            </div>
+            <div id="revisionGrid" class="revision-grid"></div>
+        </div>
+    </main>
+
+    <!-- Tela: resultado -->
+    <main id="resultView" class="result-view" style="display:none">
+        <div class="result-card">
+            <div id="resultStars" class="result-stars">☆☆☆</div>
+            <h2 id="resultMsg">—</h2>
+            <p id="resultDetail" class="result-detail"></p>
+            <div class="result-actions">
+                <button id="btnRetry" class="btn-secondary">Tentar de novo</button>
+                <button id="btnBackFromRes" class="btn-primary">Voltar ao mapa</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Drawer: missões -->
+    <aside id="missionsDrawer" class="missions-drawer">
+        <header>
+            <h3>🎯 Missões de hoje</h3>
+            <button id="btnCloseMissions" class="iconbtn">✕</button>
+        </header>
+        <div id="missionsList" class="missions-list"></div>
+    </aside>
+
+    <!-- Drawer: leaderboard -->
+    <aside id="lbDrawer" class="leaderboard-drawer">
+        <header>
+            <h3>🏆 Ranking da turma</h3>
+            <button id="btnCloseLb" class="iconbtn">✕</button>
+        </header>
+        <div id="lbList" class="lb-list"></div>
+    </aside>
+
+    <!-- Drawer: conquistas -->
+    <aside id="achDrawer" class="ach-drawer">
+        <header>
+            <h3>Conquistas</h3>
+            <button id="btnCloseAch" class="iconbtn">✕</button>
+        </header>
+        <div id="achList" class="ach-list"></div>
+    </aside>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast"></div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="script.js"></script>
+<div id="teacherPage" style="display:none">
+<!-- Loader -->
+<div id="loader" class="loader">
+    <div class="loader-dots"><span></span><span></span><span></span></div>
+    <p>Carregando o painel…</p>
+</div>
+
+<!-- Login / Signup -->
+<div id="loginView" class="t-login" style="display:none">
+    <div class="t-login-card">
+        <div class="t-logo">∑ MathQuest</div>
+        <h1>Painel do professor</h1>
+        <div class="t-tabs">
+            <button id="tabLogin" class="active">Entrar</button>
+            <button id="tabSignup">Criar conta</button>
+        </div>
+        <input id="email" class="field" type="email" placeholder="Seu e-mail" autocomplete="email">
+        <input id="pwd" class="field" type="password" placeholder="Senha (mínimo 6 caracteres)" autocomplete="current-password">
+        <button id="btnAuth" class="btn-primary">Entrar</button>
+        <p id="authError" class="t-error"></p>
+        <p class="t-info">Suas turmas e o progresso dos alunos só você vê. Os dados pessoais dos alunos não ficam aqui — só o apelido e o progresso.<br><a href="#" style="color:var(--accent)">Política de privacidade</a></p>
+    </div>
+</div>
+
+<!-- Dashboard -->
+<div id="dashView" style="display:none">
+    <header class="t-header">
+        <div>
+            <h1>∑ Painel do professor</h1>
+            <div id="hdrEmail" class="t-header-email"></div>
+        </div>
+        <div class="t-header-actions">
+            <button id="btnNewClass" class="btn-primary" style="width:auto">+ Nova turma</button>
+            <button id="btnLogout" class="btn-secondary" style="width:auto">Sair</button>
+        </div>
+    </header>
+
+    <div id="classesGrid" class="t-classes-grid"></div>
+    <div id="classesEmpty" class="t-empty" style="display:none">
+        <p>Você ainda não tem turmas.</p>
+        <p>Clique em <b>+ Nova turma</b> pra criar uma. Cada turma recebe um código que você passa pros alunos.</p>
+    </div>
+
+    <div id="rosterSection" style="display:none">
+        <div class="t-roster">
+            <div class="t-roster-head">
+                <div>
+                    <h2 id="rosterTitle">Turma</h2>
+                    <div id="rosterMeta" class="meta"></div>
+                    <div id="lastSync" class="t-last-sync"></div>
+                </div>
+                <div id="rosterStats" class="t-roster-stats"></div>
+                <div class="t-roster-actions">
+                    <button onclick="showProjector()" style="padding:.55rem 1rem;background:#161b22;border:1px solid #30363d;color:#e6edf3;border-radius:8px;cursor:pointer;font-family:inherit">📺 Projetor</button>
+                    <button id="btnExportCSV" class="t-export-btn" title="Baixar dados da turma em CSV">📥 Exportar CSV</button>
+                    <button id="btnRefreshRoster" class="t-refresh-btn" title="Atualizar agora"><span>↻</span> Atualizar</button>
+                    <button id="rosterCode" class="t-code-pill" title="Clique para copiar">Código</button>
+                </div>
+            </div>
+            <table class="t-table">
+                <thead>
+                    <tr>
+                        <th>Apelido</th>
+                        <th>Fases</th>
+                        <th>Estrelas</th>
+                        <th>XP</th>
+                        <th>Última atividade</th>
+                    </tr>
+                </thead>
+                <tbody id="rosterBody"></tbody>
+            </table>
+            <div id="rosterEmpty" class="t-empty" style="display:none">
+                <p>Nenhum aluno entrou ainda.</p>
+                <p>Passe o código da turma pra eles digitarem na primeira tela do jogo. O painel atualiza sozinho a cada 5 segundos.</p>
+            </div>
+        </div>
+
+        <!-- Alunos parados -->
+        <div id="stuckSection" class="t-stuck-section" style="display:none">
+            <h3>⚠️ Alunos parados há +3 dias</h3>
+            <div id="stuckContent"></div>
+        </div>
+
+        <!-- Gráfico top 10 por XP -->
+        <div id="chartSection" class="t-chart-section" style="display:none">
+            <h3>🏆 Top 10 alunos por XP</h3>
+            <div id="barChart" class="t-bar-chart"></div>
+            <div id="regionAnalysis" style="margin-top:1.5rem"></div>
+        </div>
+
+        <!-- Mensagem para a turma -->
+        <div class="message-section">
+            <h3>📢 Mensagem para a turma</h3>
+            <div style="display:flex;gap:.5rem;margin-top:.5rem">
+                <input id="classMessageInput" placeholder="Ex: Estudem a região 3 para amanhã!"
+                       style="flex:1;padding:.65rem;border-radius:8px;border:1px solid #30363d;background:#161b22;color:#e6edf3;font-family:inherit">
+                <button onclick="sendClassMessage()" style="padding:.65rem 1rem;background:#f0883e;color:#0d1117;border-radius:8px;font-weight:600;cursor:pointer;white-space:nowrap">📢 Enviar</button>
+            </div>
+            <p style="color:#8b949e;font-size:.8rem;margin-top:.35rem">Os alunos verão esta mensagem como um aviso quando abrirem o jogo.</p>
+        </div>
+    </div>
+
+    <p class="t-foot">
+        <a href="javascript:history.back()">← Voltar pro jogo</a>
+        • <a href="#">Privacidade</a>
+    </p>
+</div>
+
+<!-- Modal: nova turma -->
+<div id="newClassModal" class="t-modal">
+    <div class="t-modal-card">
+        <div class="t-modal-head">
+            <h3>Nova turma</h3>
+            <button class="t-modal-close" data-close="newClassModal">✕</button>
+        </div>
+        <input id="newClassName" class="field" placeholder="Nome da turma (ex: 7º A — Matemática)" maxlength="80">
+        <select id="newClassGrade" class="field">
+            <option value="">Série (opcional)</option>
+            <option value="1">1º ano</option>
+            <option value="2">2º ano</option>
+            <option value="3">3º ano</option>
+            <option value="4">4º ano</option>
+            <option value="5">5º ano</option>
+            <option value="6">6º ano</option>
+            <option value="7">7º ano</option>
+            <option value="8">8º ano</option>
+            <option value="9">9º ano</option>
+        </select>
+        <button id="btnCreateClass" class="btn-primary">Criar turma</button>
+        <p id="newClassError" class="t-error"></p>
+    </div>
+</div>
+
+<!-- Modal: confirmar apagar turma -->
+<div id="deleteClassModal" class="t-modal">
+    <div class="t-modal-card">
+        <div class="t-modal-head">
+            <h3>Apagar turma?</h3>
+            <button class="t-modal-close" data-close="deleteClassModal">✕</button>
+        </div>
+        <p class="t-confirm-text">
+            Você vai apagar a turma <b id="deleteClassName">—</b> (código <b id="deleteClassCode">—</b>).<br><br>
+            Os alunos que estavam vinculados continuam com o próprio progresso, mas você não vai mais ver eles no painel.
+            <b>Esta ação não pode ser desfeita.</b>
+        </p>
+        <div class="t-confirm-actions">
+            <button class="btn-secondary" data-close="deleteClassModal" style="width:auto">Cancelar</button>
+            <button id="btnConfirmDelete" class="btn-danger">Apagar turma</button>
+        </div>
+        <p id="deleteError" class="t-error"></p>
+    </div>
+</div>
+
+<!-- Modal: drill-down do aluno -->
+<div id="studentModal" class="t-modal">
+    <div class="t-modal-card">
+        <div class="t-modal-head">
+            <h3 id="studentName">Aluno</h3>
+            <button class="t-modal-close" data-close="studentModal">✕</button>
+        </div>
+        <div id="studentSummary" class="t-class-meta" style="margin-bottom: 1rem"></div>
+        <div class="t-unlock-row">
+            <label for="unlockRegionSelect">Desbloquear região:</label>
+            <select id="unlockRegionSelect">
+                <option value="1">1 — Vila dos Números</option>
+                <option value="2">2 — Bosque das Operações</option>
+                <option value="3">3 — Vale das Tabuadas</option>
+                <option value="4">4 — Caverna das Frações</option>
+                <option value="5">5 — Lago dos Decimais</option>
+                <option value="6">6 — Montanha dos Inteiros</option>
+                <option value="7">7 — Deserto das Equações</option>
+                <option value="8">8 — Templo das Potências</option>
+                <option value="9">9 — Cidadela do Mestre</option>
+            </select>
+            <button id="btnUnlockRegion" class="t-unlock-btn">Desbloquear</button>
+        </div>
+        <div id="studentDrill"></div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+    /* ─── Configuração ─────────────────────────────────────────────────── */
+    const SUPABASE_URL = 'https://tlxckwsqzuedospqqyfw.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRseGNrd3NxenVlZG9zcHFxeWZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1ODM5NjAsImV4cCI6MjA5NDE1OTk2MH0.NIAf7zjDStOPgt10cza5s_1Kwk6a_uWkkpjLJ4UGKyw';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const ROSTER_REFRESH_MS = 5000;  // auto-refresh do roster a cada 5s enquanto aberto
+
+    /* ─── Regiões (espelha do script.js para o drill-down) ─────────────── */
+    const REGIONS = [
+        { id: 1, name: 'Vila dos Números', range: [1, 20], color: '#7dd3a8' },
+        { id: 2, name: 'Bosque das Operações', range: [21, 40], color: '#69b8e5' },
+        { id: 3, name: 'Vale das Tabuadas', range: [41, 60], color: '#f0c75e' },
+        { id: 4, name: 'Caverna das Frações', range: [61, 80], color: '#e88c4a' },
+        { id: 5, name: 'Lago dos Decimais', range: [81, 100], color: '#5fc8c8' },
+        { id: 6, name: 'Montanha dos Inteiros', range: [101, 120], color: '#a78bdc' },
+        { id: 7, name: 'Deserto das Equações', range: [121, 140], color: '#c89669' },
+        { id: 8, name: 'Templo das Potências', range: [141, 160], color: '#e26d6d' },
+        { id: 9, name: 'Cidadela do Mestre', range: [161, 181], color: '#f0c419' },
+    ];
+
+    /* ─── Helpers ──────────────────────────────────────────────────────── */
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s ?? '')
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+    let toastTimer;
+    function toast(msg, type = 'info') {
+        const el = $('toast');
+        el.textContent = msg;
+        el.className = `toast show ${type}`;
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+    }
+
+    function genCode() {
+        const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+        let s = '';
+        for (let i = 0; i < 6; i++) s += alphabet[Math.floor(Math.random() * alphabet.length)];
+        return s;
+    }
+
+    function fmtTime(iso) {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        const now = new Date();
+        const diff = now - d;
+        const min = Math.floor(diff / 60000);
+        if (min < 1) return 'agora';
+        if (min < 60) return `há ${min} min`;
+        const h = Math.floor(min / 60);
+        if (h < 24) return `há ${h}h`;
+        const days = Math.floor(h / 24);
+        if (days < 30) return `há ${days} dia${days === 1 ? '' : 's'}`;
+        return d.toLocaleDateString('pt-BR');
+    }
+
+    /* ─── Auth ─────────────────────────────────────────────────────────── */
+    let mode = 'login';
+
+    $('tabLogin').addEventListener('click', () => {
+        mode = 'login';
+        $('tabLogin').classList.add('active');
+        $('tabSignup').classList.remove('active');
+        $('btnAuth').textContent = 'Entrar';
+        $('authError').textContent = '';
+    });
+    $('tabSignup').addEventListener('click', () => {
+        mode = 'signup';
+        $('tabSignup').classList.add('active');
+        $('tabLogin').classList.remove('active');
+        $('btnAuth').textContent = 'Criar conta';
+        $('authError').textContent = '';
+    });
+
+    $('btnAuth').addEventListener('click', async () => {
+        const email = $('email').value.trim();
+        const pwd = $('pwd').value;
+        if (!email || !pwd) {
+            $('authError').textContent = 'Preencha e-mail e senha.';
+            return;
+        }
+        if (pwd.length < 6) {
+            $('authError').textContent = 'Senha precisa de pelo menos 6 caracteres.';
+            return;
+        }
+        $('btnAuth').disabled = true;
+        try {
+            const fn = mode === 'login' ? 'signInWithPassword' : 'signUp';
+            const { data, error } = await sb.auth[fn]({ email, password: pwd });
+            if (error) throw error;
+            if (mode === 'signup' && !data.session) {
+                $('authError').textContent = 'Conta criada. Confirme o e-mail antes de entrar (verifique sua caixa de entrada).';
+            } else {
+                showDash();
+            }
+        } catch (e) {
+            $('authError').textContent = e.message || 'Não consegui entrar.';
+        } finally {
+            $('btnAuth').disabled = false;
+        }
+    });
+
+    $('btnLogout').addEventListener('click', async () => {
+        stopRosterPolling();
+        await sb.auth.signOut();
+        showLogin();
+    });
+
+    /* ─── Views ────────────────────────────────────────────────────────── */
+    function showLogin() {
+        $('loginView').style.display = '';
+        $('dashView').style.display = 'none';
+        $('loader').style.display = 'none';
+    }
+
+    async function showDash() {
+        $('loginView').style.display = 'none';
+        $('dashView').style.display = '';
+        $('loader').style.display = 'none';
+        const { data: { user } } = await sb.auth.getUser();
+        $('hdrEmail').textContent = user?.email || '';
+        await loadClasses();
+    }
+
+    /* ─── Turmas: listar / criar / apagar ─────────────────────────────────── */
+    let currentUser = null;
+
+    async function loadClasses() {
+        const { data: { user } } = await sb.auth.getUser();
+        currentUser = user;
+        const { data, error } = await sb.from('classes')
+            .select('*')
+            .eq('teacher_id', user.id)
+            .order('created_at', { ascending: false });
+        if (error) {
+            toast('Erro carregando turmas: ' + error.message, 'error');
+            return;
+        }
+        const codes = (data || []).map(c => c.code);
+        let counts = {};
+        if (codes.length) {
+            const { data: members } = await sb.from('class_members')
+                .select('class_code').in('class_code', codes);
+            (members || []).forEach(m => { counts[m.class_code] = (counts[m.class_code] || 0) + 1; });
+        }
+        renderClasses(data || [], counts);
+    }
+
+    function renderClasses(classes, counts) {
+        const grid = $('classesGrid');
+        grid.innerHTML = '';
+        if (!classes.length) {
+            $('classesEmpty').style.display = '';
+            $('rosterSection').style.display = 'none';
+            stopRosterPolling();
+            return;
+        }
+        $('classesEmpty').style.display = 'none';
+        classes.forEach(c => {
+            const card = document.createElement('div');
+            card.className = 't-class-card';
+            const n = counts[c.code] || 0;
+            card.innerHTML = `
+                <button class="t-class-delete" title="Apagar turma" data-code="${esc(c.code)}" data-name="${esc(c.name)}">🗑️</button>
+                <div class="t-class-card-main" data-code="${esc(c.code)}">
+                    <div class="t-class-code">${esc(c.code)}</div>
+                    <div class="t-class-name">${esc(c.name)}</div>
+                    <div class="t-class-meta">${c.grade ? c.grade + 'º ano' : 'Geral'} · criada em ${new Date(c.created_at).toLocaleDateString('pt-BR')}</div>
+                    <div class="t-class-students">${n} aluno${n === 1 ? '' : 's'}</div>
+                </div>
+            `;
+            card.querySelector('.t-class-card-main').addEventListener('click', () => { openRoster(c); });
+            card.querySelector('.t-class-delete').addEventListener('click', e => { e.stopPropagation(); askDeleteClass(c); });
+            grid.appendChild(card);
+        });
+    }
+
+    $('btnNewClass').addEventListener('click', () => {
+        $('newClassName').value = '';
+        $('newClassGrade').value = '';
+        $('newClassError').textContent = '';
+        $('newClassModal').classList.add('open');
+    });
+
+    $('btnCreateClass').addEventListener('click', async () => {
+        const name = $('newClassName').value.trim();
+        const grade = $('newClassGrade').value ? parseInt($('newClassGrade').value, 10) : null;
+        if (!name) { $('newClassError').textContent = 'Dê um nome à turma.'; return; }
+        $('btnCreateClass').disabled = true;
+        try {
+            const code = genCode();
+            const { data: { user } } = await sb.auth.getUser();
+            const { error } = await sb.from('classes').insert({ code, teacher_id: user.id, name, grade });
+            if (error) { $('newClassError').textContent = error.message; return; }
+            $('newClassModal').classList.remove('open');
+            toast('Turma criada — código: ' + code, 'success');
+            await loadClasses();
+        } finally { $('btnCreateClass').disabled = false; }
+    });
+
+    let pendingDeleteCode = null;
+
+    function askDeleteClass(c) {
+        pendingDeleteCode = c.code;
+        $('deleteClassName').textContent = c.name;
+        $('deleteClassCode').textContent = c.code;
+        $('deleteError').textContent = '';
+        $('deleteClassModal').classList.add('open');
+    }
+
+    $('btnConfirmDelete').addEventListener('click', async () => {
+        if (!pendingDeleteCode) return;
+        $('btnConfirmDelete').disabled = true;
+        $('btnConfirmDelete').textContent = 'Apagando…';
+        try {
+            const { error } = await sb.from('classes').delete().eq('code', pendingDeleteCode);
+            if (error) { $('deleteError').textContent = error.message; return; }
+            $('deleteClassModal').classList.remove('open');
+            toast('Turma apagada.', 'success');
+            if (currentClass && currentClass.code === pendingDeleteCode) {
+                stopRosterPolling();
+                $('rosterSection').style.display = 'none';
+                currentClass = null;
+            }
+            pendingDeleteCode = null;
+            await loadClasses();
+        } finally {
+            $('btnConfirmDelete').disabled = false;
+            $('btnConfirmDelete').textContent = 'Apagar turma';
+        }
+    });
+
+    let currentClass = null;
+    let rosterInterval = null;
+    let lastRosterUserIds = new Set();
+    let roster = [];
+    let currentClassName = '';
+    let currentClassCode = '';
+
+    function stopRosterPolling() {
+        if (rosterInterval) { clearInterval(rosterInterval); rosterInterval = null; }
+    }
+
+    async function openRoster(c) {
+        currentClass = c;
+        currentClassName = c.name;
+        currentClassCode = c.code;
+        lastRosterUserIds = new Set();
+        $('rosterTitle').textContent = c.name;
+        $('rosterMeta').textContent = (c.grade ? c.grade + 'º ano' : 'Sem série definida') + ' · criada em ' + new Date(c.created_at).toLocaleDateString('pt-BR');
+        $('rosterCode').textContent = c.code;
+        $('rosterCode').onclick = () => { navigator.clipboard.writeText(c.code).then(() => toast('Código copiado!', 'success')); };
+        $('rosterSection').style.display = '';
+        $('rosterSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        await loadRoster(c.code, { initial: true });
+        stopRosterPolling();
+        rosterInterval = setInterval(() => {
+            if (currentClass && currentClass.code === c.code && document.visibilityState === 'visible') {
+                loadRoster(c.code, { silent: true });
+            }
+        }, ROSTER_REFRESH_MS);
+    }
+
+    $('btnRefreshRoster').addEventListener('click', async () => {
+        if (!currentClass) return;
+        const btn = $('btnRefreshRoster');
+        btn.classList.add('spinning');
+        await loadRoster(currentClass.code, { silent: false });
+        setTimeout(() => btn.classList.remove('spinning'), 300);
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && currentClass) loadRoster(currentClass.code, { silent: true });
+    });
+
+    async function loadRoster(code, opts = {}) {
+        const tbody = $('rosterBody');
+        if (opts.initial) tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim)">Carregando…</td></tr>';
+        const { data: members, error: e1 } = await sb.from('class_members').select('user_id, joined_at').eq('class_code', code);
+        if (e1) { tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger)">${esc(e1.message)}</td></tr>`; return; }
+        if (!members.length) { tbody.innerHTML = ''; $('rosterEmpty').style.display = ''; $('lastSync').textContent = 'Atualizado agora'; return; }
+        $('rosterEmpty').style.display = 'none';
+        const userIds = members.map(m => m.user_id);
+        const { data: progress, error: e2 } = await sb.from('mathquest_progress').select('user_id, nickname, xp, stars, achievements, updated_at').in('user_id', userIds);
+        if (e2) { tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger)">${esc(e2.message)}</td></tr>`; return; }
+        const rows = members.map(m => {
+            const p = (progress || []).find(x => x.user_id === m.user_id) || {};
+            return { user_id: m.user_id, joined_at: m.joined_at, hasProgress: Boolean(p.user_id), nickname: p.nickname || null, xp: p.xp || 0, stars: p.stars || {}, achievements: p.achievements || [], updated_at: p.updated_at || m.joined_at };
+        }).sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''));
+        const newIds = new Set(userIds);
+        const justArrived = [...newIds].filter(id => !lastRosterUserIds.has(id));
+        tbody.innerHTML = '';
+        rows.forEach(r => {
+            const phases = Object.keys(r.stars).length;
+            const totalStars = Object.values(r.stars).reduce((a, b) => a + b, 0);
+            const tr = document.createElement('tr');
+            if (justArrived.includes(r.user_id) && lastRosterUserIds.size > 0) { tr.className = 'just-arrived'; setTimeout(() => tr.classList.remove('just-arrived'), 4000); }
+            const nickHtml = r.nickname ? `<b>${esc(r.nickname)}</b>` : `<span class="t-no-progress" title="Aluno entrou mas ainda não terminou nenhuma fase">entrou agora</span>`;
+            tr.innerHTML = `<td>${nickHtml}</td><td>${phases}/181</td><td class="t-stars">★ ${totalStars}</td><td>${r.xp}</td><td>${fmtTime(r.updated_at)}</td>`;
+            tr.addEventListener('click', () => openStudent(r));
+            tbody.appendChild(tr);
+        });
+        if (justArrived.length && lastRosterUserIds.size > 0) toast(`${justArrived.length} aluno${justArrived.length === 1 ? ' entrou' : 's entraram'} agora!`, 'success');
+        roster = rows.map(r => { const phases = Object.keys(r.stars).length; const totalStars = Object.values(r.stars).reduce((a, b) => a + b, 0); return { ...r, phases, totalStars, last: r.updated_at, rawStars: r.stars || {} }; });
+        updateRosterStats(); renderStuckStudents(); renderBarChart(); renderRegionAnalysis();
+        lastRosterUserIds = newIds;
+        $('lastSync').textContent = 'Atualizado agora';
+        clearTimeout($('lastSync')._t);
+        const showAge = (sec) => { $('lastSync').textContent = `Atualizado há ${sec}s`; };
+        $('lastSync')._t = setTimeout(() => showAge(Math.round(ROSTER_REFRESH_MS / 1000 / 2)), 2500);
+    }
+
+    function exportCSV() {
+        if (!roster.length) { toast('Nenhum aluno para exportar.', 'error'); return; }
+        const header = ['Apelido','Fases','Estrelas','XP','Última atividade'];
+        const rows = roster.map(s => [s.nickname || '(sem apelido)', s.phases, s.totalStars, s.xp, s.last ? new Date(s.last).toLocaleDateString('pt-BR') : '—']);
+        const csv = [header, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob(['﻿' + csv], {type: 'text/csv;charset=utf-8'}));
+        a.download = `turma-${Date.now()}.csv`;
+        a.click();
+        toast('CSV exportado!', 'success');
+    }
+
+    $('btnExportCSV').addEventListener('click', exportCSV);
+
+    function updateRosterStats() {
+        const el = $('rosterStats');
+        if (!roster.length) { el.textContent = ''; return; }
+        const total = roster.length;
+        const avgFases = Math.round(roster.reduce((s, r) => s + r.phases, 0) / total);
+        const avgStars = Math.round(roster.reduce((s, r) => s + r.totalStars, 0) / total);
+        el.textContent = `${total} aluno${total === 1 ? '' : 's'} · média ${avgFases} fases · média ${avgStars}★`;
+    }
+
+    function renderStuckStudents() {
+        const section = $('stuckSection');
+        const content = $('stuckContent');
+        const now = Date.now();
+        const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
+        const stuck = roster.filter(r => { if (r.phases >= 181) return false; if (!r.last) return false; return (now - new Date(r.last).getTime()) > THREE_DAYS_MS; }).map(r => { const days = Math.floor((now - new Date(r.last).getTime()) / (24 * 60 * 60 * 1000)); return { ...r, daysAgo: days }; }).sort((a, b) => b.daysAgo - a.daysAgo);
+        section.style.display = '';
+        if (!stuck.length) { content.innerHTML = '<p class="t-stuck-ok">✅ Todos ativos!</p>'; return; }
+        content.innerHTML = `<ul class="t-stuck-list">${stuck.map(r => `<li><span>${esc(r.nickname || '(sem apelido)')}</span><span class="days">parado há ${r.daysAgo} dia${r.daysAgo === 1 ? '' : 's'}</span></li>`).join('')}</ul>`;
+    }
+
+    function renderBarChart() {
+        const section = $('chartSection');
+        const chart = $('barChart');
+        if (!roster.length) { section.style.display = 'none'; return; }
+        section.style.display = '';
+        const top10 = [...roster].filter(r => r.nickname).sort((a, b) => b.xp - a.xp).slice(0, 10);
+        if (!top10.length) { chart.innerHTML = '<p style="color:var(--text-dim);font-size:.85rem">Nenhum aluno com progresso ainda.</p>'; return; }
+        const maxXP = top10[0].xp || 1;
+        const paleta = ['#7dd3a8','#69b8e5','#f0c75e','#e88c4a','#5fc8c8','#a78bdc','#c89669','#e26d6d','#f0c419','#7dd3a8'];
+        chart.innerHTML = top10.map((r, i) => { const pct = Math.max(4, Math.round((r.xp / maxXP) * 100)); return `<div class="t-bar-row"><div class="t-bar-label" title="${esc(r.nickname)}">${esc(r.nickname)}</div><div class="t-bar-wrap"><div class="t-bar-fill" style="width:${pct}%;background:${paleta[i % paleta.length]}"></div></div><div class="t-bar-val">${r.xp} XP</div></div>`; }).join('');
+    }
+
+    let currentStudentData = null;
+
+    $('btnUnlockRegion').addEventListener('click', async () => {
+        if (!currentStudentData) return;
+        const regionNum = parseInt($('unlockRegionSelect').value, 10);
+        const key = `placement_${regionNum}`;
+        const btn = $('btnUnlockRegion');
+        btn.disabled = true; btn.textContent = 'Desbloqueando…';
+        try {
+            const { data: prog, error: e1 } = await sb.from('mathquest_progress').select('achievements').eq('user_id', currentStudentData.user_id).single();
+            if (e1 && e1.code !== 'PGRST116') throw e1;
+            const current = (prog && prog.achievements) ? prog.achievements : [];
+            if (current.includes(key)) { toast(`Região ${regionNum} já está desbloqueada para este aluno.`, 'info'); return; }
+            const updated = [...current, key];
+            const { error: e2 } = await sb.from('mathquest_progress').upsert({ user_id: currentStudentData.user_id, achievements: updated }, { onConflict: 'user_id' });
+            if (e2) throw e2;
+            toast(`Região ${regionNum} desbloqueada para ${currentStudentData.nickname || 'aluno'}!`, 'success');
+            currentStudentData.achievements = updated;
+        } catch (err) {
+            toast('Erro ao desbloquear: ' + (err.message || err), 'error');
+        } finally { btn.disabled = false; btn.textContent = 'Desbloquear'; }
+    });
+
+    function openStudent(r) {
+        currentStudentData = r;
+        $('studentName').textContent = r.nickname || 'Aluno (sem apelido ainda)';
+        $('studentSummary').innerHTML = `<b>${Object.keys(r.stars).length}</b> fases concluídas · <b>${Object.values(r.stars).reduce((a, b) => a + b, 0)}</b> estrelas · <b>${r.xp}</b> XP · Última atividade: ${fmtTime(r.updated_at)}`;
+        const drill = $('studentDrill');
+        drill.innerHTML = '';
+        REGIONS.forEach(reg => {
+            const sec = document.createElement('div');
+            sec.className = 't-drill-section';
+            sec.style.setProperty('--rcolor', reg.color);
+            const phasesHtml = [];
+            for (let id = reg.range[0]; id <= reg.range[1]; id++) {
+                const stars = r.stars[id] || 0;
+                const prev = id === 1 || r.stars[id - 1];
+                const cls = stars ? 'done' : (prev ? '' : 'locked');
+                phasesHtml.push(`<div class="t-drill-phase ${cls}" title="Fase ${id}"><div class="num">${id}</div><div class="stars">${'★'.repeat(stars)}${'☆'.repeat(3 - stars)}</div></div>`);
+            }
+            sec.innerHTML = `<h4>${esc(reg.name)}</h4><div class="t-drill-phases">${phasesHtml.join('')}</div>`;
+            drill.appendChild(sec);
+        });
+        $('studentModal').classList.add('open');
+    }
+
+    document.querySelectorAll('[data-close]').forEach(b => { b.addEventListener('click', () => $(b.dataset.close).classList.remove('open')); });
+    document.querySelectorAll('.t-modal').forEach(m => { m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }); });
+
+    (async function init() {
+        const { data: { session } } = await sb.auth.getSession();
+        if (session) showDash(); else showLogin();
+    })();
+
+    sb.auth.onAuthStateChange((event, session) => {
+        if (event === 'SIGNED_OUT') { stopRosterPolling(); showLogin(); }
+        else if (event === 'SIGNED_IN' && session) showDash();
+    });
+
+    window.addEventListener('beforeunload', stopRosterPolling);
+
+    function showProjector() {
+        const overlay = document.createElement('div');
+        overlay.className = 'projector-overlay';
+        overlay.id = 'projectorOverlay';
+        overlay.innerHTML = `<button class="proj-close" onclick="document.getElementById('projectorOverlay').remove()">✕</button><div class="projector-title">🏫 ${currentClassName || 'Turma'}</div><div class="projector-ranking" id="projRanking"></div><div class="projector-stats" id="projStats"></div>`;
+        document.body.appendChild(overlay);
+        overlay.requestFullscreen?.().catch(() => {});
+        renderProjector();
+        const interval = setInterval(() => { if (!document.getElementById('projectorOverlay')) { clearInterval(interval); return; } renderProjector(); }, 5000);
+    }
+
+    function renderProjector() {
+        const top5 = [...roster].sort((a, b) => b.xp - a.xp).slice(0, 5);
+        const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+        const rankEl = document.getElementById('projRanking');
+        if (rankEl) rankEl.innerHTML = top5.map((s, i) => `<div class="proj-row"><span class="proj-rank">${medals[i]}</span><span class="proj-name">${esc(s.nickname || '(sem apelido)')}</span><span class="proj-stars">★${s.totalStars}</span><span class="proj-xp">⚡${s.xp}</span></div>`).join('');
+        const total = roster.reduce((a, s) => a + s.phases, 0);
+        const avgPhases = roster.length ? Math.round(total / roster.length) : 0;
+        const avgStars = roster.length ? Math.round(roster.reduce((a, s) => a + s.totalStars, 0) / roster.length) : 0;
+        const statsEl = document.getElementById('projStats');
+        if (statsEl) statsEl.innerHTML = `<div><b>${roster.length}</b>alunos</div><div><b>${avgPhases}</b>média de fases</div><div><b>${avgStars}★</b>média de estrelas</div><div><b>${total}</b>fases no total</div>`;
+    }
+
+    async function sendClassMessage() {
+        const msg = document.getElementById('classMessageInput')?.value.trim();
+        if (!msg) return;
+        const code = document.getElementById('classCodeDisplay')?.textContent || currentClassCode;
+        try {
+            await sb.from('class_messages').insert({ class_code: code, message: msg, teacher_note: true, created_at: new Date().toISOString() });
+            document.getElementById('classMessageInput').value = '';
+            toast('Mensagem enviada!', 'success');
+        } catch(e) { toast('Erro ao enviar: ' + e.message, 'error'); }
+    }
+
+    function renderRegionAnalysis() {
+        const analysisEl = document.getElementById('regionAnalysis');
+        if (!analysisEl || !roster.length) return;
+        const REGION_NAMES = ['', 'Vila dos Números', 'Bosque das Operações', 'Vale das Tabuadas', 'Caverna das Frações', 'Lago dos Decimais', 'Montanha dos Inteiros', 'Deserto das Equações', 'Templo das Potências', 'Cidadela do Mestre'];
+        const regionData = Array.from({length: 9}, (_, i) => {
+            const regId = i + 1;
+            const regionStart = (regId - 1) * 20 + 1;
+            const regionEnd = regId === 9 ? 181 : regId * 20;
+            const students = roster.filter(s => { const starsObj = s.rawStars || {}; return Object.keys(starsObj).some(id => { const phaseId = parseInt(id); return phaseId >= regionStart && phaseId <= regionEnd; }); }).length;
+            return { id: regId, name: REGION_NAMES[regId], started: students, total: roster.length };
+        });
+        analysisEl.innerHTML = `<h3 style="margin-bottom:.75rem">📊 Alcance por região</h3>` + regionData.map(r => { const pct = r.total ? Math.round(r.started / r.total * 100) : 0; const color = pct >= 70 ? '#3fb950' : pct >= 40 ? '#d29922' : '#f85149'; return `<div style="margin-bottom:.5rem"><div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:.2rem"><span>${esc(r.name)}</span><span style="color:${color}">${r.started}/${r.total} alunos (${pct}%)</span></div><div style="height:6px;background:#161b22;border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:width .4s"></div></div></div>`; }).join('');
+    }
+</script>
+</div>
+<script>
+(function(){var p=new URLSearchParams(location.search);if(p.get('view')==='teacher'){var t=document.getElementById('teacherPage');if(t)t.style.display='';['loader','welcome','onboarding','app'].forEach(function(id){var el=document.getElementById(id);if(el)el.style.display='none';});}})();
+</script>
+</body>
+</html>
