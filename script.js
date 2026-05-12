@@ -755,29 +755,38 @@ const g_ratioBasic = () => Q(5, () => {
 /* ── 7º ano — Deserto das Equações ─────────────────────────────────────── */
 const g_eq2sides = () => Q(5, () => {
     const x = rand(1, 10), a = rand(2, 6), b = rand(2, 6), c = rand(1, 10);
-    // ax + c = bx + (ax+c - bx)  => valor à direita
-    if (a === b) return { stem: 'Resolva: 2x + 3 = x + 7. x = ?', ...makeChoice(4, [3, 5, 6]) };
+    if (a === b) return { stem: 'Resolva: 2x + 3 = x + 7. x = ?', ...makeChoice(4, [3, 5, 6]),
+        explain: 'Isole o x: passe os termos com x para um lado e os números para o outro. <b>2x − x = 7 − 3 → x = 4.</b> Regra: ao mudar de lado, inverta o sinal.' };
     const left = a * x + c;
     const rightConst = left - b * x;
-    return { stem: `Resolva: <b>${a}x + ${c} = ${b}x + ${rightConst}</b>. x = ?`, ...makeChoice(x, nearDistr(x, 4)) };
+    const diff = a - b;
+    return { stem: `Resolva: <b>${a}x + ${c} = ${b}x + ${rightConst}</b>. x = ?`, ...makeChoice(x, nearDistr(x, 4)),
+        explain: `Agrupe os x: <b>${a}x − ${b}x = ${rightConst} − ${c} → ${diff}x = ${diff * x} → x = ${x}.</b> Ao passar um termo para o outro lado, o sinal sempre troca.` };
 });
 
 const g_eqParen = () => Q(5, () => {
     const items = [
-        { s: '2(x + 3) = 14', r: 4 }, { s: '3(x − 1) = 12', r: 5 }, { s: '2(x − 4) = 6', r: 7 },
-        { s: '5(x + 2) = 35', r: 5 }, { s: '4(x + 1) = 20', r: 4 }, { s: '3(2x + 1) = 21', r: 3 },
+        { s: '2(x + 3) = 14', r: 4, e: '<b>Distributiva:</b> 2x + 6 = 14 → 2x = 8 → x = 4.' },
+        { s: '3(x − 1) = 12', r: 5, e: '<b>Distributiva:</b> 3x − 3 = 12 → 3x = 15 → x = 5.' },
+        { s: '2(x − 4) = 6', r: 7, e: '<b>Distributiva:</b> 2x − 8 = 6 → 2x = 14 → x = 7.' },
+        { s: '5(x + 2) = 35', r: 5, e: '<b>Distributiva:</b> 5x + 10 = 35 → 5x = 25 → x = 5.' },
+        { s: '4(x + 1) = 20', r: 4, e: '<b>Distributiva:</b> 4x + 4 = 20 → 4x = 16 → x = 4.' },
+        { s: '3(2x + 1) = 21', r: 3, e: '<b>Distributiva:</b> 6x + 3 = 21 → 6x = 18 → x = 3.' },
     ];
     const it = pick(items);
-    return { stem: `Resolva: <b>${it.s}</b>. x = ?`, ...makeChoice(it.r, nearDistr(it.r, 4)) };
+    return { stem: `Resolva: <b>${it.s}</b>. x = ?`, ...makeChoice(it.r, nearDistr(it.r, 4)), explain: it.e };
 });
 
 const g_eqFrac = () => Q(5, () => {
     const items = [
-        { s: 'x/2 + 1 = 4', r: 6 }, { s: 'x/3 − 2 = 1', r: 9 }, { s: '2x/3 = 6', r: 9 },
-        { s: 'x/4 = 3', r: 12 }, { s: 'x/5 + 1 = 3', r: 10 },
+        { s: 'x/2 + 1 = 4', r: 6,  e: 'Multiplique tudo por 2 (MMC): x + 2 = 8 → x = 6.' },
+        { s: 'x/3 − 2 = 1', r: 9,  e: 'Multiplique tudo por 3: x − 6 = 3 → x = 9.' },
+        { s: '2x/3 = 6',    r: 9,  e: 'Multiplique por 3: 2x = 18 → x = 9. Ou: x = 6 × 3/2 = 9.' },
+        { s: 'x/4 = 3',     r: 12, e: 'Multiplique por 4: x = 12. Direto: x = 3 × 4.' },
+        { s: 'x/5 + 1 = 3', r: 10, e: 'Multiplique por 5: x + 5 = 15 → x = 10.' },
     ];
     const it = pick(items);
-    return { stem: `Resolva: <b>${it.s}</b>. x = ?`, ...makeChoice(it.r, nearDistr(it.r, 4)) };
+    return { stem: `Resolva: <b>${it.s}</b>. x = ?`, ...makeChoice(it.r, nearDistr(it.r, 4)), explain: it.e };
 });
 
 const g_proportion = () => Q(5, () => {
@@ -804,27 +813,31 @@ const g_rule3 = () => Q(5, () => {
 
 const g_rule3Inv = () => Q(5, () => {
     const items = [
-        { s: '6 operários fazem obra em 10 dias. Quantos dias para 12 operários?', r: 5 },
-        { s: '4 torneiras enchem tanque em 6h. Tempo com 8 torneiras?', r: 3 },
-        { s: '3 máquinas em 8h. Tempo com 6 máquinas?', r: 4 },
-        { s: '5 pintores em 12 dias. Tempo com 10 pintores?', r: 6 },
+        { s: '6 operários fazem obra em 10 dias. Quantos dias para 12 operários?', r: 5,  e: 'Inversa: mais operários → menos dias. Produto constante: 6×10 = 12×x → x = 60/12 = <b>5 dias</b>.' },
+        { s: '4 torneiras enchem tanque em 6h. Tempo com 8 torneiras?', r: 3,             e: 'Inversa: mais torneiras → menos tempo. 4×6 = 8×x → x = 24/8 = <b>3 horas</b>.' },
+        { s: '3 máquinas em 8h. Tempo com 6 máquinas?', r: 4,                            e: 'Inversa: mais máquinas → menos tempo. 3×8 = 6×x → x = 24/6 = <b>4 horas</b>.' },
+        { s: '5 pintores em 12 dias. Tempo com 10 pintores?', r: 6,                       e: 'Inversa: mais pintores → menos dias. 5×12 = 10×x → x = 60/10 = <b>6 dias</b>.' },
     ];
     const it = pick(items);
-    return { stem: `<b>Inversa:</b> ${it.s}`, ...makeChoice(it.r, nearDistr(it.r, 4)) };
+    return { stem: `<b>Inversa:</b> ${it.s}`, ...makeChoice(it.r, nearDistr(it.r, 4)), explain: it.e };
 });
 
 const g_discount = () => Q(5, () => {
     const v = pick([100, 150, 200, 250, 300, 500]);
     const p = pick([10, 15, 20, 25, 30]);
     const c = v - (v * p) / 100;
-    return { stem: `Produto de R$ ${v} com desconto de ${p}%. Valor final?`, ...makeChoice(`R$ ${c}`, nearDistr(c, 30).map(x => `R$ ${x}`)) };
+    const fator = (1 - p / 100);
+    return { stem: `Produto de R$ ${v} com desconto de ${p}%. Valor final?`, ...makeChoice(`R$ ${c}`, nearDistr(c, 30).map(x => `R$ ${x}`)),
+        explain: `Desconto de ${p}%: multiplique pelo fator <b>(1 − ${p}/100) = ${fator}</b>. Cálculo: ${v} × ${fator} = <b>R$ ${c}</b>. Muito cobrado no ENEM em problemas de consumo!` };
 });
 
 const g_increase = () => Q(5, () => {
     const v = pick([100, 200, 300, 400, 500]);
     const p = pick([10, 15, 20, 25, 30, 50]);
     const c = v + (v * p) / 100;
-    return { stem: `R$ ${v} com aumento de ${p}%. Valor final?`, ...makeChoice(`R$ ${c}`, nearDistr(c, 40).map(x => `R$ ${x}`)) };
+    const fator = (1 + p / 100);
+    return { stem: `R$ ${v} com aumento de ${p}%. Valor final?`, ...makeChoice(`R$ ${c}`, nearDistr(c, 40).map(x => `R$ ${x}`)),
+        explain: `Aumento de ${p}%: multiplique pelo fator <b>(1 + ${p}/100) = ${fator}</b>. Cálculo: ${v} × ${fator} = <b>R$ ${c}</b>. Encadeando aumentos/descontos: multiplique os fatores em sequência.` };
 });
 
 const g_interestSimple = () => Q(5, () => {
@@ -832,7 +845,8 @@ const g_interestSimple = () => Q(5, () => {
     const i = pick([1, 2, 5, 10]);
     const t = pick([3, 6, 12]);
     const j = (c * i * t) / 100;
-    return { stem: `Capital R$ ${c}, taxa ${i}% ao mês, ${t} meses. Juros simples = ?`, ...makeChoice(`R$ ${j}`, nearDistr(j, 100).map(x => `R$ ${x}`)) };
+    return { stem: `Capital R$ ${c}, taxa ${i}% ao mês, ${t} meses. Juros simples = ?`, ...makeChoice(`R$ ${j}`, nearDistr(j, 100).map(x => `R$ ${x}`)),
+        explain: `Juros Simples: <b>J = C × i × t</b> = ${c} × ${i}/100 × ${t} = <b>R$ ${j}</b>. O montante total seria M = C + J = R$ ${c + j}. Diferente dos juros compostos (capitalização), aqui os juros não se acumulam sobre si mesmos.` };
 });
 
 const g_angles = () => Q(5, () => {
@@ -891,47 +905,55 @@ const g_circle = () => Q(5, () => {
 const g_power = () => Q(5, () => {
     const b = rand(2, 9), e = rand(2, 4);
     const c = Math.pow(b, e);
-    return { stem: `<b>${b}<sup>${e}</sup></b> = ?`, ...makeChoice(c, nearDistr(c, Math.max(5, c / 4))) };
+    const steps = Array.from({ length: e }, () => b).join(' × ');
+    return { stem: `<b>${b}<sup>${e}</sup></b> = ?`, ...makeChoice(c, nearDistr(c, Math.max(5, c / 4))),
+        explain: `Potenciação: <b>${b}${e > 1 ? `<sup>${e}</sup>` : ''}</b> = ${steps} = <b>${c}</b>. O expoente indica quantas vezes a base é multiplicada por ela mesma.` };
 });
 
 const g_powerProp = () => Q(5, () => {
     const items = [
-        { s: 'a³ × a⁵ = ?', r: 'a⁸', d: ['a²', 'a¹⁵', '2a⁸'] },
-        { s: 'x⁷ ÷ x³ = ?', r: 'x⁴', d: ['x¹⁰', 'x²¹', 'x'] },
-        { s: '(a²)³ = ?', r: 'a⁶', d: ['a⁵', 'a²³', 'a'] },
-        { s: 'x⁰ = ?', r: '1', d: ['0', 'x', 'indefinido'] },
-        { s: '2³ × 2⁴ = ?', r: '2⁷', d: ['2¹²', '4⁷', '2¹'] },
-        { s: '(2³)² = ?', r: '2⁶', d: ['2⁵', '4³', '6'] },
-        { s: 'a⁴ × a² = ?', r: 'a⁶', d: ['a⁸', 'a²', '2a⁶'] },
-        { s: 'b⁵ ÷ b² = ?', r: 'b³', d: ['b⁷', 'b¹⁰', 'b²·⁵'] },
-        { s: '(x³)² = ?', r: 'x⁶', d: ['x⁵', 'x⁹', 'x'] },
-        { s: '5⁰ = ?', r: '1', d: ['0', '5', '50'] },
-        { s: '3² × 3³ = ?', r: '3⁵', d: ['3⁶', '9⁵', '3¹'] },
-        { s: 'a⁻¹ = ?', r: '1/a', d: ['-a', '0', 'a'] },
-        { s: '(ab)² = ?', r: 'a²b²', d: ['ab²', 'a²b', '2ab'] },
-        { s: '10⁻² = ?', r: '0,01', d: ['-100', '100', '-0,01'] },
-        { s: 'a⁵ ÷ a⁵ = ?', r: '1', d: ['0', 'a', 'a¹⁰'] },
+        { s: 'a³ × a⁵ = ?', r: 'a⁸',   d: ['a²', 'a¹⁵', '2a⁸'],   e: '<b>Multiplicação de mesma base:</b> soma os expoentes. a³ × a⁵ = a^(3+5) = <b>a⁸</b>.' },
+        { s: 'x⁷ ÷ x³ = ?', r: 'x⁴',   d: ['x¹⁰', 'x²¹', 'x'],    e: '<b>Divisão de mesma base:</b> subtrai os expoentes. x⁷ ÷ x³ = x^(7−3) = <b>x⁴</b>.' },
+        { s: '(a²)³ = ?',   r: 'a⁶',   d: ['a⁵', 'a²³', 'a'],      e: '<b>Potência de potência:</b> multiplica os expoentes. (a²)³ = a^(2×3) = <b>a⁶</b>.' },
+        { s: 'x⁰ = ?',      r: '1',     d: ['0', 'x', 'indefinido'], e: 'Qualquer base (exceto 0) elevada a <b>zero é igual a 1</b>. x⁰ = 1. Decorre da divisão: xⁿ ÷ xⁿ = x⁰ = 1.' },
+        { s: '2³ × 2⁴ = ?', r: '2⁷',   d: ['2¹²', '4⁷', '2¹'],    e: '<b>Mesma base:</b> soma os expoentes. 2³ × 2⁴ = 2^(3+4) = <b>2⁷</b> = 128.' },
+        { s: '(2³)² = ?',   r: '2⁶',   d: ['2⁵', '4³', '6'],       e: '<b>Potência de potência:</b> (2³)² = 2^(3×2) = <b>2⁶</b> = 64. Nunca some os expoentes aqui!' },
+        { s: 'a⁴ × a² = ?', r: 'a⁶',   d: ['a⁸', 'a²', '2a⁶'],    e: '<b>Multiplicação de mesma base:</b> a⁴ × a² = a^(4+2) = <b>a⁶</b>.' },
+        { s: 'b⁵ ÷ b² = ?', r: 'b³',   d: ['b⁷', 'b¹⁰', 'b²·⁵'],  e: '<b>Divisão de mesma base:</b> b⁵ ÷ b² = b^(5−2) = <b>b³</b>.' },
+        { s: '(x³)² = ?',   r: 'x⁶',   d: ['x⁵', 'x⁹', 'x'],      e: '<b>Potência de potência:</b> (x³)² = x^(3×2) = <b>x⁶</b>.' },
+        { s: '5⁰ = ?',      r: '1',     d: ['0', '5', '50'],         e: '<b>Expoente zero:</b> 5⁰ = 1. Regra geral: a⁰ = 1 para qualquer a ≠ 0.' },
+        { s: '3² × 3³ = ?', r: '3⁵',   d: ['3⁶', '9⁵', '3¹'],     e: '<b>Mesma base:</b> 3² × 3³ = 3^(2+3) = <b>3⁵</b> = 243.' },
+        { s: 'a⁻¹ = ?',     r: '1/a',  d: ['-a', '0', 'a'],         e: '<b>Expoente negativo:</b> a⁻¹ = 1/a. Generalizando: a⁻ⁿ = 1/aⁿ. Ex: 2⁻³ = 1/8.' },
+        { s: '(ab)² = ?',   r: 'a²b²', d: ['ab²', 'a²b', '2ab'],    e: '<b>Potência de produto:</b> (ab)² = a²b². Cada fator recebe o expoente individualmente.' },
+        { s: '10⁻² = ?',    r: '0,01', d: ['-100', '100', '-0,01'],  e: '10⁻² = 1/10² = 1/100 = <b>0,01</b>. Expoente negativo na base 10 gera decimais.' },
+        { s: 'a⁵ ÷ a⁵ = ?', r: '1',    d: ['0', 'a', 'a¹⁰'],        e: 'a⁵ ÷ a⁵ = a^(5−5) = a⁰ = <b>1</b>. Qualquer número dividido por si mesmo é 1.' },
     ];
     const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
 });
 
 const g_sciNotation = () => Q(5, () => {
     const items = [
-        { s: '500 em notação científica:', r: '5 × 10²', d: ['5 × 10³', '50 × 10', '5,0 × 10⁻²'] },
-        { s: '3.000.000 em notação científica:', r: '3 × 10⁶', d: ['3 × 10⁵', '30 × 10⁵', '3 × 10⁷'] },
-        { s: '0,005 em notação científica:', r: '5 × 10⁻³', d: ['5 × 10³', '0,5 × 10⁻²', '5 × 10⁻²'] },
-        { s: '7,2 × 10² = ?', r: '720', d: ['72', '7200', '0,72'] },
-        { s: '4,5 × 10⁻¹ = ?', r: '0,45', d: ['45', '4,5', '0,045'] },
+        { s: '500 em notação científica:', r: '5 × 10²', d: ['5 × 10³', '50 × 10', '5,0 × 10⁻²'],
+          e: 'Notação científica: <b>a × 10ⁿ</b> onde 1 ≤ a < 10. 500 = 5,00 × 10² (vírgula andou 2 casas para a esquerda).' },
+        { s: '3.000.000 em notação científica:', r: '3 × 10⁶', d: ['3 × 10⁵', '30 × 10⁵', '3 × 10⁷'],
+          e: '3.000.000 = 3 × 10⁶ (6 zeros = expoente 6). Muito usada em Física (distâncias astronômicas, tamanho de átomos).' },
+        { s: '0,005 em notação científica:', r: '5 × 10⁻³', d: ['5 × 10³', '0,5 × 10⁻²', '5 × 10⁻²'],
+          e: '0,005 = 5 × 10⁻³ (vírgula andou 3 casas para a direita → expoente negativo).' },
+        { s: '7,2 × 10² = ?', r: '720', d: ['72', '7200', '0,72'],
+          e: '7,2 × 10² = 7,2 × 100 = <b>720</b>. Expoente positivo → desloque a vírgula para a direita.' },
+        { s: '4,5 × 10⁻¹ = ?', r: '0,45', d: ['45', '4,5', '0,045'],
+          e: '4,5 × 10⁻¹ = 4,5 ÷ 10 = <b>0,45</b>. Expoente negativo → desloque a vírgula para a esquerda.' },
     ];
     const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
 });
 
 const g_sqrt = () => Q(5, () => {
     const r = rand(2, 15);
     const n = r * r;
-    return { stem: `<b>√${n}</b> = ?`, ...makeChoice(r, nearDistr(r, 4)) };
+    return { stem: `<b>√${n}</b> = ?`, ...makeChoice(r, nearDistr(r, 4)),
+        explain: `Raiz quadrada: √${n} = <b>${r}</b> porque ${r}² = ${n}. Para conferir: ${r} × ${r} = ${n}. ✓` };
 });
 
 const g_cubeRoot = () => Q(5, () => {
@@ -985,54 +1007,65 @@ const g_monoMult = () => Q(5, () => {
     return { stem: it.s, ...makeChoice(it.r, it.d) };
 });
 
+const EXPLAIN_SQ_PLUS  = 'Quadrado da soma: <b>(a+b)² = a² + 2ab + b²</b>. O erro mais comum é esquecer o termo do meio <b>2ab</b>. Nunca escreva (a+b)² = a²+b²!';
+const EXPLAIN_SQ_MINUS = 'Quadrado da diferença: <b>(a−b)² = a² − 2ab + b²</b>. Atenção: o último termo <b>+b²</b> é positivo! Só o termo do meio muda de sinal.';
+const EXPLAIN_DIFF_SQ  = 'Diferença de quadrados: <b>(a+b)(a−b) = a² − b²</b>. Reconheça o padrão para fatorar rapidamente. Muito cobrado em vestibulares!';
+
 const g_squarePlus = () => Q(5, () => {
     const items = [
         { s: '(a + b)² = ?', r: 'a² + 2ab + b²', d: ['a² + b²', 'a² − b²', 'a² + ab + b²'] },
-        { s: '(x + 3)² = ?', r: 'x² + 6x + 9', d: ['x² + 9', 'x² − 6x + 9', 'x² + 3x + 9'] },
-        { s: '(2 + y)² = ?', r: 'y² + 4y + 4', d: ['y² + 4', '2y² + 4', '4 + y²'] },
+        { s: '(x + 3)² = ?', r: 'x² + 6x + 9',   d: ['x² + 9', 'x² − 6x + 9', 'x² + 3x + 9'] },
+        { s: '(2 + y)² = ?', r: 'y² + 4y + 4',   d: ['y² + 4', '2y² + 4', '4 + y²'] },
     ];
     const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: EXPLAIN_SQ_PLUS };
 });
 
 const g_squareMinus = () => Q(5, () => {
     const items = [
         { s: '(a − b)² = ?', r: 'a² − 2ab + b²', d: ['a² + b²', 'a² − b²', 'a² + 2ab − b²'] },
-        { s: '(x − 2)² = ?', r: 'x² − 4x + 4', d: ['x² − 4', 'x² + 4x + 4', 'x² − 2x + 4'] },
+        { s: '(x − 2)² = ?', r: 'x² − 4x + 4',   d: ['x² − 4', 'x² + 4x + 4', 'x² − 2x + 4'] },
     ];
     const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: EXPLAIN_SQ_MINUS };
 });
 
 const g_diffSquares = () => Q(5, () => {
     const items = [
-        { s: '(a + b)(a − b) = ?', r: 'a² − b²', d: ['a² + b²', 'a² + 2ab + b²', '(a − b)²'] },
-        { s: '(x + 3)(x − 3) = ?', r: 'x² − 9', d: ['x² + 9', 'x² − 6x + 9', 'x² − 6'] },
-        { s: '(y + 5)(y − 5) = ?', r: 'y² − 25', d: ['y² + 25', '(y − 5)²', 'y² − 10'] },
+        { s: '(a + b)(a − b) = ?', r: 'a² − b²',  d: ['a² + b²', 'a² + 2ab + b²', '(a − b)²'] },
+        { s: '(x + 3)(x − 3) = ?', r: 'x² − 9',   d: ['x² + 9', 'x² − 6x + 9', 'x² − 6'] },
+        { s: '(y + 5)(y − 5) = ?', r: 'y² − 25',  d: ['y² + 25', '(y − 5)²', 'y² − 10'] },
     ];
     const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: EXPLAIN_DIFF_SQ };
 });
 
 const g_factor = () => Q(5, () => {
     const items = [
-        { s: 'Fatore: 2x + 4', r: '2(x + 2)', d: ['x(2 + 4)', '2x · 4', '(x + 2)(x + 2)'] },
-        { s: 'Fatore: 3x² − 6x', r: '3x(x − 2)', d: ['3x² − 6x', 'x(3x − 6)', '3(x² − 2)'] },
-        { s: 'Fatore: 5a + 10', r: '5(a + 2)', d: ['(a + 2)(a + 5)', '5a · 2', 'a(5 + 10)'] },
-        { s: 'Fatore: x² − 9', r: '(x + 3)(x − 3)', d: ['(x − 3)²', '(x + 3)²', 'x(x − 9)'] },
+        { s: 'Fatore: 2x + 4', r: '2(x + 2)', d: ['x(2 + 4)', '2x · 4', '(x + 2)(x + 2)'],
+          e: '<b>Evidenciação:</b> MDC(2x, 4) = 2. Coloque 2 em evidência: 2x+4 = <b>2(x+2)</b>. Confira expandindo: 2·x + 2·2 = 2x+4. ✓' },
+        { s: 'Fatore: 3x² − 6x', r: '3x(x − 2)', d: ['3x² − 6x', 'x(3x − 6)', '3(x² − 2)'],
+          e: '<b>Evidenciação:</b> MDC(3x², 6x) = 3x. Então 3x²−6x = <b>3x(x−2)</b>. Sempre coloque o maior fator comum em evidência.' },
+        { s: 'Fatore: 5a + 10', r: '5(a + 2)', d: ['(a + 2)(a + 5)', '5a · 2', 'a(5 + 10)'],
+          e: '<b>Evidenciação:</b> MDC(5a, 10) = 5. Então 5a+10 = <b>5(a+2)</b>.' },
+        { s: 'Fatore: x² − 9', r: '(x + 3)(x − 3)', d: ['(x − 3)²', '(x + 3)²', 'x(x − 9)'],
+          e: '<b>Diferença de quadrados:</b> x²−9 = x²−3² = <b>(x+3)(x−3)</b>. Reconheça o padrão a²−b² = (a+b)(a−b).' },
     ];
     const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
 });
 
 const g_sysSubst = () => Q(5, () => {
     const items = [
-        { s: '{ x + y = 7 ;  x − y = 1 }', r: 'x=4, y=3', d: ['x=3, y=4', 'x=5, y=2', 'x=6, y=1'] },
-        { s: '{ x + y = 10 ; x − y = 4 }', r: 'x=7, y=3', d: ['x=3, y=7', 'x=6, y=4', 'x=5, y=5'] },
-        { s: '{ 2x + y = 9 ; x + y = 5 }', r: 'x=4, y=1', d: ['x=1, y=4', 'x=3, y=2', 'x=2, y=3'] },
+        { s: '{ x + y = 7 ;  x − y = 1 }', r: 'x=4, y=3', d: ['x=3, y=4', 'x=5, y=2', 'x=6, y=1'],
+          e: '<b>Método da adição:</b> some as equações: 2x = 8 → x = 4. Substitua: 4+y=7 → y=3.' },
+        { s: '{ x + y = 10 ; x − y = 4 }', r: 'x=7, y=3', d: ['x=3, y=7', 'x=6, y=4', 'x=5, y=5'],
+          e: '<b>Método da adição:</b> some: 2x = 14 → x = 7. Substitua: 7+y=10 → y=3.' },
+        { s: '{ 2x + y = 9 ; x + y = 5 }', r: 'x=4, y=1', d: ['x=1, y=4', 'x=3, y=2', 'x=2, y=3'],
+          e: '<b>Subtração:</b> subtraia a 2ª da 1ª: (2x+y)−(x+y) = 9−5 → x=4. Substitua: 4+y=5 → y=1.' },
     ];
     const it = pick(items);
-    return { stem: `Sistema: ${it.s}`, ...makeChoice(it.r, it.d) };
+    return { stem: `Sistema: ${it.s}`, ...makeChoice(it.r, it.d), explain: it.e };
 });
 
 const g_thales = () => Q(5, () => {
@@ -1047,14 +1080,19 @@ const g_thales = () => Q(5, () => {
 /* ── 9º ano — Cidadela do Mestre ───────────────────────────────────────── */
 const g_funcAfim = () => Q(5, () => {
     const items = [
-        { s: 'Em f(x) = 2x + 3, qual o coeficiente angular?', r: 2, d: [3, 5, -2] },
-        { s: 'Em f(x) = 2x + 3, qual o coeficiente linear?', r: 3, d: [2, -3, 0] },
-        { s: 'f(x) = 3x − 6. f(0) = ?', r: -6, d: [0, 3, 6] },
-        { s: 'f(x) = 3x − 6. f(2) = ?', r: 0, d: [6, -6, 12] },
-        { s: 'A função afim tem a forma:', r: 'f(x) = ax + b', d: ['f(x) = ax²', 'f(x) = a/x', 'f(x) = aˣ'] },
+        { s: 'Em f(x) = 2x + 3, qual o coeficiente angular?', r: 2, d: [3, 5, -2],
+          e: 'Em <b>f(x) = ax + b</b>: <b>a</b> é o coeficiente angular (taxa de variação, inclinação da reta). Aqui a=<b>2</b>, b=3.' },
+        { s: 'Em f(x) = 2x + 3, qual o coeficiente linear?', r: 3, d: [2, -3, 0],
+          e: 'Em <b>f(x) = ax + b</b>: <b>b</b> é o coeficiente linear (valor de f quando x=0, onde a reta cruza o eixo y). Aqui b=<b>3</b>.' },
+        { s: 'f(x) = 3x − 6. f(0) = ?', r: -6, d: [0, 3, 6],
+          e: 'Substitua x=0: f(0) = 3(0)−6 = <b>−6</b>. Este é o coeficiente linear — o ponto onde a reta toca o eixo y.' },
+        { s: 'f(x) = 3x − 6. f(2) = ?', r: 0, d: [6, -6, 12],
+          e: 'Substitua x=2: f(2) = 3(2)−6 = 6−6 = <b>0</b>. Quando f(x)=0, x=2 é a raiz (zero) da função afim.' },
+        { s: 'A função afim tem a forma:', r: 'f(x) = ax + b', d: ['f(x) = ax²', 'f(x) = a/x', 'f(x) = aˣ'],
+          e: 'Função afim: <b>f(x) = ax + b</b> (grau 1, gráfico é reta). Não confunda com quadrática (ax²), inversa (a/x) ou exponencial (aˣ).' },
     ];
     const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
 });
 
 const g_funcRoot = () => Q(5, () => {
@@ -1064,59 +1102,76 @@ const g_funcRoot = () => Q(5, () => {
     return { stem: `Raiz de f(x) = ${a}x − ${b}`, ...makeChoice(r, nearDistr(r, 4)) };
 });
 
+const EXPLAIN_FUNC_GRAPH = 'Gráfico de <b>f(x) = ax + b</b> é sempre uma <b>reta</b>. Se a>0 → crescente (sobe da esquerda para direita). Se a<0 → decrescente. Se a=0 → reta horizontal. O gráfico corta o eixo y no ponto (0, b).';
 const g_funcGraph = () => Q(5, () => {
     const items = [
-        { s: 'Gráfico de função afim é:', r: 'uma reta', d: ['parábola', 'hipérbole', 'circunferência'] },
-        { s: 'Quando a > 0, f(x) = ax + b é:', r: 'crescente', d: ['decrescente', 'constante', 'oscilante'] },
-        { s: 'Quando a < 0, f(x) = ax + b é:', r: 'decrescente', d: ['crescente', 'constante', 'paralela ao eixo x'] },
-        { s: 'A reta passa pelo eixo y no ponto:', r: '(0, b)', d: ['(b, 0)', '(0, 0)', '(a, b)'] },
+        { s: 'Gráfico de função afim é:',          r: 'uma reta',   d: ['parábola', 'hipérbole', 'circunferência'] },
+        { s: 'Quando a > 0, f(x) = ax + b é:',     r: 'crescente',  d: ['decrescente', 'constante', 'oscilante'] },
+        { s: 'Quando a < 0, f(x) = ax + b é:',     r: 'decrescente', d: ['crescente', 'constante', 'paralela ao eixo x'] },
+        { s: 'A reta passa pelo eixo y no ponto:',  r: '(0, b)',     d: ['(b, 0)', '(0, 0)', '(a, b)'] },
     ];
     const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: EXPLAIN_FUNC_GRAPH };
 });
 
 const g_bhaskaraDelta = () => Q(5, () => {
     const items = [
-        { s: 'x² − 5x + 6 = 0. Δ = ?', r: 1, d: [25, -1, 11] },
-        { s: 'x² + 2x − 3 = 0. Δ = ?', r: 16, d: [4, -8, 12] },
-        { s: '2x² + 3x − 2 = 0. Δ = ?', r: 25, d: [9, -7, 17] },
-        { s: 'x² − 4x + 4 = 0. Δ = ?', r: 0, d: [16, -16, 8] },
+        { s: 'x² − 5x + 6 = 0. Δ = ?', r: 1, d: [25, -1, 11],
+          e: '<b>Δ = b²−4ac</b> com a=1, b=−5, c=6: Δ = 25−24 = <b>1</b>. Como Δ>0, há duas raízes reais distintas.' },
+        { s: 'x² + 2x − 3 = 0. Δ = ?', r: 16, d: [4, -8, 12],
+          e: 'a=1, b=2, c=−3: <b>Δ = 4−4(1)(−3) = 4+12 = 16</b>. √16=4, logo as raízes são racionais.' },
+        { s: '2x² + 3x − 2 = 0. Δ = ?', r: 25, d: [9, -7, 17],
+          e: 'a=2, b=3, c=−2: <b>Δ = 9−4(2)(−2) = 9+16 = 25</b>. √25=5, raízes racionais.' },
+        { s: 'x² − 4x + 4 = 0. Δ = ?', r: 0, d: [16, -16, 8],
+          e: 'a=1, b=−4, c=4: <b>Δ = 16−16 = 0</b>. Quando Δ=0, há exatamente <b>uma raiz real</b> (raiz dupla): x = −b/2a = 2.' },
     ];
     const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
 });
 
 const g_bhaskaraRoots = () => Q(5, () => {
     const items = [
-        { s: 'x² − 5x + 6 = 0. Raízes?', r: '2 e 3', d: ['1 e 6', '−2 e −3', '5 e 6'] },
-        { s: 'x² − 7x + 12 = 0. Raízes?', r: '3 e 4', d: ['2 e 6', '1 e 12', '−3 e −4'] },
-        { s: 'x² + x − 6 = 0. Raízes?', r: '2 e −3', d: ['−2 e 3', '1 e −6', '6 e −1'] },
-        { s: 'x² − 9 = 0. Raízes?', r: '3 e −3', d: ['9 e −9', '3 e 9', '0 e 9'] },
+        { s: 'x² − 5x + 6 = 0. Raízes?', r: '2 e 3', d: ['1 e 6', '−2 e −3', '5 e 6'],
+          e: 'Δ = 25−24 = 1. <b>x = (5±1)/2</b> → x₁=3, x₂=2. Verificação: soma = 5 = −b/a ✓  produto = 6 = c/a ✓' },
+        { s: 'x² − 7x + 12 = 0. Raízes?', r: '3 e 4', d: ['2 e 6', '1 e 12', '−3 e −4'],
+          e: 'Δ = 49−48 = 1. <b>x = (7±1)/2</b> → x₁=4, x₂=3. Soma=7=−(−7), produto=12. Relações de Girard!' },
+        { s: 'x² + x − 6 = 0. Raízes?', r: '2 e −3', d: ['−2 e 3', '1 e −6', '6 e −1'],
+          e: 'a=1, b=1, c=−6. Δ = 1+24 = 25. <b>x = (−1±5)/2</b> → x₁=2, x₂=−3. Note: b=+1, então −b=−1!' },
+        { s: 'x² − 9 = 0. Raízes?', r: '3 e −3', d: ['9 e −9', '3 e 9', '0 e 9'],
+          e: 'Reconheça: <b>diferença de quadrados!</b> x²−9 = (x+3)(x−3)=0. Logo x=3 ou x=−3. Mais rápido que Bhaskara!' },
     ];
     const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
 });
 
 const g_sumProd = () => Q(5, () => {
     const items = [
-        { s: 'x² − 5x + 6 = 0. Soma das raízes?', r: 5, d: [-5, 6, 1] },
-        { s: 'x² − 5x + 6 = 0. Produto das raízes?', r: 6, d: [5, -6, 1] },
-        { s: 'x² + 3x − 10 = 0. Soma?', r: -3, d: [3, -10, 10] },
-        { s: 'Soma = −b/a, produto = c/a. Em x²+2x−8: soma?', r: -2, d: [2, -8, 8] },
+        { s: 'x² − 5x + 6 = 0. Soma das raízes?', r: 5, d: [-5, 6, 1],
+          e: '<b>Soma = −b/a</b> = −(−5)/1 = <b>5</b>. Confirme: raízes são 2 e 3, soma = 5. ✓' },
+        { s: 'x² − 5x + 6 = 0. Produto das raízes?', r: 6, d: [5, -6, 1],
+          e: '<b>Produto = c/a</b> = 6/1 = <b>6</b>. Confirme: raízes 2 e 3, produto = 6. ✓ Relações de Girard!' },
+        { s: 'x² + 3x − 10 = 0. Soma?', r: -3, d: [3, -10, 10],
+          e: 'a=1, b=3, c=−10. <b>Soma = −b/a = −3/1 = −3</b>. Raízes: x=2 e x=−5, soma=−3. ✓' },
+        { s: 'Soma = −b/a, produto = c/a. Em x²+2x−8: soma?', r: -2, d: [2, -8, 8],
+          e: 'a=1, b=2, c=−8. <b>Soma = −2/1 = −2</b>. Produto = −8. Raízes: x=2 e x=−4, soma=−2. ✓' },
     ];
     const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
 });
 
 const g_vertex = () => Q(5, () => {
     const items = [
-        { s: 'f(x) = x² − 4x + 3. xᵥ = ?', r: 2, d: [-2, 4, 3] },
-        { s: 'f(x) = x² − 6x + 5. xᵥ = ?', r: 3, d: [-3, 6, 5] },
-        { s: 'f(x) = 2x² − 4x. xᵥ = ?', r: 1, d: [-1, 2, 0] },
-        { s: 'Vértice da parábola: xᵥ = ?', r: '−b/(2a)', d: ['−b/a', 'b/(2a)', '−c/a'] },
+        { s: 'f(x) = x² − 4x + 3. xᵥ = ?', r: 2, d: [-2, 4, 3],
+          e: 'Vértice: <b>xᵥ = −b/(2a)</b> = −(−4)/(2·1) = 4/2 = <b>2</b>. Com a>0, é o ponto de mínimo da parábola.' },
+        { s: 'f(x) = x² − 6x + 5. xᵥ = ?', r: 3, d: [-3, 6, 5],
+          e: '<b>xᵥ = −b/(2a)</b> = −(−6)/(2·1) = <b>3</b>. A parábola tem mínimo em x=3, pois a=1>0.' },
+        { s: 'f(x) = 2x² − 4x. xᵥ = ?', r: 1, d: [-1, 2, 0],
+          e: 'a=2, b=−4, c=0. <b>xᵥ = −(−4)/(2·2) = 4/4 = 1</b>. A parábola abre para cima (a>0) com mínimo em x=1.' },
+        { s: 'Vértice da parábola: xᵥ = ?', r: '−b/(2a)', d: ['−b/a', 'b/(2a)', '−c/a'],
+          e: 'Fórmula do vértice: <b>xᵥ = −b/(2a)</b>. O yᵥ = f(xᵥ) = −Δ/(4a). O vértice é máximo se a<0 e mínimo se a>0.' },
     ];
     const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
 });
 
 const g_pythCat = () => Q(5, () => {
@@ -1125,42 +1180,51 @@ const g_pythCat = () => Q(5, () => {
     ];
     const [a, b, c] = pick(items);
     const role = pick(['hip', 'catA', 'catB']);
-    if (role === 'hip') return { stem: `Catetos ${a} e ${b}. Hipotenusa?`, ...makeChoice(c, nearDistr(c, 5)) };
-    if (role === 'catA') return { stem: `Hipotenusa ${c}, um cateto ${b}. Outro cateto?`, ...makeChoice(a, nearDistr(a, 4)) };
-    return { stem: `Hipotenusa ${c}, um cateto ${a}. Outro cateto?`, ...makeChoice(b, nearDistr(b, 5)) };
+    if (role === 'hip') return { stem: `Catetos ${a} e ${b}. Hipotenusa?`, ...makeChoice(c, nearDistr(c, 5)),
+        explain: `<b>Pitágoras: c² = a² + b²</b> = ${a}² + ${b}² = ${a*a} + ${b*b} = ${c*c}. Então c = √${c*c} = <b>${c}</b>. Terna pitagórica: (${a}, ${b}, ${c}).` };
+    if (role === 'catA') return { stem: `Hipotenusa ${c}, um cateto ${b}. Outro cateto?`, ...makeChoice(a, nearDistr(a, 4)),
+        explain: `<b>Pitágoras: a² = c² − b²</b> = ${c}² − ${b}² = ${c*c} − ${b*b} = ${a*a}. Então a = √${a*a} = <b>${a}</b>.` };
+    return { stem: `Hipotenusa ${c}, um cateto ${a}. Outro cateto?`, ...makeChoice(b, nearDistr(b, 5)),
+        explain: `<b>Pitágoras: b² = c² − a²</b> = ${c}² − ${a}² = ${c*c} − ${a*a} = ${b*b}. Então b = √${b*b} = <b>${b}</b>.` };
 });
 
+const EXPLAIN_TRIG_TABLE = 'Tabela notável: <b>30°→1/2 | 45°→√2/2 | 60°→√3/2</b> (para seno). Coseno usa a mesma tabela mas invertida (cos30°=sen60°=√3/2). Mnemônico: <b>1, √2, √3</b> divididos por 2.';
+const EXPLAIN_TRIG_ID = '<b>Identidade fundamental:</b> sen²x + cos²x = 1 (para qualquer x). Decorre do Teorema de Pitágoras no círculo trigonométrico de raio 1.';
 const g_trigSpecial = () => Q(5, () => {
     const items = [
-        { s: 'sen 30° = ?', r: '1/2', d: ['√3/2', '√2/2', '1'] },
-        { s: 'cos 60° = ?', r: '1/2', d: ['√3/2', '√2/2', '1'] },
-        { s: 'sen 45° = ?', r: '√2/2', d: ['1/2', '√3/2', '1'] },
-        { s: 'cos 30° = ?', r: '√3/2', d: ['1/2', '√2/2', '0'] },
-        { s: 'tg 45° = ?', r: '1', d: ['0', '√2', '√3'] },
-        { s: 'sen 90° = ?', r: '1', d: ['0', '1/2', '√3/2'] },
-        { s: 'cos 0° = ?', r: '1', d: ['0', '1/2', '√2/2'] },
-        { s: 'sen 0° = ?', r: '0', d: ['1', '1/2', '√2/2'] },
-        { s: 'cos 90° = ?', r: '0', d: ['1', '1/2', '√3/2'] },
-        { s: 'cos 45° = ?', r: '√2/2', d: ['1/2', '√3/2', '1'] },
-        { s: 'sen 60° = ?', r: '√3/2', d: ['1/2', '√2/2', '1'] },
-        { s: 'tg 30° = ?', r: '√3/3', d: ['1/2', '√3', '√3/2'] },
-        { s: 'tg 60° = ?', r: '√3', d: ['1/2', '√3/2', '1'] },
-        { s: 'sen²x + cos²x = ?', r: '1', d: ['0', 'x', '2'] },
-        { s: 'tg x = sen x / ?', r: 'cos x', d: ['sen x', '1', 'x'] },
+        { s: 'sen 30° = ?', r: '1/2',   d: ['√3/2', '√2/2', '1'],    e: EXPLAIN_TRIG_TABLE },
+        { s: 'cos 60° = ?', r: '1/2',   d: ['√3/2', '√2/2', '1'],    e: EXPLAIN_TRIG_TABLE },
+        { s: 'sen 45° = ?', r: '√2/2',  d: ['1/2', '√3/2', '1'],     e: EXPLAIN_TRIG_TABLE },
+        { s: 'cos 30° = ?', r: '√3/2',  d: ['1/2', '√2/2', '0'],     e: EXPLAIN_TRIG_TABLE },
+        { s: 'tg 45° = ?',  r: '1',     d: ['0', '√2', '√3'],         e: 'tg 45° = sen45°/cos45° = (√2/2)/(√2/2) = <b>1</b>. A tangente de 45° é 1 porque os catetos são iguais.' },
+        { s: 'sen 90° = ?', r: '1',     d: ['0', '1/2', '√3/2'],      e: 'sen 90° = <b>1</b> (máximo). cos 90° = 0. No círculo trig, o ponto é (0, 1).' },
+        { s: 'cos 0° = ?',  r: '1',     d: ['0', '1/2', '√2/2'],      e: 'cos 0° = <b>1</b>. No círculo trigonométrico, o ângulo 0° corresponde ao ponto (1, 0).' },
+        { s: 'sen 0° = ?',  r: '0',     d: ['1', '1/2', '√2/2'],      e: 'sen 0° = <b>0</b>. O seno de 0° é zero porque a altura no círculo trigonométrico é nula.' },
+        { s: 'cos 90° = ?', r: '0',     d: ['1', '1/2', '√3/2'],      e: 'cos 90° = <b>0</b>. No círculo trig, 90° → ponto (0, 1), então a projeção horizontal é zero.' },
+        { s: 'cos 45° = ?', r: '√2/2',  d: ['1/2', '√3/2', '1'],     e: EXPLAIN_TRIG_TABLE },
+        { s: 'sen 60° = ?', r: '√3/2',  d: ['1/2', '√2/2', '1'],     e: EXPLAIN_TRIG_TABLE },
+        { s: 'tg 30° = ?',  r: '√3/3',  d: ['1/2', '√3', '√3/2'],    e: 'tg 30° = sen30°/cos30° = (1/2)/(√3/2) = 1/√3 = <b>√3/3</b> (racionalizando o denominador).' },
+        { s: 'tg 60° = ?',  r: '√3',    d: ['1/2', '√3/2', '1'],     e: 'tg 60° = sen60°/cos60° = (√3/2)/(1/2) = <b>√3</b> ≈ 1,73.' },
+        { s: 'sen²x + cos²x = ?', r: '1', d: ['0', 'x', '2'],        e: EXPLAIN_TRIG_ID },
+        { s: 'tg x = sen x / ?', r: 'cos x', d: ['sen x', '1', 'x'], e: 'Definição: <b>tg x = sen x / cos x</b>. Daí derivam outras identidades como 1 + tg²x = sec²x.' },
     ];
     const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
 });
 
 const g_similar = () => Q(5, () => {
     const items = [
-        { s: 'Triângulos semelhantes têm lados ___:', r: 'proporcionais', d: ['iguais', 'perpendiculares', 'paralelos'] },
-        { s: 'Razão de semelhança 1:2. Áreas?', r: '1:4', d: ['1:2', '2:1', '1:8'] },
-        { s: 'Razão de semelhança 2:3. Áreas?', r: '4:9', d: ['2:3', '6:9', '8:27'] },
-        { s: 'Triângulos semelhantes têm ângulos ___:', r: 'iguais', d: ['proporcionais', 'opostos', 'retos'] },
+        { s: 'Triângulos semelhantes têm lados ___:', r: 'proporcionais', d: ['iguais', 'perpendiculares', 'paralelos'],
+          e: 'Semelhança: mesmos ângulos e lados <b>proporcionais</b> (não iguais). Congruência exige lados iguais. Semelhante ≠ congruente!' },
+        { s: 'Razão de semelhança 1:2. Áreas?', r: '1:4', d: ['1:2', '2:1', '1:8'],
+          e: 'Razão de semelhança k → razão de áreas = <b>k²</b>. Se k=1/2, área = (1/2)² = <b>1:4</b>. Dobrar o lado quadruplica a área!' },
+        { s: 'Razão de semelhança 2:3. Áreas?', r: '4:9', d: ['2:3', '6:9', '8:27'],
+          e: 'k = 2/3 → razão de áreas = k² = <b>(2/3)² = 4/9</b>. Para volumes, seria k³ = 8/27.' },
+        { s: 'Triângulos semelhantes têm ângulos ___:', r: 'iguais', d: ['proporcionais', 'opostos', 'retos'],
+          e: 'Critério AA (ângulo-ângulo): basta dois ângulos iguais para garantir semelhança. Os ângulos são sempre <b>iguais</b>, os lados é que são proporcionais.' },
     ];
     const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
+    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
 });
 
 const g_polygon = () => Q(5, () => {
@@ -1524,7 +1588,14 @@ async function initAuth() {
 /* ─── Desbloqueio e estrelas ───────────────────────────────────────────── */
 function isUnlocked(phaseId) {
     if (phaseId === 1) return true;
-    return Boolean(state.stars[phaseId - 1]);
+    if (state.stars[phaseId - 1]) return true;
+    // Teste de nivelamento: desbloqueia apenas a 1ª fase da região
+    const phase = PHASES.find(p => p.id === phaseId);
+    if (phase) {
+        const firstInRegion = PHASES.find(p => p.region === phase.region);
+        if (firstInRegion?.id === phaseId && state.achievements.includes(`placement_${phase.region}`)) return true;
+    }
+    return false;
 }
 
 function starsFor(phaseId) {
@@ -1537,6 +1608,52 @@ function totalStars() {
 
 function completedCount() {
     return Object.keys(state.stars).length;
+}
+
+/* ─── Teste de nivelamento ─────────────────────────────────────────────── */
+function buildPlacementTest(regionId) {
+    const regionPhases = PHASES.filter(p => p.region === regionId);
+    const picked = shuffle([...regionPhases]).slice(0, Math.min(5, regionPhases.length));
+    const qs = [];
+    picked.forEach(p => { const all = p.gen(); qs.push(...all.slice(0, 2)); });
+    return shuffle(qs).slice(0, 10);
+}
+
+function startPlacementTest(regionId) {
+    const reg = REGIONS.find(r => r.id === regionId);
+    state.currentPhase = { id: `p_${regionId}`, name: `🧪 Teste: ${reg.name}`, region: regionId, isPlacement: true };
+    state.questions    = buildPlacementTest(regionId);
+    state.qIndex       = 0;
+    state.correct      = 0;
+    state.hearts       = 3;
+    state.earnedXp     = 0;
+    state.answered     = false;
+    $('mapView').style.display = 'none';
+    $('phaseView').style.display = '';
+    renderQuestion();
+}
+
+function endPlacementTest() {
+    const regionId = state.currentPhase.region;
+    const reg      = REGIONS.find(r => r.id === regionId);
+    const total    = state.questions.length;
+    const passed   = state.correct / total >= 0.7;
+
+    if (passed && !state.achievements.includes(`placement_${regionId}`)) {
+        state.achievements.push(`placement_${regionId}`);
+        persist();
+        sndUnlock();
+    }
+
+    $('resultStars').innerHTML = passed ? '🎯' : '📚';
+    $('resultMsg').textContent = passed ? `${reg.name} desbloqueada!` : 'Continue estudando';
+    $('resultDetail').innerHTML = passed
+        ? `Você acertou <b>${state.correct}/${total}</b>. Pode começar em <b>${esc(reg.name)}</b>!`
+        : `Você acertou <b>${state.correct}/${total}</b>. Precisa de pelo menos <b>${Math.ceil(total * 0.7)}/${total}</b> para desbloquear esta região.`;
+    $('btnRetry').textContent = 'Repetir teste';
+    $('resultView').style.display = '';
+    $('phaseView').style.display  = 'none';
+    if (passed) setTimeout(() => toast(`🎉 ${reg.name} desbloqueada!`, 'success'), 400);
 }
 
 /* ─── Renderização: header HUD ─────────────────────────────────────────── */
@@ -1556,21 +1673,28 @@ function renderMap() {
         const phases = PHASES.filter(p => p.region === reg.id);
         const total  = phases.length;
         const got    = phases.filter(p => state.stars[p.id]).length;
+        const firstPhaseId  = phases[0].id;
+        const regionLocked  = !isUnlocked(firstPhaseId);
         const wrap = document.createElement('section');
         wrap.className = 'region';
         wrap.style.setProperty('--rcolor', reg.color);
         wrap.innerHTML = `
             <header class="region-head">
                 <div class="region-icon">${reg.icon}</div>
-                <div>
+                <div class="region-info">
                     <h2>${esc(reg.name)} <small>${reg.year}</small></h2>
                     <p>${esc(reg.desc)}</p>
                 </div>
-                <div class="region-progress">${got}/${total}</div>
+                <div class="region-actions">
+                    ${regionLocked ? `<button class="btn-placement" data-region="${reg.id}" title="Responda 10 questões para ver se você já sabe este nível">🧪 Testar nível</button>` : ''}
+                    <div class="region-progress">${got}/${total}</div>
+                </div>
             </header>
             <div class="phases" id="reg-${reg.id}"></div>
         `;
         root.appendChild(wrap);
+        const placementBtn = wrap.querySelector('.btn-placement');
+        if (placementBtn) placementBtn.addEventListener('click', () => startPlacementTest(reg.id));
         const node = wrap.querySelector('.phases');
         phases.forEach((p, idx) => {
             const unlocked = isUnlocked(p.id);
@@ -1608,10 +1732,16 @@ function startPhase(phase) {
 
 function renderQuestion() {
     const q = state.questions[state.qIndex];
-    $('phaseTitle').textContent = `${state.currentPhase.id}. ${state.currentPhase.name}`;
+    const isPlacement = state.currentPhase?.isPlacement;
+    $('phaseTitle').textContent = isPlacement
+        ? state.currentPhase.name
+        : `${state.currentPhase.id}. ${state.currentPhase.name}`;
     $('phaseProg').textContent  = `${state.qIndex + 1} / ${state.questions.length}`;
-    $('hearts').innerHTML       = '❤'.repeat(state.hearts) + '<span class="lost">❤</span>'.repeat(3 - state.hearts);
+    $('hearts').innerHTML       = isPlacement
+        ? '<span class="placement-label">📊 Diagnóstico</span>'
+        : '❤'.repeat(state.hearts) + '<span class="lost">❤</span>'.repeat(3 - state.hearts);
     $('qStem').innerHTML        = q.stem;
+    $('qExplain').style.display = 'none';
     const opts = $('qOpts'); opts.innerHTML = '';
     q.options.forEach((opt, i) => {
         const b = document.createElement('button');
@@ -1628,6 +1758,7 @@ function answer(i) {
     if (state.answered) return;
     state.answered = true;
     const q = state.questions[state.qIndex];
+    const isPlacement = state.currentPhase?.isPlacement;
     const buttons = $('qOpts').querySelectorAll('.opt');
     buttons.forEach((b, idx) => {
         b.disabled = true;
@@ -1636,16 +1767,25 @@ function answer(i) {
     });
     if (i === q.correctIndex) {
         state.correct++;
-        state.earnedXp += 10;
+        if (!isPlacement) state.earnedXp += 10;
         sndCorrect();
         toast('Acertou!', 'success');
     } else {
-        state.hearts--;
         sndWrong();
         toast('Errou.', 'error');
+        if (!isPlacement) {
+            state.hearts--;
+            if (state.hearts <= 0) return setTimeout(() => endPhase(false), 700);
+        }
     }
-    if (state.hearts <= 0) return setTimeout(() => endPhase(false), 700);
-    if (state.qIndex >= state.questions.length - 1) return setTimeout(() => endPhase(true), 700);
+    if (q.explain) {
+        const el = $('qExplain');
+        el.innerHTML = `<div class="q-explain-title">💡 Entendendo o conceito</div>${q.explain}`;
+        el.style.display = '';
+    }
+    if (state.qIndex >= state.questions.length - 1) {
+        return setTimeout(() => isPlacement ? endPlacementTest() : endPhase(true), 700);
+    }
     $('btnNext').style.display = '';
 }
 
@@ -1675,6 +1815,7 @@ function endPhase(completed) {
     persist();
     if (stars > 0) sndStar();
 
+    $('btnRetry').textContent = 'Tentar de novo';
     $('resultStars').innerHTML = '★'.repeat(stars) + '☆'.repeat(3 - stars);
     $('resultMsg').textContent = stars >= 3 ? 'Perfeito!' : stars >= 2 ? 'Muito bem!' : stars >= 1 ? 'Boa!' : 'Tente de novo!';
     $('resultDetail').innerHTML = `
@@ -1698,8 +1839,12 @@ function backToMap() {
 }
 
 function retryPhase() {
-    startPhase(state.currentPhase);
     $('resultView').style.display = 'none';
+    if (state.currentPhase?.isPlacement) {
+        startPlacementTest(state.currentPhase.region);
+    } else {
+        startPhase(state.currentPhase);
+    }
 }
 
 /* ─── Conquistas ───────────────────────────────────────────────────────── */
@@ -1831,7 +1976,12 @@ document.addEventListener('DOMContentLoaded', () => {
     $('btnStart')      .addEventListener('click', startGame);
     $('nickInput')     .addEventListener('keydown', e => e.key === 'Enter' && startGame());
     $('btnNext')       .addEventListener('click', nextQuestion);
-    $('btnBackMap')    .addEventListener('click', () => { if (confirm('Sair da fase? O progresso desta tentativa será perdido.')) backToMap(); });
+    $('btnBackMap')    .addEventListener('click', () => {
+        const msg = state.currentPhase?.isPlacement
+            ? 'Sair do teste de nivelamento? Seu progresso neste teste será perdido.'
+            : 'Sair da fase? O progresso desta tentativa será perdido.';
+        if (confirm(msg)) backToMap();
+    });
     $('btnBackFromRes').addEventListener('click', backToMap);
     $('btnRetry')      .addEventListener('click', retryPhase);
     $('btnMute')       .addEventListener('click', () => {

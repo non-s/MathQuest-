@@ -192,8 +192,12 @@ input { font-family: inherit; }
 .region-head p {
     color: var(--text-dim); font-size: .85rem; margin-top: .15rem;
 }
+.region-info { flex: 1; min-width: 0; }
+.region-actions {
+    display: flex; flex-direction: column; align-items: flex-end; gap: .45rem;
+    flex-shrink: 0;
+}
 .region-progress {
-    margin-left: auto;
     background: var(--bg-soft);
     border: 1px solid var(--rcolor);
     color: var(--rcolor);
@@ -201,6 +205,32 @@ input { font-family: inherit; }
     border-radius: 999px;
     font-weight: 600;
     font-size: .9rem;
+    white-space: nowrap;
+}
+.btn-placement {
+    background: transparent;
+    border: 1px solid var(--rcolor);
+    color: var(--rcolor);
+    border-radius: 999px;
+    padding: .3rem .8rem;
+    font-size: .78rem;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s, transform .12s;
+}
+.btn-placement:hover {
+    background: color-mix(in srgb, var(--rcolor) 15%, transparent);
+    transform: translateY(-1px);
+}
+.placement-label {
+    font-size: .78rem;
+    opacity: .7;
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    padding: .15rem .55rem;
+    border-radius: 999px;
 }
 
 .phases {
@@ -329,6 +359,39 @@ input { font-family: inherit; }
 .opt.correct { background: color-mix(in srgb, var(--success) 18%, transparent); border-color: var(--success); opacity: 1; }
 .opt.wrong   { background: color-mix(in srgb, var(--danger)  18%, transparent); border-color: var(--danger);  opacity: 1; }
 
+.q-explain {
+    margin-top: 1.25rem;
+    padding: 1rem 1.25rem;
+    background: color-mix(in srgb, var(--accent-2) 8%, transparent);
+    border: 1px solid color-mix(in srgb, var(--accent-2) 35%, var(--border));
+    border-radius: 12px;
+    font-size: .9rem;
+    line-height: 1.6;
+    animation: slideUp .25s ease-out;
+    text-align: left;
+}
+.q-explain-title {
+    display: flex; align-items: center; gap: .4rem;
+    font-weight: 700;
+    color: var(--accent-2);
+    margin-bottom: .5rem;
+    font-size: .8rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+}
+.q-explain b { color: var(--text); }
+.q-explain code {
+    font-family: 'Fira Code', monospace;
+    font-size: .85em;
+    background: var(--bg-soft);
+    padding: .1em .35em;
+    border-radius: 4px;
+    color: var(--accent);
+}
+@supports not (color: color-mix(in srgb, red, blue)) {
+    .q-explain { background: rgba(210, 168, 255, .07); border-color: rgba(210, 168, 255, .3); }
+}
+
 .qfoot { margin-top: 1.5rem; }
 
 /* ─── Resultado ──────────────────────────────────────────────────────── */
@@ -427,6 +490,7 @@ input { font-family: inherit; }
  * not—browsers modernos ignoram este bloco.
  * ─────────────────────────────────────────────────────────────── */
 @supports not (color: color-mix(in srgb, red, blue)) {
+    .btn-placement:hover { background: rgba(255, 255, 255, .08); }
     .region {
         background: var(--bg-soft);
         border-color: var(--rcolor);
