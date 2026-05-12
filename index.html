@@ -306,7 +306,7 @@
         </div>
         <div class="t-header-actions">
             <button id="btnNewClass" class="btn-primary" style="width:auto">+ Nova turma</button>
-            <button id="btnLogout" class="btn-secondary" style="width:auto">Sair</button>
+            <button id="t-btnLogout" class="btn-secondary" style="width:auto">Sair</button>
         </div>
     </header>
 
@@ -541,7 +541,7 @@
         }
     });
 
-    $('btnLogout').addEventListener('click', async () => {
+    $('t-btnLogout').addEventListener('click', async () => {
         stopRosterPolling();
         await sb.auth.signOut();
         showLogin();
