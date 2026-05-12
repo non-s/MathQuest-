@@ -62,6 +62,19 @@
             .ob-item-text h3 { font-size: .95rem; }
             .ob-item-text p { font-size: .8rem; }
         }
+        /* Código de turma: input em maiusculas, monoespaçado pra não confundir 0/O */
+        #classCodeInput {
+            font-family: 'Fira Code', monospace;
+            text-transform: uppercase;
+            letter-spacing: .1em;
+        }
+        /* Link discreto pro painel do professor na welcome */
+        .welcome-teacher-link {
+            display: block; margin-top: 1.25rem;
+            color: var(--text-dim); font-size: .8rem;
+            text-decoration: none;
+        }
+        .welcome-teacher-link:hover { color: var(--accent); }
     </style>
 </head>
 <body>
@@ -72,16 +85,18 @@
     <p>Carregando o mundo…</p>
 </div>
 
-<!-- Boas-vindas: pede um apelido -->
+<!-- Boas-vindas: pede um apelido (e código de turma opcional) -->
 <div id="welcome" class="welcome" style="display:none">
     <div class="welcome-card">
         <div class="welcome-logo">∑ MathQuest</div>
         <h1>Bem-vindo, aventureiro!</h1>
         <p class="welcome-sub">Você vai sair do zero até o avançado em matemática. 9 regiões, 181 fases, do 1º ao 9º ano.</p>
         <input id="nickInput" class="field" placeholder="Como devemos te chamar?" maxlength="30" autocomplete="off">
+        <input id="classCodeInput" class="field" placeholder="Código da turma (opcional)" maxlength="10" autocomplete="off">
         <button id="btnStart" class="btn-primary">Começar a jornada</button>
         <p id="welcomeError" class="welcome-error"></p>
-        <p class="welcome-tip">Seu progresso é salvo automaticamente — você pode voltar quando quiser.</p>
+        <p class="welcome-tip">Tem código do(a) professor(a)? Digite aí. Senão, é só seguir.</p>
+        <a href="teacher.html" class="welcome-teacher-link">Sou professor(a) →</a>
     </div>
 </div>
 
@@ -140,6 +155,7 @@
             <div class="stat" title="Fases concluídas"><span>🗺️</span><b id="hudPhases">0/181</b></div>
         </div>
         <div class="hud-right">
+            <button id="btnInstall" class="hud-btn" title="Instalar como app" style="display:none">📲</button>
             <button id="btnAch"  class="hud-btn" title="Conquistas">🏅</button>
             <button id="btnMute" class="hud-btn" title="Som">🔊</button>
         </div>

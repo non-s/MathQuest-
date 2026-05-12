@@ -22,6 +22,7 @@ const state = {
     answered:      false,
     earnedXp:      0,
     muted:         localStorage.getItem('mq_muted') === '1',
+    classCode:     localStorage.getItem('mq_class_code') || '',
 };
 
 /* ─── Utilitários ───────────────────────────────────────────────────────── */
@@ -1731,6 +1732,14 @@ async function startGame() {
     if (!nick) { $('welcomeError').textContent = 'Digite seu nome para começar.'; return; }
     if (nick.length > 30) { $('welcomeError').textContent = 'Nome longo demais (máx. 30).'; return; }
     state.nickname = nick;
+    // Código de turma é opcional. Se digitado, normaliza pra uppercase e tenta entrar.
+    const codeRaw = $('classCodeInput')?.value.trim().toUpperCase() || '';
+    if (codeRaw) {
+        const joined = await joinClass(codeRaw);
+        if (!joined) { return; }  // joinClass já mostrou o erro
+        state.classCode = codeRaw;
+        localStorage.setItem('mq_class_code', codeRaw);
+    }
     persist();
     hideWelcome();
     // Primeiro acesso: mostra tutorial antes do mapa.  Depois disso a flag fica
@@ -1740,6 +1749,35 @@ async function startGame() {
     } else {
         renderMap();
     }
+}
+
+/* ─── Turma (opcional) ─────────────────────────────────────────────────────
+ * Aluno digita o código que o professor passou e vira membro da turma.
+ * Professor então vê o progresso no painel.  Sem código, o jogo funciona
+ * normalmente — só não aparece em nenhum painel.
+ * ───────────────────────────────────────────────────────────────────────── */
+async function joinClass(code) {
+    if (!state.userId) {
+        $('welcomeError').textContent = 'Aguarde a conexão e tente de novo.';
+        return false;
+    }
+    // 1) confere se o código existe (RLS permite SELECT em classes ativas)
+    const { data: cls, error: e1 } = await sb.from('classes')
+        .select('code, name').eq('code', code).eq('active', true).maybeSingle();
+    if (e1 || !cls) {
+        $('welcomeError').textContent = 'Código de turma não encontrado.';
+        return false;
+    }
+    // 2) registra a associação (idempotente por chave primária composta)
+    const { error: e2 } = await sb.from('class_members').upsert({
+        class_code: code, user_id: state.userId,
+    }, { onConflict: 'class_code,user_id' });
+    if (e2) {
+        $('welcomeError').textContent = 'Não consegui entrar na turma: ' + e2.message;
+        return false;
+    }
+    toast(`Entrou na turma "${cls.name}"!`, 'success');
+    return true;
 }
 
 /* ─── Onboarding (primeira visita) ─────────────────────────────────────── */
@@ -1794,6 +1832,28 @@ document.addEventListener('DOMContentLoaded', () => {
         if (n && n.trim()) { state.nickname = n.trim().slice(0, 30); persist(); renderHud(); }
     });
     $('btnOnboardingDone')?.addEventListener('click', finishOnboarding);
+
+    // PWA: prompt de instalação. Browser dispara beforeinstallprompt quando a
+    // página atende aos critérios (HTTPS, manifest, SW). Guardamos o evento e
+    // mostramos um botão no HUD que o aluno pode tocar pra instalar como app.
+    let deferredInstall = null;
+    window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredInstall = e;
+        const btn = $('btnInstall');
+        if (btn) btn.style.display = '';
+    });
+    $('btnInstall')?.addEventListener('click', async () => {
+        if (!deferredInstall) return;
+        deferredInstall.prompt();
+        const { outcome } = await deferredInstall.userChoice;
+        if (outcome === 'accepted') {
+            toast('App instalado! Procure o ícone na tela inicial.', 'success');
+        }
+        deferredInstall = null;
+        $('btnInstall').style.display = 'none';
+    });
+
     // Service Worker
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
     init();
