@@ -149,6 +149,8 @@ input { font-family: inherit; }
     transition: transform .15s, background .15s;
 }
 .hud-btn:hover { background: var(--bg-card); transform: scale(1.05); }
+.hud-btn-exit { color: var(--text-dim); }
+.hud-btn-exit:hover { color: var(--danger); border-color: var(--danger); background: color-mix(in srgb, var(--danger) 10%, var(--bg-card)); }
 
 /* ─── Mapa ─────────────────────────────────────────────────────────── */
 .map-view { padding: 1rem; padding-bottom: 4rem; }

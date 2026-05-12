@@ -1,4 +1,4 @@
-const CACHE = 'mathquest-v3';
+const CACHE = 'mathquest-v4';
 
 // Assets pré-cacheados na instalação.  Caminhos network-first (HTML, script.js,
 // teacher.html) buscam versão fresca a cada visita mas usam estes como
@@ -65,7 +65,7 @@ self.addEventListener('fetch', e => {
 
     // Network-first: páginas e o script que muda a cada deploy.
     const path = url.pathname;
-    if (path.endsWith('/') || path.endsWith('.html') || path.endsWith('/script.js')) {
+    if (path.endsWith('/') || path.endsWith('.html') || path.endsWith('/script.js') || path.endsWith('/style.css')) {
         e.respondWith(networkFirst(req));
         return;
     }
