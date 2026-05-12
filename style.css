@@ -895,3 +895,293 @@ body { font-size: calc(1rem * var(--font-scale, 1)); }
     padding: .5rem; background: var(--accent-2); color: #0d1117;
     border-radius: 8px; font-weight: 600; font-family: inherit; cursor: pointer;
 }
+
+
+/* ─── Teacher panel styles (merged from teacher.html) ─────────────── */
+
+        body { padding: 1rem; max-width: 1100px; margin: 0 auto; }
+        .t-login { max-width: 420px; margin: 4rem auto 0; }
+        .t-login-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 16px; padding: 2.5rem 2rem; text-align: center;
+            box-shadow: var(--shadow);
+        }
+        .t-logo {
+            font-family: 'Fira Code', monospace;
+            font-size: 2rem; font-weight: 700; color: var(--accent);
+            margin-bottom: .5rem;
+        }
+        .t-login-card h1 { font-size: 1.3rem; margin-bottom: 1.5rem; }
+        .t-tabs { display: flex; gap: .5rem; margin-bottom: 1.25rem; justify-content: center; }
+        .t-tabs button {
+            padding: .5rem 1rem; background: var(--bg-soft);
+            border: 1px solid var(--border); border-radius: 8px;
+            color: var(--text-dim); font-size: .9rem;
+        }
+        .t-tabs button.active { background: var(--accent); color: var(--bg); font-weight: 600; }
+        .t-error { color: var(--danger); font-size: .85rem; min-height: 1.2em; margin-top: .5rem; }
+        .t-info { color: var(--text-dim); font-size: .8rem; margin-top: 1rem; line-height: 1.4; }
+
+        .t-header {
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 1.5rem; padding-bottom: 1rem;
+            border-bottom: 1px solid var(--border); gap: 1rem; flex-wrap: wrap;
+        }
+        .t-header h1 { font-size: 1.4rem; }
+        .t-header-email { color: var(--text-dim); font-size: .85rem; }
+        .t-header-actions { display: flex; gap: .5rem; }
+
+        .t-empty { text-align: center; padding: 3rem 1rem; color: var(--text-dim); }
+        .t-empty p { margin-bottom: 1rem; }
+
+        .t-classes-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 1rem; margin-bottom: 2rem;
+        }
+        .t-class-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 1.25rem; position: relative;
+            transition: transform .15s, border-color .15s;
+            text-align: left; font-family: inherit; color: inherit;
+        }
+        .t-class-card:hover { border-color: var(--accent); }
+        .t-class-card-main {
+            cursor: pointer; padding-right: 2rem;
+        }
+        .t-class-card-main:hover { transform: translateY(-1px); }
+        .t-class-delete {
+            position: absolute; top: .5rem; right: .5rem;
+            background: transparent; border: 1px solid transparent;
+            border-radius: 6px; width: 28px; height: 28px;
+            color: var(--text-dim); font-size: 1rem;
+            display: grid; place-items: center;
+            transition: all .15s;
+        }
+        .t-class-delete:hover {
+            background: var(--bg-soft); border-color: var(--danger);
+            color: var(--danger);
+        }
+        .t-class-code {
+            font-family: 'Fira Code', monospace;
+            font-size: 1.05rem; color: var(--accent); margin-bottom: .35rem;
+            letter-spacing: .05em;
+        }
+        .t-class-name { font-size: 1.05rem; font-weight: 500; margin-bottom: .5rem; }
+        .t-class-meta { color: var(--text-dim); font-size: .8rem; }
+        .t-class-students {
+            margin-top: .35rem; font-size: .85rem; color: var(--accent-2);
+            font-weight: 500;
+        }
+
+        .t-roster {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; overflow: hidden;
+        }
+        .t-roster-head {
+            padding: 1rem 1.25rem; display: flex; flex-wrap: wrap; gap: .75rem;
+            justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .t-roster-head h2 { font-size: 1.1rem; }
+        .t-roster-head .meta { color: var(--text-dim); font-size: .8rem; }
+        .t-roster-actions { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+        .t-code-pill {
+            background: var(--bg-soft); border: 1px solid var(--border);
+            color: var(--accent); padding: .35rem .75rem;
+            border-radius: 8px; font-family: 'Fira Code', monospace;
+            font-size: .85rem; cursor: pointer; transition: border-color .15s;
+        }
+        .t-code-pill:hover { border-color: var(--accent); }
+        .t-refresh-btn {
+            background: var(--bg-soft); border: 1px solid var(--border);
+            color: var(--text); padding: .35rem .75rem;
+            border-radius: 8px; font-size: .85rem; cursor: pointer;
+            display: flex; align-items: center; gap: .35rem;
+        }
+        .t-refresh-btn:hover { border-color: var(--accent); }
+        .t-refresh-btn.spinning span { display: inline-block; animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+        .t-last-sync { color: var(--text-dim); font-size: .75rem; }
+
+        .t-table { width: 100%; border-collapse: collapse; }
+        .t-table th, .t-table td {
+            padding: .75rem 1rem; text-align: left;
+            border-bottom: 1px solid var(--border); font-size: .9rem;
+        }
+        .t-table th { color: var(--text-dim); font-weight: 500; font-size: .8rem; text-transform: uppercase; }
+        .t-table tbody tr { cursor: pointer; transition: background .12s; }
+        .t-table tbody tr:hover { background: var(--bg-soft); }
+        .t-table tbody tr:last-child td { border-bottom: none; }
+        .t-table tr.just-arrived { background: color-mix(in srgb, var(--success) 12%, transparent); }
+        .t-stars { color: #f0c419; letter-spacing: .05em; white-space: nowrap; }
+        .t-no-progress { color: var(--text-dim); font-style: italic; }
+
+        .t-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,.6);
+            display: none; align-items: center; justify-content: center;
+            padding: 1rem; z-index: 30;
+        }
+        .t-modal.open { display: flex; }
+        .t-modal-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 1.5rem;
+            max-width: 560px; width: 100%; max-height: 90vh; overflow-y: auto;
+        }
+        .t-modal-head {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 1rem; gap: 1rem;
+        }
+        .t-modal-card h3 { font-size: 1.1rem; }
+        .t-modal-close {
+            background: var(--bg-soft); border: 1px solid var(--border);
+            border-radius: 8px; width: 32px; height: 32px;
+        }
+        .t-confirm-text { margin-bottom: 1rem; color: var(--text-dim); line-height: 1.5; }
+        .t-confirm-text b { color: var(--text); }
+        .t-confirm-actions { display: flex; gap: .5rem; justify-content: flex-end; }
+        .t-confirm-actions button { width: auto; padding: .65rem 1.25rem; }
+        .btn-danger {
+            background: var(--danger); color: white;
+            padding: .65rem 1.25rem; border-radius: 8px; font-weight: 600;
+        }
+        .btn-danger:hover { background: #d63d35; }
+        .btn-danger:disabled { opacity: .5; cursor: not-allowed; }
+
+        .t-drill-section { margin-top: 1rem; }
+        .t-drill-section h4 {
+            font-size: .9rem; margin-bottom: .5rem;
+            color: var(--rcolor, var(--accent));
+        }
+        .t-drill-phases {
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(46px, 1fr));
+            gap: .35rem;
+        }
+        .t-drill-phase {
+            background: var(--bg-soft); border: 1px solid var(--border);
+            border-radius: 6px; padding: .4rem .25rem;
+            text-align: center; font-size: .75rem;
+        }
+        .t-drill-phase .num { font-weight: 600; }
+        .t-drill-phase .stars { color: #f0c419; font-size: .7rem; }
+        .t-drill-phase.done { border-color: var(--success); }
+        .t-drill-phase.locked { opacity: .3; }
+        .t-foot {
+            margin-top: 2.5rem; padding-top: 1.5rem;
+            border-top: 1px solid var(--border);
+            color: var(--text-dim); font-size: .8rem; text-align: center;
+        }
+        .t-foot a { color: var(--text-dim); }
+
+        @media (max-width: 600px) {
+            .t-header { flex-direction: column; align-items: flex-start; }
+            .t-table th:nth-child(4), .t-table td:nth-child(4) { display: none; }
+        }
+
+        /* ── Exportar CSV ─────────────────────────────────────────────────── */
+        .t-export-btn {
+            background: var(--bg-soft); border: 1px solid var(--border);
+            color: var(--text); padding: .35rem .75rem;
+            border-radius: 8px; font-size: .85rem; cursor: pointer;
+            display: flex; align-items: center; gap: .35rem;
+            transition: border-color .15s;
+        }
+        .t-export-btn:hover { border-color: var(--accent); }
+
+        /* ── Contador de turma no topo do roster ─────────────────────────── */
+        .t-roster-stats {
+            font-size: .82rem; color: var(--accent-2);
+            font-weight: 500; margin-top: .25rem;
+        }
+
+        /* ── Alunos travados ──────────────────────────────────────────────── */
+        .t-stuck-section {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 1rem 1.25rem;
+            margin-top: 1rem;
+        }
+        .t-stuck-section h3 {
+            font-size: 1rem; margin-bottom: .65rem;
+            color: var(--warning, #f0a419);
+        }
+        .t-stuck-list { list-style: none; padding: 0; margin: 0; }
+        .t-stuck-list li {
+            padding: .4rem 0; border-bottom: 1px solid var(--border);
+            font-size: .88rem; display: flex; justify-content: space-between;
+        }
+        .t-stuck-list li:last-child { border-bottom: none; }
+        .t-stuck-list .days { color: var(--danger); font-weight: 600; }
+        .t-stuck-ok { color: var(--success, #7dd3a8); font-size: .88rem; }
+
+        /* ── Gráfico de barras ─────────────────────────────────────────────── */
+        .t-chart-section {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 1rem 1.25rem;
+            margin-top: 1rem;
+        }
+        .t-chart-section h3 { font-size: 1rem; margin-bottom: .75rem; }
+        .t-bar-chart { display: flex; flex-direction: column; gap: .45rem; }
+        .t-bar-row { display: flex; align-items: center; gap: .6rem; font-size: .82rem; }
+        .t-bar-label { width: 110px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--text-dim); flex-shrink: 0; }
+        .t-bar-wrap { flex: 1; background: var(--bg-soft); border-radius: 4px; height: 18px; overflow: hidden; }
+        .t-bar-fill { height: 100%; border-radius: 4px; transition: width .4s ease; }
+        .t-bar-val { width: 48px; text-align: right; color: var(--text-dim); flex-shrink: 0; }
+
+        /* ── Desbloquear região (dentro do modal do aluno) ─────────────────── */
+        .t-unlock-row {
+            display: flex; gap: .5rem; align-items: center;
+            margin-top: 1rem; padding-top: 1rem;
+            border-top: 1px solid var(--border); flex-wrap: wrap;
+        }
+        .t-unlock-row label { font-size: .85rem; color: var(--text-dim); }
+        .t-unlock-row select {
+            padding: .35rem .6rem; border-radius: 8px;
+            border: 1px solid var(--border); background: var(--bg-soft);
+            color: var(--text); font-size: .85rem; font-family: inherit;
+        }
+        .t-unlock-btn {
+            background: var(--accent); color: var(--bg);
+            border: none; border-radius: 8px; padding: .35rem .85rem;
+            font-size: .85rem; font-weight: 600; cursor: pointer;
+            transition: opacity .15s;
+        }
+        .t-unlock-btn:hover { opacity: .85; }
+        .t-unlock-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+        /* ── Modo Projetor ─────────────────────────────────────────────────── */
+        .projector-overlay {
+            position: fixed; inset: 0; background: #0d1117;
+            z-index: 1000; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 2rem;
+            padding: 2rem;
+        }
+        .projector-title { font-size: 3rem; font-weight: 700; color: #f0883e; }
+        .projector-ranking { width: 100%; max-width: 700px; display: grid; gap: 1rem; }
+        .proj-row {
+            display: flex; align-items: center; gap: 1rem;
+            background: #161b22; border-radius: 12px; padding: 1rem 1.5rem;
+        }
+        .proj-rank { font-size: 2rem; width: 50px; }
+        .proj-name { flex: 1; font-size: 1.8rem; font-weight: 600; color: #e6edf3; }
+        .proj-xp { font-size: 1.5rem; color: #f0883e; font-weight: 700; }
+        .proj-stars { font-size: 1.3rem; color: #f0c419; }
+        .projector-stats {
+            display: flex; gap: 3rem; color: #8b949e;
+            font-size: 1.4rem; text-align: center;
+        }
+        .projector-stats b { display: block; font-size: 2.5rem; color: #e6edf3; }
+        .proj-close {
+            position: fixed; top: 1rem; right: 1rem;
+            background: #30363d; color: #e6edf3; border: none;
+            border-radius: 50%; width: 48px; height: 48px;
+            font-size: 1.3rem; cursor: pointer;
+        }
+
+        /* ── Mensagem para a turma ─────────────────────────────────────────── */
+        .message-section {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 1rem 1.25rem;
+            margin-top: 1rem;
+        }
+        .message-section h3 { font-size: 1rem; margin-bottom: .25rem; }
+    
