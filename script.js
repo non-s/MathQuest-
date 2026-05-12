@@ -1463,7 +1463,7 @@ function loadLocal() {
 async function saveRemote() {
     if (!state.userId) return;
     try {
-        await sb.from('mathquest_progress').upsert({
+        const { error } = await sb.from('mathquest_progress').upsert({
             user_id:      state.userId,
             nickname:     state.nickname,
             xp:           state.xp,
@@ -1471,7 +1471,15 @@ async function saveRemote() {
             achievements: state.achievements,
             updated_at:   new Date().toISOString(),
         });
-    } catch (e) { /* offline: ok, vai sincronizar depois */ }
+        if (error) {
+            // Falha de RLS / schema / etc. precisa aparecer no console pro professor
+            // conseguir diagnosticar; antes era engolida silenciosamente.
+            console.warn('[mathquest] saveRemote falhou:', error.message, error);
+        }
+    } catch (e) {
+        // Sem rede: cache local cobre, sincroniza depois.
+        console.warn('[mathquest] saveRemote offline:', e?.message || e);
+    }
 }
 
 async function loadRemote() {
@@ -1488,6 +1496,10 @@ async function loadRemote() {
 }
 
 const persist = () => { saveLocal(); saveRemote(); };
+// Variante que espera o write remoto terminar.  Usada quando precisamos
+// garantir que o servidor tem a linha (ex: antes de o aluno entrar numa
+// turma, pra que o professor já veja o apelido em vez de "entrou agora").
+const persistAwait = async () => { saveLocal(); await saveRemote(); };
 
 /* ─── Auth anônima ─────────────────────────────────────────────────────── */
 async function initAuth() {
@@ -1735,12 +1747,17 @@ async function startGame() {
     // Código de turma é opcional. Se digitado, normaliza pra uppercase e tenta entrar.
     const codeRaw = $('classCodeInput')?.value.trim().toUpperCase() || '';
     if (codeRaw) {
+        // Persiste o apelido NO BANCO antes de entrar na turma, pra que o
+        // professor já veja o aluno com nome no roster (em vez de "entrou
+        // agora" sem identificação).
+        await persistAwait();
         const joined = await joinClass(codeRaw);
         if (!joined) { return; }  // joinClass já mostrou o erro
         state.classCode = codeRaw;
         localStorage.setItem('mq_class_code', codeRaw);
+    } else {
+        persist();
     }
-    persist();
     hideWelcome();
     // Primeiro acesso: mostra tutorial antes do mapa.  Depois disso a flag fica
     // em localStorage e o aluno vai direto pro mapa nas próximas visitas.
