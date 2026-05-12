@@ -458,24 +458,6 @@
     /* ─── Configuração ─────────────────────────────────────────────────── */
     const ROSTER_REFRESH_MS = 5000;  // auto-refresh do roster a cada 5s enquanto aberto
 
-    /* ─── Regiões (espelha do script.js para o drill-down) ─────────────── */
-    const REGIONS = [
-        { id: 1, name: 'Vila dos Números', range: [1, 20], color: '#7dd3a8' },
-        { id: 2, name: 'Bosque das Operações', range: [21, 40], color: '#69b8e5' },
-        { id: 3, name: 'Vale das Tabuadas', range: [41, 60], color: '#f0c75e' },
-        { id: 4, name: 'Caverna das Frações', range: [61, 80], color: '#e88c4a' },
-        { id: 5, name: 'Lago dos Decimais', range: [81, 100], color: '#5fc8c8' },
-        { id: 6, name: 'Montanha dos Inteiros', range: [101, 120], color: '#a78bdc' },
-        { id: 7, name: 'Deserto das Equações', range: [121, 140], color: '#c89669' },
-        { id: 8, name: 'Templo das Potências', range: [141, 160], color: '#e26d6d' },
-        { id: 9, name: 'Cidadela do Mestre', range: [161, 181], color: '#f0c419' },
-    ];
-
-    /* ─── Helpers ──────────────────────────────────────────────────────── */
-    const $ = id => document.getElementById(id);
-    const esc = s => String(s ?? '')
-        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
     let toastTimer;
     function toast(msg, type = 'info') {
