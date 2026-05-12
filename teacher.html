@@ -52,11 +52,27 @@
         }
         .t-class-card {
             background: var(--bg-card); border: 1px solid var(--border);
-            border-radius: 12px; padding: 1.25rem; cursor: pointer;
+            border-radius: 12px; padding: 1.25rem; position: relative;
             transition: transform .15s, border-color .15s;
             text-align: left; font-family: inherit; color: inherit;
         }
-        .t-class-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+        .t-class-card:hover { border-color: var(--accent); }
+        .t-class-card-main {
+            cursor: pointer; padding-right: 2rem;
+        }
+        .t-class-card-main:hover { transform: translateY(-1px); }
+        .t-class-delete {
+            position: absolute; top: .5rem; right: .5rem;
+            background: transparent; border: 1px solid transparent;
+            border-radius: 6px; width: 28px; height: 28px;
+            color: var(--text-dim); font-size: 1rem;
+            display: grid; place-items: center;
+            transition: all .15s;
+        }
+        .t-class-delete:hover {
+            background: var(--bg-soft); border-color: var(--danger);
+            color: var(--danger);
+        }
         .t-class-code {
             font-family: 'Fira Code', monospace;
             font-size: 1.05rem; color: var(--accent); margin-bottom: .35rem;
@@ -64,6 +80,10 @@
         }
         .t-class-name { font-size: 1.05rem; font-weight: 500; margin-bottom: .5rem; }
         .t-class-meta { color: var(--text-dim); font-size: .8rem; }
+        .t-class-students {
+            margin-top: .35rem; font-size: .85rem; color: var(--accent-2);
+            font-weight: 500;
+        }
 
         .t-roster {
             background: var(--bg-card); border: 1px solid var(--border);
@@ -76,6 +96,7 @@
         }
         .t-roster-head h2 { font-size: 1.1rem; }
         .t-roster-head .meta { color: var(--text-dim); font-size: .8rem; }
+        .t-roster-actions { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
         .t-code-pill {
             background: var(--bg-soft); border: 1px solid var(--border);
             color: var(--accent); padding: .35rem .75rem;
@@ -83,6 +104,17 @@
             font-size: .85rem; cursor: pointer; transition: border-color .15s;
         }
         .t-code-pill:hover { border-color: var(--accent); }
+        .t-refresh-btn {
+            background: var(--bg-soft); border: 1px solid var(--border);
+            color: var(--text); padding: .35rem .75rem;
+            border-radius: 8px; font-size: .85rem; cursor: pointer;
+            display: flex; align-items: center; gap: .35rem;
+        }
+        .t-refresh-btn:hover { border-color: var(--accent); }
+        .t-refresh-btn.spinning span { display: inline-block; animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+        .t-last-sync { color: var(--text-dim); font-size: .75rem; }
+
         .t-table { width: 100%; border-collapse: collapse; }
         .t-table th, .t-table td {
             padding: .75rem 1rem; text-align: left;
@@ -92,7 +124,9 @@
         .t-table tbody tr { cursor: pointer; transition: background .12s; }
         .t-table tbody tr:hover { background: var(--bg-soft); }
         .t-table tbody tr:last-child td { border-bottom: none; }
+        .t-table tr.just-arrived { background: color-mix(in srgb, var(--success) 12%, transparent); }
         .t-stars { color: #f0c419; letter-spacing: .05em; white-space: nowrap; }
+        .t-no-progress { color: var(--text-dim); font-style: italic; }
 
         .t-modal {
             position: fixed; inset: 0; background: rgba(0,0,0,.6);
@@ -114,6 +148,16 @@
             background: var(--bg-soft); border: 1px solid var(--border);
             border-radius: 8px; width: 32px; height: 32px;
         }
+        .t-confirm-text { margin-bottom: 1rem; color: var(--text-dim); line-height: 1.5; }
+        .t-confirm-text b { color: var(--text); }
+        .t-confirm-actions { display: flex; gap: .5rem; justify-content: flex-end; }
+        .t-confirm-actions button { width: auto; padding: .65rem 1.25rem; }
+        .btn-danger {
+            background: var(--danger); color: white;
+            padding: .65rem 1.25rem; border-radius: 8px; font-weight: 600;
+        }
+        .btn-danger:hover { background: #d63d35; }
+        .btn-danger:disabled { opacity: .5; cursor: not-allowed; }
 
         .t-drill-section { margin-top: 1rem; }
         .t-drill-section h4 {
@@ -196,8 +240,12 @@
                 <div>
                     <h2 id="rosterTitle">Turma</h2>
                     <div id="rosterMeta" class="meta"></div>
+                    <div id="lastSync" class="t-last-sync"></div>
                 </div>
-                <button id="rosterCode" class="t-code-pill" title="Clique para copiar">Código</button>
+                <div class="t-roster-actions">
+                    <button id="btnRefreshRoster" class="t-refresh-btn" title="Atualizar agora"><span>↻</span> Atualizar</button>
+                    <button id="rosterCode" class="t-code-pill" title="Clique para copiar">Código</button>
+                </div>
             </div>
             <table class="t-table">
                 <thead>
@@ -213,7 +261,7 @@
             </table>
             <div id="rosterEmpty" class="t-empty" style="display:none">
                 <p>Nenhum aluno entrou ainda.</p>
-                <p>Passe o código da turma pra eles digitarem na primeira tela do jogo.</p>
+                <p>Passe o código da turma pra eles digitarem na primeira tela do jogo. O painel atualiza sozinho a cada 5 segundos.</p>
             </div>
         </div>
     </div>
@@ -249,6 +297,26 @@
     </div>
 </div>
 
+<!-- Modal: confirmar apagar turma -->
+<div id="deleteClassModal" class="t-modal">
+    <div class="t-modal-card">
+        <div class="t-modal-head">
+            <h3>Apagar turma?</h3>
+            <button class="t-modal-close" data-close="deleteClassModal">✕</button>
+        </div>
+        <p class="t-confirm-text">
+            Você vai apagar a turma <b id="deleteClassName">—</b> (código <b id="deleteClassCode">—</b>).<br><br>
+            Os alunos que estavam vinculados continuam com o próprio progresso, mas você não vai mais ver eles no painel.
+            <b>Esta ação não pode ser desfeita.</b>
+        </p>
+        <div class="t-confirm-actions">
+            <button class="btn-secondary" data-close="deleteClassModal" style="width:auto">Cancelar</button>
+            <button id="btnConfirmDelete" class="btn-danger">Apagar turma</button>
+        </div>
+        <p id="deleteError" class="t-error"></p>
+    </div>
+</div>
+
 <!-- Modal: drill-down do aluno -->
 <div id="studentModal" class="t-modal">
     <div class="t-modal-card">
@@ -270,6 +338,7 @@
     const SUPABASE_URL = 'https://tlxckwsqzuedospqqyfw.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRseGNrd3NxenVlZG9zcHFxeWZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1ODM5NjAsImV4cCI6MjA5NDE1OTk2MH0.NIAf7zjDStOPgt10cza5s_1Kwk6a_uWkkpjLJ4UGKyw';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const ROSTER_REFRESH_MS = 5000;  // auto-refresh do roster a cada 5s enquanto aberto
 
     /* ─── Regiões (espelha do script.js para o drill-down) ─────────────── */
     const REGIONS = [
@@ -300,7 +369,6 @@
     }
 
     function genCode() {
-        // Código curto, 6 chars, sem 0/O/1/I/L pra evitar ambigüidade.
         const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
         let s = '';
         for (let i = 0; i < 6; i++) s += alphabet[Math.floor(Math.random() * alphabet.length)];
@@ -369,6 +437,7 @@
     });
 
     $('btnLogout').addEventListener('click', async () => {
+        stopRosterPolling();
         await sb.auth.signOut();
         showLogin();
     });
@@ -389,36 +458,64 @@
         await loadClasses();
     }
 
-    /* ─── Turmas ───────────────────────────────────────────────────────── */
+    /* ─── Turmas: listar / criar / apagar ─────────────────────────────────── */
+    let currentUser = null;
+
     async function loadClasses() {
+        const { data: { user } } = await sb.auth.getUser();
+        currentUser = user;
+        // Filtro defensivo por teacher_id: a policy "anyone reads active class
+        // by code" deixaria qualquer professor enxergar turmas de outros aqui.
         const { data, error } = await sb.from('classes')
-            .select('*').order('created_at', { ascending: false });
+            .select('*')
+            .eq('teacher_id', user.id)
+            .order('created_at', { ascending: false });
         if (error) {
             toast('Erro carregando turmas: ' + error.message, 'error');
             return;
         }
-        renderClasses(data || []);
+        // Conta alunos de cada turma pra mostrar no card.
+        const codes = (data || []).map(c => c.code);
+        let counts = {};
+        if (codes.length) {
+            const { data: members } = await sb.from('class_members')
+                .select('class_code').in('class_code', codes);
+            (members || []).forEach(m => { counts[m.class_code] = (counts[m.class_code] || 0) + 1; });
+        }
+        renderClasses(data || [], counts);
     }
 
-    function renderClasses(classes) {
+    function renderClasses(classes, counts) {
         const grid = $('classesGrid');
         grid.innerHTML = '';
         if (!classes.length) {
             $('classesEmpty').style.display = '';
             $('rosterSection').style.display = 'none';
+            stopRosterPolling();
             return;
         }
         $('classesEmpty').style.display = 'none';
         classes.forEach(c => {
-            const btn = document.createElement('button');
-            btn.className = 't-class-card';
-            btn.innerHTML = `
-                <div class="t-class-code">${esc(c.code)}</div>
-                <div class="t-class-name">${esc(c.name)}</div>
-                <div class="t-class-meta">${c.grade ? c.grade + 'º ano' : 'Geral'} · criada em ${new Date(c.created_at).toLocaleDateString('pt-BR')}</div>
+            const card = document.createElement('div');
+            card.className = 't-class-card';
+            const n = counts[c.code] || 0;
+            card.innerHTML = `
+                <button class="t-class-delete" title="Apagar turma" data-code="${esc(c.code)}" data-name="${esc(c.name)}">🗑️</button>
+                <div class="t-class-card-main" data-code="${esc(c.code)}">
+                    <div class="t-class-code">${esc(c.code)}</div>
+                    <div class="t-class-name">${esc(c.name)}</div>
+                    <div class="t-class-meta">${c.grade ? c.grade + 'º ano' : 'Geral'} · criada em ${new Date(c.created_at).toLocaleDateString('pt-BR')}</div>
+                    <div class="t-class-students">${n} aluno${n === 1 ? '' : 's'}</div>
+                </div>
             `;
-            btn.addEventListener('click', () => openRoster(c));
-            grid.appendChild(btn);
+            card.querySelector('.t-class-card-main').addEventListener('click', () => {
+                openRoster(c);
+            });
+            card.querySelector('.t-class-delete').addEventListener('click', e => {
+                e.stopPropagation();
+                askDeleteClass(c);
+            });
+            grid.appendChild(card);
         });
     }
 
@@ -433,25 +530,75 @@
         const name = $('newClassName').value.trim();
         const grade = $('newClassGrade').value ? parseInt($('newClassGrade').value, 10) : null;
         if (!name) { $('newClassError').textContent = 'Dê um nome à turma.'; return; }
-        const code = genCode();
-        const { data: { user } } = await sb.auth.getUser();
-        const { error } = await sb.from('classes').insert({
-            code, teacher_id: user.id, name, grade,
-        });
-        if (error) {
-            $('newClassError').textContent = error.message;
-            return;
+        $('btnCreateClass').disabled = true;
+        try {
+            const code = genCode();
+            const { data: { user } } = await sb.auth.getUser();
+            const { error } = await sb.from('classes').insert({
+                code, teacher_id: user.id, name, grade,
+            });
+            if (error) {
+                $('newClassError').textContent = error.message;
+                return;
+            }
+            $('newClassModal').classList.remove('open');
+            toast('Turma criada — código: ' + code, 'success');
+            await loadClasses();
+        } finally {
+            $('btnCreateClass').disabled = false;
         }
-        $('newClassModal').classList.remove('open');
-        toast('Turma criada — código: ' + code, 'success');
-        await loadClasses();
     });
 
-    /* ─── Roster ───────────────────────────────────────────────────────── */
+    /* ─── Apagar turma ──────────────────────────────────────────────────────── */
+    let pendingDeleteCode = null;
+
+    function askDeleteClass(c) {
+        pendingDeleteCode = c.code;
+        $('deleteClassName').textContent = c.name;
+        $('deleteClassCode').textContent = c.code;
+        $('deleteError').textContent = '';
+        $('deleteClassModal').classList.add('open');
+    }
+
+    $('btnConfirmDelete').addEventListener('click', async () => {
+        if (!pendingDeleteCode) return;
+        $('btnConfirmDelete').disabled = true;
+        $('btnConfirmDelete').textContent = 'Apagando…';
+        try {
+            const { error } = await sb.from('classes')
+                .delete().eq('code', pendingDeleteCode);
+            if (error) {
+                $('deleteError').textContent = error.message;
+                return;
+            }
+            $('deleteClassModal').classList.remove('open');
+            toast('Turma apagada.', 'success');
+            // Se a turma apagada é a aberta no roster, fecha o roster.
+            if (currentClass && currentClass.code === pendingDeleteCode) {
+                stopRosterPolling();
+                $('rosterSection').style.display = 'none';
+                currentClass = null;
+            }
+            pendingDeleteCode = null;
+            await loadClasses();
+        } finally {
+            $('btnConfirmDelete').disabled = false;
+            $('btnConfirmDelete').textContent = 'Apagar turma';
+        }
+    });
+
+    /* ─── Roster com auto-refresh ─────────────────────────────────────────── */
     let currentClass = null;
+    let rosterInterval = null;
+    let lastRosterUserIds = new Set();
+
+    function stopRosterPolling() {
+        if (rosterInterval) { clearInterval(rosterInterval); rosterInterval = null; }
+    }
 
     async function openRoster(c) {
         currentClass = c;
+        lastRosterUserIds = new Set();
         $('rosterTitle').textContent = c.name;
         $('rosterMeta').textContent = (c.grade ? c.grade + 'º ano' : 'Sem série definida')
             + ' · criada em ' + new Date(c.created_at).toLocaleDateString('pt-BR');
@@ -461,12 +608,36 @@
         };
         $('rosterSection').style.display = '';
         $('rosterSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        await loadRoster(c.code);
+        await loadRoster(c.code, { initial: true });
+        // Auto-refresh enquanto este roster está aberto.
+        stopRosterPolling();
+        rosterInterval = setInterval(() => {
+            if (currentClass && currentClass.code === c.code && document.visibilityState === 'visible') {
+                loadRoster(c.code, { silent: true });
+            }
+        }, ROSTER_REFRESH_MS);
     }
 
-    async function loadRoster(code) {
+    $('btnRefreshRoster').addEventListener('click', async () => {
+        if (!currentClass) return;
+        const btn = $('btnRefreshRoster');
+        btn.classList.add('spinning');
+        await loadRoster(currentClass.code, { silent: false });
+        setTimeout(() => btn.classList.remove('spinning'), 300);
+    });
+
+    // Quando a aba volta ao foco, atualiza imediatamente.
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible' && currentClass) {
+            loadRoster(currentClass.code, { silent: true });
+        }
+    });
+
+    async function loadRoster(code, opts = {}) {
         const tbody = $('rosterBody');
-        tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim)">Carregando…</td></tr>';
+        if (opts.initial) {
+            tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim)">Carregando…</td></tr>';
+        }
         const { data: members, error: e1 } = await sb.from('class_members')
             .select('user_id, joined_at').eq('class_code', code);
         if (e1) {
@@ -476,6 +647,7 @@
         if (!members.length) {
             tbody.innerHTML = '';
             $('rosterEmpty').style.display = '';
+            $('lastSync').textContent = 'Atualizado agora';
             return;
         }
         $('rosterEmpty').style.display = 'none';
@@ -492,20 +664,30 @@
             return {
                 user_id: m.user_id,
                 joined_at: m.joined_at,
-                nickname: p.nickname || '(sem apelido)',
+                hasProgress: Boolean(p.user_id),
+                nickname: p.nickname || null,
                 xp: p.xp || 0,
                 stars: p.stars || {},
                 achievements: p.achievements || [],
-                updated_at: p.updated_at,
+                updated_at: p.updated_at || m.joined_at,
             };
         }).sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || ''));
+        const newIds = new Set(userIds);
+        const justArrived = [...newIds].filter(id => !lastRosterUserIds.has(id));
         tbody.innerHTML = '';
         rows.forEach(r => {
             const phases = Object.keys(r.stars).length;
             const totalStars = Object.values(r.stars).reduce((a, b) => a + b, 0);
             const tr = document.createElement('tr');
+            if (justArrived.includes(r.user_id) && lastRosterUserIds.size > 0) {
+                tr.className = 'just-arrived';
+                setTimeout(() => tr.classList.remove('just-arrived'), 4000);
+            }
+            const nickHtml = r.nickname
+                ? `<b>${esc(r.nickname)}</b>`
+                : `<span class="t-no-progress" title="Aluno entrou mas ainda não terminou nenhuma fase">entrou agora</span>`;
             tr.innerHTML = `
-                <td><b>${esc(r.nickname)}</b></td>
+                <td>${nickHtml}</td>
                 <td>${phases}/181</td>
                 <td class="t-stars">★ ${totalStars}</td>
                 <td>${r.xp}</td>
@@ -514,11 +696,21 @@
             tr.addEventListener('click', () => openStudent(r));
             tbody.appendChild(tr);
         });
+        // Avisa o professor se chegou aluno novo (só quando não é o load inicial).
+        if (justArrived.length && lastRosterUserIds.size > 0) {
+            toast(`${justArrived.length} aluno${justArrived.length === 1 ? ' entrou' : 's entraram'} agora!`, 'success');
+        }
+        lastRosterUserIds = newIds;
+        $('lastSync').textContent = 'Atualizado agora';
+        // Marca "atualizado há X" enquanto o próximo poll não chega.
+        clearTimeout($('lastSync')._t);
+        const showAge = (sec) => { $('lastSync').textContent = `Atualizado há ${sec}s`; };
+        $('lastSync')._t = setTimeout(() => showAge(Math.round(ROSTER_REFRESH_MS / 1000 / 2)), 2500);
     }
 
     /* ─── Drill-down do aluno ──────────────────────────────────────────── */
     function openStudent(r) {
-        $('studentName').textContent = r.nickname;
+        $('studentName').textContent = r.nickname || 'Aluno (sem apelido ainda)';
         $('studentSummary').innerHTML = `
             <b>${Object.keys(r.stars).length}</b> fases concluídas ·
             <b>${Object.values(r.stars).reduce((a, b) => a + b, 0)}</b> estrelas ·
@@ -562,9 +754,12 @@
     })();
 
     sb.auth.onAuthStateChange((event, session) => {
-        if (event === 'SIGNED_OUT') showLogin();
+        if (event === 'SIGNED_OUT') { stopRosterPolling(); showLogin(); }
         else if (event === 'SIGNED_IN' && session) showDash();
     });
+
+    // Quando a janela fecha, pára o polling pra não vazar memory.
+    window.addEventListener('beforeunload', stopRosterPolling);
 </script>
 
 </body>
