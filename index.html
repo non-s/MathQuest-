@@ -16,6 +16,53 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Fira+Code:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* Onboarding inline para não conflitar com Wave A no style.css. Refatorar
+           pra style.css em PR de cleanup depois que Wave A mergear. */
+        .onboarding {
+            position: fixed; inset: 0; display: flex;
+            align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #1a2030 0%, #0d1117 100%);
+            padding: 1rem; z-index: 55;
+            overflow-y: auto;
+        }
+        .onboarding-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem 1.75rem;
+            max-width: 520px; width: 100%;
+            box-shadow: var(--shadow);
+        }
+        .ob-title {
+            font-size: 1.5rem; text-align: center; margin-bottom: 1.25rem;
+        }
+        .ob-grid {
+            display: grid; gap: .85rem; margin-bottom: 1.5rem;
+        }
+        .ob-item {
+            display: flex; gap: .85rem; align-items: flex-start;
+            padding: .85rem;
+            background: var(--bg-soft);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+        .ob-emoji { font-size: 1.8rem; flex-shrink: 0; line-height: 1; }
+        .ob-item-text h3 {
+            font-size: 1rem; margin-bottom: .25rem;
+        }
+        .ob-item-text p {
+            font-size: .85rem; color: var(--text-dim); line-height: 1.4; margin: 0;
+        }
+        @media (max-width: 520px) {
+            .onboarding-card { padding: 1.5rem 1rem; }
+            .ob-title { font-size: 1.2rem; }
+            .ob-item { padding: .65rem; }
+            .ob-emoji { font-size: 1.5rem; }
+            .ob-item-text h3 { font-size: .95rem; }
+            .ob-item-text p { font-size: .8rem; }
+        }
+    </style>
 </head>
 <body>
 
@@ -35,6 +82,44 @@
         <button id="btnStart" class="btn-primary">Começar a jornada</button>
         <p id="welcomeError" class="welcome-error"></p>
         <p class="welcome-tip">Seu progresso é salvo automaticamente — você pode voltar quando quiser.</p>
+    </div>
+</div>
+
+<!-- Onboarding: 1ª visita explica regiões / estrelas / vidas -->
+<div id="onboarding" class="onboarding" style="display:none">
+    <div class="onboarding-card">
+        <h2 class="ob-title">Como o jogo funciona</h2>
+        <div class="ob-grid">
+            <div class="ob-item">
+                <div class="ob-emoji">🗺️</div>
+                <div class="ob-item-text">
+                    <h3>9 regiões, 181 fases</h3>
+                    <p>Cada região do mapa é um ano escolar — do 1º ao 9º. Você avança desbloqueando uma fase por vez.</p>
+                </div>
+            </div>
+            <div class="ob-item">
+                <div class="ob-emoji">⭐</div>
+                <div class="ob-item-text">
+                    <h3>Ganhe até 3 estrelas</h3>
+                    <p>Acertar tudo dá 3 estrelas. Pelo menos 1 estrela já desbloqueia a próxima fase. Pode voltar e tentar de novo pra melhorar.</p>
+                </div>
+            </div>
+            <div class="ob-item">
+                <div class="ob-emoji">❤️</div>
+                <div class="ob-item-text">
+                    <h3>Você tem 3 vidas por fase</h3>
+                    <p>Errou 3 vezes? A fase reinicia. Mas pode tentar quantas vezes quiser — ninguém perde nada errando.</p>
+                </div>
+            </div>
+            <div class="ob-item">
+                <div class="ob-emoji">📱</div>
+                <div class="ob-item-text">
+                    <h3>Instale como app</h3>
+                    <p>No celular ou Chromebook, abra o menu do navegador e escolha <b>“Adicionar à tela inicial”</b>. Funciona offline depois da primeira vez.</p>
+                </div>
+            </div>
+        </div>
+        <button id="btnOnboardingDone" class="btn-primary">Bora começar!</button>
     </div>
 </div>
 
