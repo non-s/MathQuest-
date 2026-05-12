@@ -258,6 +258,43 @@
         }
         .t-unlock-btn:hover { opacity: .85; }
         .t-unlock-btn:disabled { opacity: .5; cursor: not-allowed; }
+
+        /* ── Modo Projetor ─────────────────────────────────────────────────── */
+        .projector-overlay {
+            position: fixed; inset: 0; background: #0d1117;
+            z-index: 1000; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 2rem;
+            padding: 2rem;
+        }
+        .projector-title { font-size: 3rem; font-weight: 700; color: #f0883e; }
+        .projector-ranking { width: 100%; max-width: 700px; display: grid; gap: 1rem; }
+        .proj-row {
+            display: flex; align-items: center; gap: 1rem;
+            background: #161b22; border-radius: 12px; padding: 1rem 1.5rem;
+        }
+        .proj-rank { font-size: 2rem; width: 50px; }
+        .proj-name { flex: 1; font-size: 1.8rem; font-weight: 600; color: #e6edf3; }
+        .proj-xp { font-size: 1.5rem; color: #f0883e; font-weight: 700; }
+        .proj-stars { font-size: 1.3rem; color: #f0c419; }
+        .projector-stats {
+            display: flex; gap: 3rem; color: #8b949e;
+            font-size: 1.4rem; text-align: center;
+        }
+        .projector-stats b { display: block; font-size: 2.5rem; color: #e6edf3; }
+        .proj-close {
+            position: fixed; top: 1rem; right: 1rem;
+            background: #30363d; color: #e6edf3; border: none;
+            border-radius: 50%; width: 48px; height: 48px;
+            font-size: 1.3rem; cursor: pointer;
+        }
+
+        /* ── Mensagem para a turma ─────────────────────────────────────────── */
+        .message-section {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 1rem 1.25rem;
+            margin-top: 1rem;
+        }
+        .message-section h3 { font-size: 1rem; margin-bottom: .25rem; }
     </style>
 </head>
 <body>
@@ -314,6 +351,7 @@
                 </div>
                 <div id="rosterStats" class="t-roster-stats"></div>
                 <div class="t-roster-actions">
+                    <button onclick="showProjector()" style="padding:.55rem 1rem;background:#161b22;border:1px solid #30363d;color:#e6edf3;border-radius:8px;cursor:pointer;font-family:inherit">📺 Projetor</button>
                     <button id="btnExportCSV" class="t-export-btn" title="Baixar dados da turma em CSV">📥 Exportar CSV</button>
                     <button id="btnRefreshRoster" class="t-refresh-btn" title="Atualizar agora"><span>↻</span> Atualizar</button>
                     <button id="rosterCode" class="t-code-pill" title="Clique para copiar">Código</button>
@@ -347,6 +385,18 @@
         <div id="chartSection" class="t-chart-section" style="display:none">
             <h3>🏆 Top 10 alunos por XP</h3>
             <div id="barChart" class="t-bar-chart"></div>
+            <div id="regionAnalysis" style="margin-top:1.5rem"></div>
+        </div>
+
+        <!-- Mensagem para a turma -->
+        <div class="message-section">
+            <h3>📢 Mensagem para a turma</h3>
+            <div style="display:flex;gap:.5rem;margin-top:.5rem">
+                <input id="classMessageInput" placeholder="Ex: Estudem a região 3 para amanhã!"
+                       style="flex:1;padding:.65rem;border-radius:8px;border:1px solid #30363d;background:#161b22;color:#e6edf3;font-family:inherit">
+                <button onclick="sendClassMessage()" style="padding:.65rem 1rem;background:#f0883e;color:#0d1117;border-radius:8px;font-weight:600;cursor:pointer;white-space:nowrap">📢 Enviar</button>
+            </div>
+            <p style="color:#8b949e;font-size:.8rem;margin-top:.35rem">Os alunos verão esta mensagem como um aviso quando abrirem o jogo.</p>
         </div>
     </div>
 
@@ -691,6 +741,8 @@
     let rosterInterval = null;
     let lastRosterUserIds = new Set();
     let roster = [];  // cache dos dados carregados, usado pelo CSV e outros módulos
+    let currentClassName = '';
+    let currentClassCode = '';
 
     function stopRosterPolling() {
         if (rosterInterval) { clearInterval(rosterInterval); rosterInterval = null; }
@@ -698,6 +750,8 @@
 
     async function openRoster(c) {
         currentClass = c;
+        currentClassName = c.name;
+        currentClassCode = c.code;
         lastRosterUserIds = new Set();
         $('rosterTitle').textContent = c.name;
         $('rosterMeta').textContent = (c.grade ? c.grade + 'º ano' : 'Sem série definida')
@@ -804,12 +858,13 @@
         roster = rows.map(r => {
             const phases = Object.keys(r.stars).length;
             const totalStars = Object.values(r.stars).reduce((a, b) => a + b, 0);
-            return { ...r, phases, totalStars, last: r.updated_at };
+            return { ...r, phases, totalStars, last: r.updated_at, rawStars: r.stars || {} };
         });
 
         updateRosterStats();
         renderStuckStudents();
         renderBarChart();
+        renderRegionAnalysis();
 
         lastRosterUserIds = newIds;
         $('lastSync').textContent = 'Atualizado agora';
@@ -995,6 +1050,104 @@
 
     // Quando a janela fecha, pára o polling pra não vazar memory.
     window.addEventListener('beforeunload', stopRosterPolling);
+
+    /* ─── Modo Projetor ────────────────────────────────────────────────── */
+    function showProjector() {
+        const overlay = document.createElement('div');
+        overlay.className = 'projector-overlay';
+        overlay.id = 'projectorOverlay';
+        overlay.innerHTML = `
+            <button class="proj-close" onclick="document.getElementById('projectorOverlay').remove()">✕</button>
+            <div class="projector-title">🏫 ${currentClassName || 'Turma'}</div>
+            <div class="projector-ranking" id="projRanking"></div>
+            <div class="projector-stats" id="projStats"></div>
+        `;
+        document.body.appendChild(overlay);
+        overlay.requestFullscreen?.().catch(() => {});
+        renderProjector();
+        const interval = setInterval(() => {
+            if (!document.getElementById('projectorOverlay')) { clearInterval(interval); return; }
+            renderProjector();
+        }, 5000);
+    }
+
+    function renderProjector() {
+        const top5 = [...roster].sort((a, b) => b.xp - a.xp).slice(0, 5);
+        const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
+        const rankEl = document.getElementById('projRanking');
+        if (rankEl) rankEl.innerHTML = top5.map((s, i) => `
+            <div class="proj-row">
+                <span class="proj-rank">${medals[i]}</span>
+                <span class="proj-name">${esc(s.nickname || '(sem apelido)')}</span>
+                <span class="proj-stars">★${s.totalStars}</span>
+                <span class="proj-xp">⚡${s.xp}</span>
+            </div>`).join('');
+        const total = roster.reduce((a, s) => a + s.phases, 0);
+        const avgPhases = roster.length ? Math.round(total / roster.length) : 0;
+        const avgStars  = roster.length ? Math.round(roster.reduce((a, s) => a + s.totalStars, 0) / roster.length) : 0;
+        const statsEl = document.getElementById('projStats');
+        if (statsEl) statsEl.innerHTML = `
+            <div><b>${roster.length}</b>alunos</div>
+            <div><b>${avgPhases}</b>média de fases</div>
+            <div><b>${avgStars}★</b>média de estrelas</div>
+            <div><b>${total}</b>fases no total</div>
+        `;
+    }
+
+    /* ─── Mensagem para a turma ─────────────────────────────────────────── */
+    async function sendClassMessage() {
+        const msg = document.getElementById('classMessageInput')?.value.trim();
+        if (!msg) return;
+        const code = document.getElementById('classCodeDisplay')?.textContent || currentClassCode;
+        try {
+            await sb.from('class_messages').insert({
+                class_code: code,
+                message: msg,
+                teacher_note: true,
+                created_at: new Date().toISOString()
+            });
+            document.getElementById('classMessageInput').value = '';
+            toast('Mensagem enviada!', 'success');
+        } catch(e) {
+            toast('Erro ao enviar: ' + e.message, 'error');
+        }
+    }
+
+    /* ─── Análise por região ────────────────────────────────────────────── */
+    function renderRegionAnalysis() {
+        const analysisEl = document.getElementById('regionAnalysis');
+        if (!analysisEl || !roster.length) return;
+
+        const REGION_NAMES = ['', 'Vila dos Números', 'Bosque das Operações', 'Vale das Tabuadas', 'Caverna das Frações', 'Lago dos Decimais', 'Montanha dos Inteiros', 'Deserto das Equações', 'Templo das Potências', 'Cidadela do Mestre'];
+
+        const regionData = Array.from({length: 9}, (_, i) => {
+            const regId = i + 1;
+            const regionStart = (regId - 1) * 20 + 1;
+            const regionEnd   = regId === 9 ? 181 : regId * 20;
+            const students = roster.filter(s => {
+                const starsObj = s.rawStars || {};
+                return Object.keys(starsObj).some(id => {
+                    const phaseId = parseInt(id);
+                    return phaseId >= regionStart && phaseId <= regionEnd;
+                });
+            }).length;
+            return { id: regId, name: REGION_NAMES[regId], started: students, total: roster.length };
+        });
+
+        analysisEl.innerHTML = `<h3 style="margin-bottom:.75rem">📊 Alcance por região</h3>` +
+            regionData.map(r => {
+                const pct = r.total ? Math.round(r.started / r.total * 100) : 0;
+                const color = pct >= 70 ? '#3fb950' : pct >= 40 ? '#d29922' : '#f85149';
+                return `<div style="margin-bottom:.5rem">
+                    <div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:.2rem">
+                        <span>${esc(r.name)}</span><span style="color:${color}">${r.started}/${r.total} alunos (${pct}%)</span>
+                    </div>
+                    <div style="height:6px;background:#161b22;border-radius:3px;overflow:hidden">
+                        <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:width .4s"></div>
+                    </div>
+                </div>`;
+            }).join('');
+    }
 </script>
 
 </body>
