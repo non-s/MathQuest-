@@ -3,8 +3,8 @@
  * Settings → API → Project URL e anon public key.
  * A chave anon é pública por design — o RLS protege os dados no servidor.
  * ─────────────────────────────────────────────────────────────────────── */
-const SUPABASE_URL      = 'https://YOUR_PROJECT.supabase.co';
-const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+const SUPABASE_URL      = 'https://tlxckwsqzuedospqqyfw.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRseGNrd3NxenVlZG9zcHFxeWZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1ODM5NjAsImV4cCI6MjA5NDE1OTk2MH0.NIAf7zjDStOPgt10cza5s_1Kwk6a_uWkkpjLJ4UGKyw';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 /* ─── Estado ────────────────────────────────────────────────────────────── */
