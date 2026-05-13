@@ -505,18 +505,14 @@ const g_fracEquiv = () => Q(5, () => {
 
 const g_fracCompareSameDen = () => Q(5, () => {
     const den = pick([4, 5, 6, 8]);
-    let a = rand(1, den - 1), b = rand(1, den - 1);
-    while (a === b) b = rand(1, den - 1);
-    const greaterNum = Math.max(a, b);
-    const lesserNum  = Math.min(a, b);
-    const greater = `${greaterNum}/${den}`;
-    const lesser  = `${lesserNum}/${den}`;
-    // Third distractor: a fraction clearly different from both options
-    let d3num = den - greaterNum;
-    if (d3num === greaterNum || d3num === lesserNum || d3num <= 0) {
-        d3num = greaterNum > 1 ? greaterNum - 1 : greaterNum + 1;
-        if (d3num === lesserNum) d3num = Math.max(1, greaterNum - 2) || greaterNum + 2;
-    }
+    const a = rand(3, den - 1);       // greaterNum always >= 3
+    const b = rand(1, a - 1);         // lesserNum always < a
+    const greater = `${a}/${den}`;
+    const lesser  = `${b}/${den}`;
+    // d3: pick from nums 1..a-1 excluding b (all < greaterNum, guaranteed unique)
+    const d3candidates = [];
+    for (let n = 1; n < a; n++) if (n !== b) d3candidates.push(n);
+    const d3num = pick(d3candidates);
     return { stem: `Qual é <b>maior</b>? ${a}/${den} ou ${b}/${den}?`,
              ...makeChoice(greater, [lesser, 'São iguais', `${d3num}/${den}`]),
              explain: 'Mesmo denominador: compare os numeradores. Maior numerador = <b>maior fração</b>.' };
