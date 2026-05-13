@@ -6,6 +6,9 @@
 const SUPABASE_URL      = 'https://tlxckwsqzuedospqqyfw.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRseGNrd3NxenVlZG9zcHFxeWZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1ODM5NjAsImV4cCI6MjA5NDE1OTk2MH0.NIAf7zjDStOPgt10cza5s_1Kwk6a_uWkkpjLJ4UGKyw';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+/** @constant {Object} ROLES - Role name constants */
+const ROLES = { TEACHER: 'teacher', STUDENT: 'student' };
+
 
 /* ─── Estado ────────────────────────────────────────────────────────────── */
 const state = {
@@ -43,6 +46,27 @@ const sleep   = ms    => new Promise(r => setTimeout(r, ms));
 
 /* ─── Toast ─────────────────────────────────────────────────────────────── */
 let toastTimer;
+
+/**
+ * Centralizes error handling across the app.
+ * @param {Error|Object} err - Error from Supabase or JS.
+ * @param {string} [context=''] - Context label.
+ */
+function handleError(err, context = '') {
+  const msg = err?.message || String(err) || 'Erro inesperado';
+  console.error('[handleError]', context, err);
+  showToast(msg, 'error');
+}
+
+/**
+ * Returns true if every value is a non-empty string after trimming.
+ * @param {...string} values
+ * @returns {boolean}
+ */
+function validateRequired(...values) {
+  return values.every(v => typeof v === 'string' && v.trim().length > 0);
+}
+
 function toast(msg, type = 'info') {
     const el = $('toast');
     el.textContent = msg;
@@ -2131,6 +2155,7 @@ function startPhase(phase) {
     $('btnModeTrain').addEventListener('click',  () => launch(true));
 }
 
+/** Renders the current question in the active game session. */
 function renderQuestion() {
     const q = state.questions[state.qIndex];
     const isPlacement = state.currentPhase?.isPlacement;
@@ -2825,7 +2850,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Service Worker
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
-    if (new URLSearchParams(location.search).get('view') !== 'teacher') init();
+    if (new URLSearchParams(location.search).get('view') !== ROLES.TEACHER) init();
 });
 
 
