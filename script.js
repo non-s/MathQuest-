@@ -163,7 +163,7 @@ const g_zero = () => Q(5, () => {
         { stem: 'Quanto é 7 − 7?', ans: 0 },
         { stem: 'Quanto é 4 + 0?', ans: 4, d: [0, 1, 5] },
         { stem: 'Quantas patas tem um peixe?', ans: 0 },
-        { stem: 'Quantas vezes o número 0 cabe em 8?', ans: 0 },
+        { stem: 'Quanto vale qualquer número multiplicado por 0?', ans: 0 },
         { stem: 'Quantos dias da semana começam com a letra K?', ans: 0 },
         { stem: 'Quantos cachorros voam pela janela?', ans: 0 },
         { stem: 'Quanto é 10 − 10?', ans: 0 },
@@ -499,7 +499,7 @@ const g_fracEquiv = () => Q(5, () => {
     const num = rand(1, den - 1);
     const k = rand(2, 4);
     return { stem: `Qual fração é <b>equivalente</b> a ${num}/${den}?`,
-             ...makeChoice(`${num * k}/${den * k}`, [`${num + 1}/${den + 1}`, `${num * k}/${den + k}`, `${num + k}/${den * k}`]),
+             ...makeChoice(`${num * k}/${den * k}`, [`${num + 1}/${den + 1}`, `${num * k}/${den * k + 1}`, `${num + k}/${den * k}`]),
              explain: 'Frações equivalentes: multiplique (ou divida) numerador <b>e</b> denominador pelo mesmo número. O valor não muda!' };
 });
 
@@ -507,9 +507,18 @@ const g_fracCompareSameDen = () => Q(5, () => {
     const den = pick([4, 5, 6, 8]);
     let a = rand(1, den - 1), b = rand(1, den - 1);
     while (a === b) b = rand(1, den - 1);
-    const greater = a > b ? `${a}/${den}` : `${b}/${den}`;
+    const greaterNum = Math.max(a, b);
+    const lesserNum  = Math.min(a, b);
+    const greater = `${greaterNum}/${den}`;
+    const lesser  = `${lesserNum}/${den}`;
+    // Third distractor: a fraction clearly different from both options
+    let d3num = den - greaterNum;
+    if (d3num === greaterNum || d3num === lesserNum || d3num <= 0) {
+        d3num = greaterNum > 1 ? greaterNum - 1 : greaterNum + 1;
+        if (d3num === lesserNum) d3num = Math.max(1, greaterNum - 2) || greaterNum + 2;
+    }
     return { stem: `Qual é <b>maior</b>? ${a}/${den} ou ${b}/${den}?`,
-             ...makeChoice(greater, [`${a}/${den}` === greater ? `${b}/${den}` : `${a}/${den}`, 'São iguais', `${den - a}/${den}`]),
+             ...makeChoice(greater, [lesser, 'São iguais', `${d3num}/${den}`]),
              explain: 'Mesmo denominador: compare os numeradores. Maior numerador = <b>maior fração</b>.' };
 });
 
@@ -517,7 +526,7 @@ const g_fracAddSame = () => Q(5, () => {
     const den = pick([4, 5, 6, 7, 8]);
     const a = rand(1, Math.floor(den / 2)), b = rand(1, den - a - 1);
     return { stem: `<b>${a}/${den} + ${b}/${den}</b> = ?`,
-             ...makeChoice(`${a + b}/${den}`, [`${a + b}/${den * 2}`, `${a * b}/${den}`, `${a + b + 1}/${den}`]),
+             ...makeChoice(`${a + b}/${den}`, [`${a + b}/${den * 2}`, `${a + b - 1}/${den}`, `${a + b + 1}/${den}`]),
              explain: 'Mesmo denominador: some os numeradores e mantenha o denominador. <b>a/n + b/n = (a+b)/n</b>.' };
 });
 
@@ -707,9 +716,12 @@ const g_volumePar = () => Q(5, () => {
 const g_mean = () => Q(5, () => {
     const n = pick([2, 3, 4]);
     const nums = Array.from({ length: n }, () => rand(2, 20));
-    const s = nums.reduce((a, b) => a + b, 0);
-    while (s % n !== 0) { nums[0] = rand(2, 20); break; }
-    const sum = nums.reduce((a, b) => a + b, 0);
+    let sum = nums.reduce((a, b) => a + b, 0);
+    let guard = 0;
+    while (sum % n !== 0 && guard++ < 30) {
+        nums[0] = rand(2, 20);
+        sum = nums.reduce((a, b) => a + b, 0);
+    }
     const ans = sum / n;
     const intAns = Math.round(ans * 10) / 10;
     return { stem: `Média de ${nums.join(', ')} =?`, ...makeChoice(intAns, nearDistr(intAns, 4)),
@@ -1365,7 +1377,7 @@ const g_polygon = () => Q(5, () => {
 const g_probComp = () => Q(5, () => {
     const items = [
         { s: 'Duas moedas. Probabilidade de duas caras?', r: '1/4', d: ['1/2', '1/3', '2/4'] },
-        { s: 'Dois dados. Probabilidade de soma 7?', r: '6/36', d: ['1/6', '7/36', '5/36'] },
+        { s: 'Dois dados. Probabilidade de soma 7?', r: '1/6', d: ['1/7', '2/6', '1/12'] },
         { s: 'Tirar 2 ases num baralho (sem reposição):', r: '1/221', d: ['1/52', '1/13', '1/26'] },
         { s: 'Eventos independentes: P(A e B) =', r: 'P(A) · P(B)', d: ['P(A) + P(B)', 'P(A) − P(B)', '1'] },
     ];
@@ -2147,6 +2159,7 @@ function startPhase(phase) {
         state.hearts       = 3;
         state.earnedXp     = 0;
         state.answered     = false;
+        state._answerStreak  = 0;
         $('mapView').style.display = 'none';
         $('phaseView').style.display = '';
         renderQuestion();
@@ -2154,6 +2167,13 @@ function startPhase(phase) {
     $('btnModeNormal').addEventListener('click', () => launch(false));
     $('btnModeTrain').addEventListener('click',  () => launch(true));
 }
+
+function formatOpt(raw) {
+    const str = String(raw ?? '');
+    return str.replace(/(-?[\d\u221a]+)\/(-?[\d\u221a]+)/g,
+        '<span class="frac-inline"><sup>$1</sup><span class="frac-bar-char">⁄</span><sub>$2</sub></span>');
+}
+const OPT_LABELS = ['A', 'B', 'C', 'D'];
 
 /** Renders the current question in the active game session. */
 function renderQuestion() {
@@ -2163,7 +2183,24 @@ function renderQuestion() {
     $('phaseTitle').textContent = isPlacement
         ? state.currentPhase.name
         : `${state.currentPhase.id}. ${state.currentPhase.name}`;
-    $('phaseProg').textContent  = `${state.qIndex + 1} / ${state.questions.length}`;
+
+    const total   = state.questions.length;
+    const current = state.qIndex;
+    let progBar = $('qProgressBarWrap');
+    if (!progBar) {
+        progBar = document.createElement('div');
+        progBar.id = 'qProgressBarWrap';
+        progBar.style.cssText = 'width:100%;height:6px;background:rgba(255,255,255,.1);border-radius:3px;margin:6px 0 2px;overflow:hidden';
+        const fill = document.createElement('div');
+        fill.id = 'qProgressBarFill';
+        fill.style.cssText = 'height:100%;border-radius:3px;background:linear-gradient(90deg,#f0883e,#f0c419);transition:width .35s ease';
+        progBar.appendChild(fill);
+        const progRow = $('phaseProg')?.parentElement;
+        if (progRow) progRow.insertAdjacentElement('afterend', progBar);
+    }
+    const fill = document.getElementById('qProgressBarFill');
+    if (fill) fill.style.width = `${Math.round((current / total) * 100)}%`;
+    $('phaseProg').textContent = `${current + 1} / ${total}`;
     if (state.trainingMode) {
         $('hearts').innerHTML = '<span class="training-badge">📚 Treino</span>';
     } else {
@@ -2185,12 +2222,21 @@ function renderQuestion() {
     q.options.forEach((opt, i) => {
         const b = document.createElement('button');
         b.className = 'opt';
-        b.innerHTML = esc(opt);
+        b.innerHTML = `<span class="opt-label-badge">${OPT_LABELS[i]}</span><span class="opt-text">${formatOpt(opt)}</span>`;
+        b.dataset.optIndex = i;
         b.addEventListener('click', () => answer(i));
         opts.appendChild(b);
     });
     state.answered = false;
     $('btnNext').style.display = 'none';
+    if (window._mqKeyHandler) document.removeEventListener('keydown', window._mqKeyHandler);
+    window._mqKeyHandler = (e) => {
+        if (state.answered) return;
+        const idx = OPT_LABELS.indexOf(e.key.toUpperCase());
+        if (idx !== -1 && idx < q.options.length) answer(idx);
+        if (e.key === 'Enter' && state.answered && $('btnNext').style.display !== 'none') nextQuestion();
+    };
+    document.addEventListener('keydown', window._mqKeyHandler);
 }
 
 function answer(i) {
@@ -2209,11 +2255,18 @@ function answer(i) {
         if (!isPlacement && !state.trainingMode) state.earnedXp += 10;
         sndCorrect();
         haptic('success');
-        toast('Acertou!', 'success');
+        state._answerStreak = (state._answerStreak || 0) + 1;
+        if (state._answerStreak >= 3 && state._answerStreak % 3 === 0) {
+            setTimeout(() => { sndStreak(); toast(`🔥 ${state._answerStreak} acertos seguidos!`, 'success'); }, 300);
+        } else {
+            const remaining = state.questions.length - state.qIndex - 1;
+            toast(remaining > 0 ? `✅ Acertou! (${state.correct}/${state.qIndex + 1})` : '✅ Acertou!', 'success');
+        }
     } else {
         sndWrong();
         haptic('error');
-        toast('Errou.', 'error');
+        state._answerStreak = 0;
+        toast('❌ Errou.', 'error');
         state.wrongCount = (state.wrongCount || 0) + 1;
         if (state.wrongCount === 1 && q.explain && !isPlacement) {
             const hint = q.explain.replace(/<[^>]+>/g,'').slice(0, 80);
@@ -2736,6 +2789,11 @@ function showAvatarPicker() {
     $('btnAvatarClose').addEventListener('click', () => modal.remove());
     modal.addEventListener('click', e => { if(e.target===modal) modal.remove(); });
 }
+
+(function injectStyles() {
+    const css = `.opt{display:flex;align-items:center;gap:.6rem;text-align:left}.opt-label-badge{display:inline-flex;align-items:center;justify-content:center;min-width:1.6rem;height:1.6rem;border-radius:50%;background:rgba(255,255,255,.12);font-size:.75rem;font-weight:700;flex-shrink:0;color:var(--text-dim,#8b949e);transition:background .2s}.opt:hover .opt-label-badge,.opt:focus .opt-label-badge{background:rgba(240,136,62,.3);color:#f0883e}.opt.correct .opt-label-badge{background:#3fb95022;color:#3fb950}.opt.wrong .opt-label-badge{background:#f8514922;color:#f85149}.opt-text{flex:1}.frac-inline{display:inline-flex;flex-direction:column;align-items:center;vertical-align:middle;line-height:1.1;font-size:.9em;margin:0 .1em}.frac-inline sup,.frac-inline sub{font-size:1em;line-height:1}.frac-bar-char{font-size:.85em;line-height:.8}#qProgressBarWrap{margin-bottom:.4rem!important}.kbd-hint{text-align:center;font-size:.7rem;color:var(--text-dim,.4);margin-top:.4rem;letter-spacing:.03em}`;
+    const s = document.createElement('style'); s.textContent = css; document.head.appendChild(s);
+})();
 
 document.addEventListener('DOMContentLoaded', () => {
     // Bind UI
