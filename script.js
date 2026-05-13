@@ -198,9 +198,13 @@ const g_orderAsc = (min, max) => Q(5, () => {
     const nums = shuffle([rand(min, max), rand(min, max), rand(min, max), rand(min, max)]);
     while (new Set(nums).size < 4) nums[rand(0, 3)] = rand(min, max);
     const sorted = [...nums].sort((a, b) => a - b).join(', ');
-    const opts = shuffle([sorted, [...nums].reverse().join(', '),
-                          [...nums].sort((a, b) => b - a).join(', '),
-                          nums.join(', ')]);
+    const sortedArr = [...nums].sort((a, b) => a - b);
+    const descSorted = [...sortedArr].reverse().join(', ');
+    const asIs = nums.join(', ');
+    const distrSet = new Set([descSorted, asIs, [...nums].reverse().join(', ')].filter(x => x !== sorted));
+    if (distrSet.size < 3) distrSet.add([sortedArr[1], sortedArr[0], sortedArr[2], sortedArr[3]].join(', '));
+    if (distrSet.size < 3) distrSet.add([sortedArr[0], sortedArr[2], sortedArr[1], sortedArr[3]].join(', '));
+    const opts = shuffle([sorted, ...[...distrSet].slice(0, 3)]);
     return { stem: `Coloque em ordem <b>crescente</b>: ${nums.join(', ')}`,
              options: opts, correctIndex: opts.indexOf(sorted),
              explain: '<b>Crescente</b>: do menor para o maior (como ir crescendo!). Coloque os números em fila do menor para o maior.' };
@@ -210,9 +214,13 @@ const g_orderDesc = (min, max) => Q(5, () => {
     const nums = shuffle([rand(min, max), rand(min, max), rand(min, max), rand(min, max)]);
     while (new Set(nums).size < 4) nums[rand(0, 3)] = rand(min, max);
     const sorted = [...nums].sort((a, b) => b - a).join(', ');
-    const opts = shuffle([sorted, [...nums].sort((a, b) => a - b).join(', '),
-                          nums.join(', '),
-                          [...nums].reverse().join(', ')]);
+    const sortedArr2 = [...nums].sort((a, b) => b - a);
+    const ascSorted = [...sortedArr2].reverse().join(', ');
+    const asIs2 = nums.join(', ');
+    const distrSet2 = new Set([ascSorted, asIs2, [...nums].reverse().join(', ')].filter(x => x !== sorted));
+    if (distrSet2.size < 3) distrSet2.add([sortedArr2[1], sortedArr2[0], sortedArr2[2], sortedArr2[3]].join(', '));
+    if (distrSet2.size < 3) distrSet2.add([sortedArr2[0], sortedArr2[2], sortedArr2[1], sortedArr2[3]].join(', '));
+    const opts = shuffle([sorted, ...[...distrSet2].slice(0, 3)]);
     return { stem: `Coloque em ordem <b>decrescente</b>: ${nums.join(', ')}`,
              options: opts, correctIndex: opts.indexOf(sorted),
              explain: '<b>Decrescente</b>: do maior para o menor. É o contrário da ordem crescente!' };
@@ -332,10 +340,12 @@ const g_decomp = () => Q(5, () => {
     const n = rand(11, 99);
     const d = Math.floor(n / 10), u = n % 10;
     const ans = `${d} dezenas e ${u} unidades`;
-    const d1 = `${u} dezenas e ${d} unidades`;
+    const d1 = d !== u ? `${u} dezenas e ${d} unidades` : `${d + 2} dezenas e ${u} unidades`;
     const d2 = `${d + 1} dezenas e ${u} unidades`;
     const d3 = `${d} dezenas e ${(u + 1) % 10} unidades`;
-    const opts = shuffle([ans, d1, d2, d3]);
+    const optsSet3 = new Set([ans, d1, d2, d3]);
+    let ex3 = d + 3; while (optsSet3.size < 4) { optsSet3.add(`${ex3++} dezenas e ${u} unidades`); }
+    const opts = shuffle([...optsSet3]);
     return { stem: `Decomponha o número <b>${n}</b>:`, options: opts, correctIndex: opts.indexOf(ans),
              explain: `<b>${n}</b> = ${d} dezenas + ${u} unidades. Lembre: 1 dezena = 10 unidades.` };
 });
@@ -413,7 +423,11 @@ const g_money = () => Q(5, () => {
         () => { const total = rand(30, 80); return { s: `Uma compra de R$ ${total},00 paga com nota de R$ 100,00. Troco?`, r: `R$ ${100 - total},00`, d: [`R$ ${total},00`, `R$ ${100 + total},00`, `R$ ${100 - total + 1},00`] }; },
     ];
     const it = pick(items)();
-    return { stem: it.s, ...makeChoice(it.r, it.d),
+    const seen4 = new Set([String(it.r)]);
+    const uniqueD = [];
+    for (const x of it.d) { if (!seen4.has(String(x))) { seen4.add(String(x)); uniqueD.push(x); } }
+    let fill4 = 1; while (uniqueD.length < 3) { const v = `R$ ${fill4++},00`; if (!seen4.has(v)) { seen4.add(v); uniqueD.push(v); } }
+    return { stem: it.s, ...makeChoice(it.r, uniqueD.slice(0, 3)),
              explain: 'Com dinheiro: <b>+</b> para ganhar/comprar juntos, <b>−</b> para gastar/troco. Troco = pago − preço.' };
 });
 
@@ -463,10 +477,11 @@ const g_fracVisual = () => Q(5, () => {
     const num = rand(1, den - 1);
     const blocks = '<span class="frac-on">█</span>'.repeat(num) + '<span class="frac-off">█</span>'.repeat(den - num);
     const correct = `${num}/${den}`;
-    const distr = [`${den - num}/${den}`, `${num}/${den + 1}`, `${num + 1}/${den}`].filter(x => x !== correct);
-    while (distr.length < 3) distr.push(`${num + distr.length + 1}/${den + 1}`);
+    const candidates5 = [`${den - num}/${den}`, `${num}/${den + 1}`, `${num + 1}/${den}`];
+    const distrSet5 = new Set(candidates5.filter(x => x !== correct));
+    let ex5 = 2; while (distrSet5.size < 3) { const v = `${num + ex5}/${den + ex5}`; if (v !== correct) distrSet5.add(v); ex5++; }
     return { stem: `Qual fração representa a parte preenchida?<div class="frac-bar">${blocks}</div>`,
-             ...makeChoice(correct, distr.slice(0, 3)),
+             ...makeChoice(correct, [...distrSet5].slice(0, 3)),
              explain: `Fração: partes coloridas / total de partes. Aqui: <b>${num}/${den}</b> — ${num} partes preenchidas de ${den} totais.` };
 });
 
@@ -498,8 +513,12 @@ const g_fracEquiv = () => Q(5, () => {
     const den = pick([2, 3, 4, 5]);
     const num = rand(1, den - 1);
     const k = rand(2, 4);
+    const correct6 = `${num * k}/${den * k}`;
+    const cands6 = [`${num + 1}/${den + 1}`, `${num * k}/${den * k + 1}`, `${num + k}/${den * k}`];
+    const distrSet6 = new Set(cands6.filter(x => x !== correct6));
+    let ex6 = 1; while (distrSet6.size < 3) { const v = `${num * k + ex6}/${den * k}`; if (v !== correct6) distrSet6.add(v); ex6++; }
     return { stem: `Qual fração é <b>equivalente</b> a ${num}/${den}?`,
-             ...makeChoice(`${num * k}/${den * k}`, [`${num + 1}/${den + 1}`, `${num * k}/${den * k + 1}`, `${num + k}/${den * k}`]),
+             ...makeChoice(correct6, [...distrSet6].slice(0, 3)),
              explain: 'Frações equivalentes: multiplique (ou divida) numerador <b>e</b> denominador pelo mesmo número. O valor não muda!' };
 });
 
@@ -1229,7 +1248,7 @@ const g_funcAfim = () => Q(5, () => {
 const g_funcRoot = () => Q(5, () => {
     const a = rand(1, 6), b = rand(2, 20);
     const r = b / a;
-    if (b % a !== 0) return { stem: `Raiz de f(x) = ${a}x − ${a * 3}`, ...makeChoice(3, [0, a, -3]) };
+    if (b % a !== 0) return { stem: `Raiz de f(x) = ${a}x − ${a * 3}`, ...makeChoice(3, [0, a === 3 ? 6 : a, a === -3 ? -6 : -3]) };
     return { stem: `Raiz de f(x) = ${a}x − ${b}`, ...makeChoice(r, nearDistr(r, 4)) };
 });
 
@@ -1501,11 +1520,11 @@ const g_geometriaAnalitica = () => Q(5, () => {
     const items = [
         { s: `Distância entre (${x1},${y1}) e (${x2},${y2}):`,
           ans: distRound,
-          d: nearDistr(Math.round(distRound), 3).map(x => Math.abs(x) || 1),
+          d: (() => { const raw = nearDistr(Math.round(distRound), 3).map(x => Math.abs(x) || 1); const seen8 = new Set([String(distRound)]); const u8 = []; for (const v of raw) { if (!seen8.has(String(v))) { seen8.add(String(v)); u8.push(v); } } let i8 = 1; while (u8.length < 3) { if (!seen8.has(String(i8))) { seen8.add(String(i8)); u8.push(i8); } i8++; } return u8; })(),
           e: `d = √[(${x2}−${x1})² + (${y2}−${y1})²] = √[${(x2-x1)**2}+${(y2-y1)**2}] ≈ <b>${distRound}</b>. Teorema de Pitágoras no plano!` },
         { s: `Ponto médio de (${x1},${y1}) e (${x2},${y2}):`,
           ans: `(${(x1+x2)/2}, ${(y1+y2)/2})`,
-          d: [`(${x1+x2}, ${y1+y2})`, `(${(x1-x2)/2}, ${(y1-y2)/2})`, `(${x1}, ${y2})`],
+          d: (() => { const ans8b = `(${(x1+x2)/2}, ${(y1+y2)/2})`; const c8b = [`(${x1+x2}, ${y1+y2})`, `(${(x1-x2)/2}, ${(y1-y2)/2})`, `(${x1}, ${y2})`]; const s8b = new Set([ans8b]); const u8b = c8b.filter(c => !s8b.has(c) && s8b.add(c)); while (u8b.length < 3) u8b.push(`(${x1+u8b.length}, ${y1+u8b.length})`); return u8b.slice(0,3); })(),
           e: `Ponto médio: M = ((x₁+x₂)/2, (y₁+y₂)/2) = <b>(${(x1+x2)/2}, ${(y1+y2)/2})</b>.` },
     ];
     const it = pick(items);
