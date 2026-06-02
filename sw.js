@@ -1,4 +1,4 @@
-const CACHE = 'mathquest-v1';
+const CACHE = 'mathquest-v2';
 const CORE = ['./', './index.html', './style.css', './script.js', './config.js', './privacy.html', './manifest.json'];
 
 self.addEventListener('install', event => {
