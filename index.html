@@ -292,7 +292,7 @@
             <button id="tabSignup">Criar conta</button>
         </div>
         <input id="email" class="field" type="email" placeholder="Seu e-mail" autocomplete="email">
-        <input id="pwd" class="field" type="password" placeholder="Senha (mínimo 6 caracteres)" autocomplete="current-password">
+        <input id="pwd" class="field" type="password" placeholder="Senha (mínimo 8 caracteres)" autocomplete="current-password">
         <button id="btnAuth" class="btn-primary">Entrar</button>
         <p id="authError" class="t-error"></p>
         <p class="t-info">Suas turmas e o progresso dos alunos só você vê. Os dados pessoais dos alunos não ficam aqui — só o apelido e o progresso.<br><a href="privacy.html" style="color:var(--accent)">Política de privacidade</a></p>
@@ -525,8 +525,8 @@
             $('authError').textContent = 'Preencha e-mail e senha.';
             return;
         }
-        if (pwd.length < 6) {
-            $('authError').textContent = 'Senha precisa de pelo menos 6 caracteres.';
+        if (pwd.length < 8) {
+            $('authError').textContent = 'Senha precisa de pelo menos 8 caracteres.';
             return;
         }
         $('btnAuth').disabled = true;
