@@ -3,11 +3,15 @@
  * Settings → API → Project URL e anon public key.
  * A chave anon é pública por design — o RLS protege os dados no servidor.
  * ─────────────────────────────────────────────────────────────────────── */
-const SUPABASE_URL      = 'https://tlxckwsqzuedospqqyfw.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRseGNrd3NxenVlZG9zcHFxeWZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1ODM5NjAsImV4cCI6MjA5NDE1OTk2MH0.NIAf7zjDStOPgt10cza5s_1Kwk6a_uWkkpjLJ4UGKyw';
+const MQ_CONFIG         = window.MATHQUEST_CONFIG || {};
+const SUPABASE_URL      = MQ_CONFIG.supabaseUrl || 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = MQ_CONFIG.supabaseAnonKey || 'YOUR_SUPABASE_ANON_KEY';
+const BACKEND_CONFIGURED = !SUPABASE_URL.includes('YOUR_PROJECT') && !SUPABASE_ANON_KEY.includes('YOUR_SUPABASE');
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 /** @constant {Object} ROLES - Role name constants */
 const ROLES = { TEACHER: 'teacher', STUDENT: 'student' };
+const TOTAL_PHASES = 201;
+const TOTAL_STARS = TOTAL_PHASES * 3;
 
 
 /* ─── Estado ────────────────────────────────────────────────────────────── */
@@ -31,6 +35,7 @@ const state = {
     trainingMode:  false,
     wrongCount:    0,
     failStreak:    {},
+    teacherUnlocks: [],
     avatar:        '🎓',
 };
 
@@ -55,7 +60,7 @@ let toastTimer;
 function handleError(err, context = '') {
   const msg = err?.message || String(err) || 'Erro inesperado';
   console.error('[handleError]', context, err);
-  showToast(msg, 'error');
+  toast(msg, 'error');
 }
 
 /**
@@ -109,16 +114,16 @@ const sndStreak = () => {
 
 /* ─── Regiões (mapa) ────────────────────────────────────────────────────── */
 const REGIONS = [
-    { id: 1, name: 'Vila dos Números',      year: '1º ano', color: '#7dd3a8', icon: '🏘️',  desc: 'Primeiros passos: contar, reconhecer e comparar.' },
-    { id: 2, name: 'Bosque das Operações',  year: '2º ano', color: '#69b8e5', icon: '🌳',  desc: 'Somas, subtrações e família dos números.' },
-    { id: 3, name: 'Vale das Tabuadas',     year: '3º ano', color: '#f0c75e', icon: '🌾',  desc: 'Multiplicação, divisão e dinheiro.' },
-    { id: 4, name: 'Caverna das Frações',   year: '4º ano', color: '#e88c4a', icon: '🕳️',  desc: 'Pedaços do todo e medidas.' },
-    { id: 5, name: 'Lago dos Decimais',     year: '5º ano', color: '#5fc8c8', icon: '🏞️',  desc: 'Vírgulas, porcentagens e áreas.' },
-    { id: 6, name: 'Montanha dos Inteiros', year: '6º ano', color: '#a78bdc', icon: '⛰️',  desc: 'Negativos, MMC e primeiras equações.' },
-    { id: 7, name: 'Deserto das Equações',  year: '7º ano', color: '#c89669', icon: '🏜️',  desc: 'X dos dois lados, razão e proporção.' },
-    { id: 8, name: 'Templo das Potências',  year: '8º ano', color: '#e26d6d', icon: '🏛️',  desc: 'Potências, raízes e álgebra.' },
-    { id: 9, name: 'Cidadela do Mestre',    year: '9º ano', color: '#f0c419', icon: '🏰',  desc: 'Funções, Bhaskara e Pitágoras.' },
-    { id: 10, name: 'Arena do Vestibular',  year: 'ENEM/Vestibular', color: '#ff6b9d', icon: '🏟️',  desc: 'ENEM, FUVEST, UNICAMP: matemática de alto nível.' },
+    { id: 1, range: [1, 20], name: 'Vila dos Números',      year: '1º ano', color: '#7dd3a8', icon: '🏘️',  desc: 'Primeiros passos: contar, reconhecer e comparar.' },
+    { id: 2, range: [21, 40], name: 'Bosque das Operações',  year: '2º ano', color: '#69b8e5', icon: '🌳',  desc: 'Somas, subtrações e família dos números.' },
+    { id: 3, range: [41, 60], name: 'Vale das Tabuadas',     year: '3º ano', color: '#f0c75e', icon: '🌾',  desc: 'Multiplicação, divisão e dinheiro.' },
+    { id: 4, range: [61, 80], name: 'Caverna das Frações',   year: '4º ano', color: '#e88c4a', icon: '🕳️',  desc: 'Pedaços do todo e medidas.' },
+    { id: 5, range: [81, 100], name: 'Lago dos Decimais',     year: '5º ano', color: '#5fc8c8', icon: '🏞️',  desc: 'Vírgulas, porcentagens e áreas.' },
+    { id: 6, range: [101, 120], name: 'Montanha dos Inteiros', year: '6º ano', color: '#a78bdc', icon: '⛰️',  desc: 'Negativos, MMC e primeiras equações.' },
+    { id: 7, range: [121, 140], name: 'Deserto das Equações',  year: '7º ano', color: '#c89669', icon: '🏜️',  desc: 'X dos dois lados, razão e proporção.' },
+    { id: 8, range: [141, 160], name: 'Templo das Potências',  year: '8º ano', color: '#e26d6d', icon: '🏛️',  desc: 'Potências, raízes e álgebra.' },
+    { id: 9, range: [161, 181], name: 'Cidadela do Mestre',    year: '9º ano', color: '#f0c419', icon: '🏰',  desc: 'Funções, Bhaskara e Pitágoras.' },
+    { id: 10, range: [182, 201], name: 'Arena do Vestibular',  year: 'ENEM/Vestibular', color: '#ff6b9d', icon: '🏟️',  desc: 'ENEM, FUVEST, UNICAMP: matemática de alto nível.' },
 ];
 
 /* ─── Geradores de questões ───────────────────────────────────────────────
@@ -1524,7 +1529,7 @@ const g_geometriaAnalitica = () => Q(5, () => {
           e: `d = √[(${x2}−${x1})² + (${y2}−${y1})²] = √[${(x2-x1)**2}+${(y2-y1)**2}] ≈ <b>${distRound}</b>. Teorema de Pitágoras no plano!` },
         { s: `Ponto médio de (${x1},${y1}) e (${x2},${y2}):`,
           ans: `(${(x1+x2)/2}, ${(y1+y2)/2})`,
-          d: (() => { const ans8b = `(${(x1+x2)/2}, ${(y1+y2)/2})`; const c8b = [`(${x1+x2}, ${y1+y2})`, `(${(x1-x2)/2}, ${(y1-y2)/2})`, `(${x1}, ${y2})`]; const s8b = new Set([ans8b]); const u8b = c8b.filter(c => !s8b.has(c) && s8b.add(c)); while (u8b.length < 3) u8b.push(`(${x1+u8b.length}, ${y1+u8b.length})`); return u8b.slice(0,3); })(),
+          d: (() => { const ans8b = `(${(x1+x2)/2}, ${(y1+y2)/2})`; const c8b = [`(${x1+x2}, ${y1+y2})`, `(${(x1-x2)/2}, ${(y1-y2)/2})`, `(${x1}, ${y2})`]; const s8b = new Set([ans8b]); const u8b = c8b.filter(c => !s8b.has(c) && s8b.add(c)); let i8b = 1; while (u8b.length < 3) { const candidate = `(${x1+i8b}, ${y1-i8b})`; if (!s8b.has(candidate)) { s8b.add(candidate); u8b.push(candidate); } i8b++; } return u8b.slice(0,3); })(),
           e: `Ponto médio: M = ((x₁+x₂)/2, (y₁+y₂)/2) = <b>(${(x1+x2)/2}, ${(y1+y2)/2})</b>.` },
     ];
     const it = pick(items);
@@ -1848,7 +1853,7 @@ const ACHIEVEMENTS = [
     { id: 'all_phases',   name: 'Mestre da matemática',   desc: 'Todas as 201 fases',              check: s => Object.keys(s.stars).length >= 201 },
     { id: 'perfectionist', name: 'Perfeccionista',        desc: '10 fases com 3 estrelas',         check: s => Object.values(s.stars).filter(x => x === 3).length >= 10 },
     { id: 'star_collector', name: 'Coletor de estrelas',  desc: '300 estrelas no total',           check: s => Object.values(s.stars).reduce((a, b) => a + b, 0) >= 300 },
-    { id: 'all_stars',    name: 'Brilhantíssimo',         desc: 'Todas as estrelas (543)',         check: s => Object.values(s.stars).reduce((a, b) => a + b, 0) >= 543 },
+    { id: 'all_stars',    name: 'Brilhantíssimo',         desc: `Todas as estrelas (${TOTAL_STARS})`, check: s => Object.values(s.stars).reduce((a, b) => a + b, 0) >= TOTAL_STARS },
     { id: 'region_1',     name: 'Numerologista',          desc: 'Conclua toda a Vila dos Números', check: s => PHASES.filter(p => p.region === 1).every(p => s.stars[p.id]) },
     { id: 'region_9',     name: 'Coroado',                desc: 'Conclua toda a Cidadela',         check: s => PHASES.filter(p => p.region === 9).every(p => s.stars[p.id]) },
     { id: 'xp_1000',      name: 'Mil XP',                 desc: 'Acumule 1000 XP',                 check: s => s.xp >= 1000 },
@@ -1885,6 +1890,8 @@ function saveLocal() {
     localStorage.setItem(localKey(state.userId), JSON.stringify({
         nickname: state.nickname, xp: state.xp, stars: state.stars, achievements: state.achievements,
         streak: state.streak, lastPlayDate: state.lastPlayDate, avatar: state.avatar,
+        trainingSessions: state._trainingSessions || 0, missionDays: state._missionDays || 0,
+        teacherUnlocks: state.teacherUnlocks || [],
     }));
 }
 
@@ -1900,12 +1907,15 @@ function loadLocal() {
         state.streak       = d.streak       || 0;
         state.lastPlayDate = d.lastPlayDate || '';
         state.avatar       = d.avatar       || '🎓';
+        state._trainingSessions = d.trainingSessions || 0;
+        state._missionDays      = d.missionDays || 0;
+        state.teacherUnlocks    = d.teacherUnlocks || [];
         return true;
     } catch { return false; }
 }
 
 async function saveRemote() {
-    if (!state.userId) return;
+    if (!state.userId || !BACKEND_CONFIGURED || state.userId.startsWith('local-')) return;
     try {
         const { error } = await sb.from('mathquest_progress').upsert({
             user_id:      state.userId,
@@ -1927,7 +1937,7 @@ async function saveRemote() {
 }
 
 async function loadRemote() {
-    if (!state.userId) return false;
+    if (!state.userId || !BACKEND_CONFIGURED || state.userId.startsWith('local-')) return false;
     const { data, error } = await sb.from('mathquest_progress')
         .select('nickname, xp, stars, achievements')
         .eq('user_id', state.userId).maybeSingle();
@@ -1936,6 +1946,8 @@ async function loadRemote() {
     state.xp           = data.xp           || 0;
     state.stars        = data.stars        || {};
     state.achievements = data.achievements || [];
+    const { data: unlocks } = await sb.from('teacher_unlocks').select('region').eq('user_id', state.userId);
+    state.teacherUnlocks = (unlocks || []).map(({ region }) => region);
     return true;
 }
 
@@ -1948,6 +1960,7 @@ const persistAwait = async () => { saveLocal(); await saveRemote(); };
 /* ─── Auth anônima ─────────────────────────────────────────────────────── */
 async function initAuth() {
     try {
+        if (!BACKEND_CONFIGURED) throw new Error('Backend Supabase ainda não configurado.');
         const { data: { session } } = await sb.auth.getSession();
         if (session) {
             state.userId = session.user.id;
@@ -1973,7 +1986,10 @@ function isUnlocked(phaseId) {
     const phase = PHASES.find(p => p.id === phaseId);
     if (phase) {
         const firstInRegion = PHASES.find(p => p.region === phase.region);
-        if (firstInRegion?.id === phaseId && state.achievements.includes(`placement_${phase.region}`)) return true;
+        if (firstInRegion?.id === phaseId && (
+            state.achievements.includes(`placement_${phase.region}`)
+            || state.teacherUnlocks.includes(phase.region)
+        )) return true;
     }
     return false;
 }
@@ -2045,7 +2061,7 @@ function renderHud() {
     $('hudNick').textContent      = state.nickname || 'Aluno(a)';
     $('hudXp').textContent        = state.xp;
     $('hudStars').textContent     = totalStars();
-    $('hudPhases').textContent    = `${completedCount()}/201`;
+    $('hudPhases').textContent    = `${completedCount()}/${TOTAL_PHASES}`;
     $('btnMute').textContent      = state.muted ? '🔇' : '🔊';
     if ($('avatarEmoji')) $('avatarEmoji').textContent = state.avatar || '🎓';
     const streakBadge = $('hudStreakBadge');
@@ -2217,6 +2233,9 @@ function renderQuestion() {
     if (fill) fill.style.width = `${Math.round((current / total) * 100)}%`;
     $('phaseProg').textContent = `${current + 1} / ${total}`;
     if (state.trainingMode) {
+        state._trainingSessions = (state._trainingSessions || 0) + 1;
+        checkAchievements();
+        saveLocal();
         $('hearts').innerHTML = '<span class="training-badge">📚 Treino</span>';
     } else {
         $('hearts').innerHTML = isPlacement
@@ -2267,6 +2286,9 @@ function answer(i) {
     });
     if (i === q.correctIndex) {
         state.correct++;
+        if (state.currentPhase?.id === 3 && String(q.options[i]) === '0' && !state.achievements.includes('secret_zero')) {
+            state.achievements.push('secret_zero');
+        }
         if (!isPlacement && !state.trainingMode) state.earnedXp += 10;
         sndCorrect();
         haptic('success');
@@ -2393,7 +2415,7 @@ function endPhase(completed) {
     `;
     $('resultView').style.display = '';
     $('phaseView').style.display  = 'none';
-    if (completed && stars > 0 && state.currentPhase.id < 201 && !state.stars[state.currentPhase.id + 1]) {
+    if (completed && stars > 0 && state.currentPhase.id < TOTAL_PHASES && !state.stars[state.currentPhase.id + 1]) {
         setTimeout(() => { sndUnlock(); toast('Nova fase desbloqueada!', 'success'); }, 800);
     }
 }
@@ -2522,19 +2544,14 @@ async function joinClass(code) {
         $('welcomeError').textContent = 'Aguarde a conexão e tente de novo.';
         return false;
     }
-    // 1) confere se o código existe (RLS permite SELECT em classes ativas)
-    const { data: cls, error: e1 } = await sb.from('classes')
-        .select('code, name').eq('code', code).eq('active', true).maybeSingle();
-    if (e1 || !cls) {
-        $('welcomeError').textContent = 'Código de turma não encontrado.';
+    if (!BACKEND_CONFIGURED || state.userId.startsWith('local-')) {
+        $('welcomeError').textContent = 'Turmas indisponíveis: backend ainda não configurado.';
         return false;
     }
-    // 2) registra a associação (idempotente por chave primária composta)
-    const { error: e2 } = await sb.from('class_members').upsert({
-        class_code: code, user_id: state.userId,
-    }, { onConflict: 'class_code,user_id' });
-    if (e2) {
-        $('welcomeError').textContent = 'Não consegui entrar na turma: ' + e2.message;
+    const { data, error: e1 } = await sb.rpc('join_class', { p_code: code });
+    const cls = Array.isArray(data) ? data[0] : data;
+    if (e1 || !cls) {
+        $('welcomeError').textContent = 'Código de turma não encontrado.';
         return false;
     }
     toast(`Entrou na turma "${cls.name}"!`, 'success');
@@ -2713,13 +2730,8 @@ async function loadLeaderboard() {
     const list = $('lbList');
     list.innerHTML = '<p class="lb-empty">Carregando…</p>';
     try {
-        const { data: members } = await sb.from('class_members')
-            .select('user_id').eq('class_code', state.classCode);
-        if (!members?.length) { list.innerHTML = '<p class="lb-empty">Nenhum aluno na turma.</p>'; return; }
-        const ids = members.map(m => m.user_id);
-        const { data: rows } = await sb.from('mathquest_progress')
-            .select('nickname,xp,stars').in('user_id', ids)
-            .order('xp', { ascending: false }).limit(50);
+        const { data: rows, error } = await sb.rpc('class_leaderboard', { p_class_code: state.classCode });
+        if (error) throw error;
         if (!rows?.length) { list.innerHTML = '<p class="lb-empty">Sem dados ainda.</p>'; return; }
         const medals = ['🥇','🥈','🥉'];
         const rankClasses = ['gold','silver','bronze'];
@@ -2728,7 +2740,7 @@ async function loadLeaderboard() {
             const isMe = r.nickname === state.nickname;
             return `<div class="lb-row ${isMe?'me':''}">
                 <span class="lb-rank ${rankClasses[i]||''}">${medals[i] || (i+1)}</span>
-                <span class="lb-name">${r.nickname||'?'}${isMe?' 👈':''}</span>
+                <span class="lb-name">${esc(r.nickname || '?')}${isMe?' 👈':''}</span>
                 <span class="lb-stars">★${totalStarsLb}</span>
                 <span class="lb-xp">⚡${r.xp}</span>
             </div>`;
@@ -2923,7 +2935,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Service Worker
     if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
-    if (new URLSearchParams(location.search).get('view') !== ROLES.TEACHER) init();
+    if (new URLSearchParams(location.search).get('view') !== ROLES.TEACHER) {
+        ensureConsent().then(init);
+    }
 });
 
 
@@ -3115,7 +3129,8 @@ window.answer = function(i) {
     prev.sum += elapsed; prev.count++;
     localStorage.setItem(key, JSON.stringify(prev));
     // Conquista relâmpago: resposta em menos de 5 segundos
-    if (elapsed < 5000) {
+    const q = state.questions[state.qIndex];
+    if (elapsed < 5000 && q && i === q.correctIndex) {
         state._correctStreak = (state._correctStreak || 0) + 1;
     } else {
         state._correctStreak = 0;
@@ -3124,8 +3139,11 @@ window.answer = function(i) {
 };
 
 /* ── LGPD / Consentimento ──────────────────────────────────────────── */
-function checkLGPD() {
-    if (localStorage.getItem('mq_lgpd_ok')) return;
+let consentPromise;
+function ensureConsent() {
+    if (localStorage.getItem('mq_lgpd_ok')) return Promise.resolve();
+    if (consentPromise) return consentPromise;
+    consentPromise = new Promise(resolve => {
     const modal = document.createElement('div');
     modal.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:200;display:flex;align-items:flex-end;padding:1rem`;
     modal.innerHTML = `
@@ -3153,12 +3171,15 @@ function checkLGPD() {
         }
         localStorage.setItem('mq_lgpd_ok', '1');
         modal.remove();
+        resolve();
     });
+    });
+    return consentPromise;
 }
 
 /* ── Mensagens da turma (receber do professor) ──────────────────────── */
 async function checkClassMessages() {
-    if (!state?.classCode || !window.sb) return;
+    if (!localStorage.getItem('mq_lgpd_ok') || !state?.classCode || !window.sb || !BACKEND_CONFIGURED) return;
     try {
         const since = new Date(Date.now() - 24*60*60*1000).toISOString();
         const { data } = await sb.from('class_messages')
@@ -3181,7 +3202,7 @@ async function checkClassMessages() {
             box-shadow:0 8px 24px rgba(0,0,0,.35);animation:slideUp .25s ease-out;
         `;
         banner.innerHTML = `<div style="font-size:.75rem;color:#8b949e;margin-bottom:.35rem">📢 Mensagem do professor</div>
-            <div style="font-weight:600">${lastMsg.message}</div>
+            <div style="font-weight:600">${esc(lastMsg.message)}</div>
             <button onclick="this.parentElement.remove()" style="margin-top:.65rem;color:#8b949e;font-size:.8rem;background:none;border:none;cursor:pointer">Fechar ✕</button>`;
         document.body.appendChild(banner);
         setTimeout(() => banner.remove(), 12000);
@@ -3214,9 +3235,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 500);
 
-    // LGPD
-    checkLGPD();
-
     // Mensagens da turma (checa a cada 5 minutos)
     setTimeout(checkClassMessages, 3000);
     setInterval(checkClassMessages, 5 * 60 * 1000);
@@ -3240,4 +3258,4 @@ window.$ = $;
 window.esc = esc;
 window.REGIONS = REGIONS;
 window.sb = sb;
-
+window.MQ_BACKEND_CONFIGURED = BACKEND_CONFIGURED;

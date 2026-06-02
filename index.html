@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
     <title>MathQuest — Aprenda matemática jogando</title>
-    <meta name="description" content="Jogo educacional de matemática em mundo aberto. Do 1º ao 9º ano: 181 fases do básico ao avançado.">
+    <meta name="description" content="Jogo educacional de matemática em mundo aberto. 201 fases do 1º ano ao vestibular.">
     <meta name="theme-color" content="#0d1117">
     <meta property="og:title" content="MathQuest — Aprenda matemática jogando">
-    <meta property="og:description" content="Do zero à senioridade em matemática: 181 fases, mundo aberto, do 1º ao 9º ano.">
+    <meta property="og:description" content="Do zero ao vestibular em matemática: 201 fases em mundo aberto.">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary">
+    <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Fira+Code:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
@@ -87,7 +88,7 @@
     <div class="welcome-card">
         <div class="welcome-logo">∑ MathQuest</div>
         <h1>Bem-vindo, aventureiro!</h1>
-        <p class="welcome-sub">Você vai sair do zero até o avançado em matemática. 9 regiões, 181 fases, do 1º ao 9º ano.</p>
+        <p class="welcome-sub">Você vai sair do zero até o vestibular em matemática. 10 regiões e 201 fases.</p>
         <input id="nickInput" class="field" placeholder="Como devemos te chamar?" maxlength="30" autocomplete="off">
         <input id="classCodeInput" class="field" placeholder="Código da turma (opcional)" maxlength="10" autocomplete="off">
         <button id="btnStart" class="btn-primary">Começar a jornada</button>
@@ -105,8 +106,8 @@
             <div class="ob-item">
                 <div class="ob-emoji">🗺️</div>
                 <div class="ob-item-text">
-                    <h3>9 regiões, 181 fases</h3>
-                    <p>Cada região do mapa é um ano escolar — do 1º ao 9º. Você avança desbloqueando uma fase por vez.</p>
+                    <h3>10 regiões, 201 fases</h3>
+                    <p>Cada região do mapa é um nível escolar — do 1º ano ao vestibular. Você avança desbloqueando uma fase por vez.</p>
                 </div>
             </div>
             <div class="ob-item">
@@ -167,7 +168,7 @@
         <div class="hud-stats">
             <div class="stat" title="XP total"><span>⚡</span><b id="hudXp">0</b></div>
             <div class="stat" title="Estrelas"><span>⭐</span><b id="hudStars">0</b></div>
-            <div class="stat" title="Fases concluídas"><span>🗺️</span><b id="hudPhases">0/181</b></div>
+            <div class="stat" title="Fases concluídas"><span>🗺️</span><b id="hudPhases">0/201</b></div>
             <div class="stat streak-badge" title="Dias seguidos" id="hudStreakBadge" style="display:none">🔥<b id="hudStreak">0</b></div>
         </div>
         <div class="hud-right">
@@ -272,6 +273,7 @@
 <div id="toast" class="toast"></div>
 
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
 <script src="script.js"></script>
 <div id="teacherPage" style="display:none">
 <!-- Loader -->
@@ -293,7 +295,7 @@
         <input id="pwd" class="field" type="password" placeholder="Senha (mínimo 6 caracteres)" autocomplete="current-password">
         <button id="btnAuth" class="btn-primary">Entrar</button>
         <p id="authError" class="t-error"></p>
-        <p class="t-info">Suas turmas e o progresso dos alunos só você vê. Os dados pessoais dos alunos não ficam aqui — só o apelido e o progresso.<br><a href="#" style="color:var(--accent)">Política de privacidade</a></p>
+        <p class="t-info">Suas turmas e o progresso dos alunos só você vê. Os dados pessoais dos alunos não ficam aqui — só o apelido e o progresso.<br><a href="privacy.html" style="color:var(--accent)">Política de privacidade</a></p>
     </div>
 </div>
 
@@ -326,7 +328,7 @@
                 </div>
                 <div id="rosterStats" class="t-roster-stats"></div>
                 <div class="t-roster-actions">
-                    <button onclick="showProjector()" style="padding:.55rem 1rem;background:#161b22;border:1px solid #30363d;color:#e6edf3;border-radius:8px;cursor:pointer;font-family:inherit">📺 Projetor</button>
+                    <button id="btnProjector" style="padding:.55rem 1rem;background:#161b22;border:1px solid #30363d;color:#e6edf3;border-radius:8px;cursor:pointer;font-family:inherit">📺 Projetor</button>
                     <button id="btnExportCSV" class="t-export-btn" title="Baixar dados da turma em CSV">📥 Exportar CSV</button>
                     <button id="btnRefreshRoster" class="t-refresh-btn" title="Atualizar agora"><span>↻</span> Atualizar</button>
                     <button id="rosterCode" class="t-code-pill" title="Clique para copiar">Código</button>
@@ -367,9 +369,9 @@
         <div class="message-section">
             <h3>📢 Mensagem para a turma</h3>
             <div style="display:flex;gap:.5rem;margin-top:.5rem">
-                <input id="classMessageInput" placeholder="Ex: Estudem a região 3 para amanhã!"
+                <input id="classMessageInput" maxlength="500" placeholder="Ex: Estudem a região 3 para amanhã!"
                        style="flex:1;padding:.65rem;border-radius:8px;border:1px solid #30363d;background:#161b22;color:#e6edf3;font-family:inherit">
-                <button onclick="sendClassMessage()" style="padding:.65rem 1rem;background:#f0883e;color:#0d1117;border-radius:8px;font-weight:600;cursor:pointer;white-space:nowrap">📢 Enviar</button>
+                <button id="btnSendClassMessage" style="padding:.65rem 1rem;background:#f0883e;color:#0d1117;border-radius:8px;font-weight:600;cursor:pointer;white-space:nowrap">📢 Enviar</button>
             </div>
             <p style="color:#8b949e;font-size:.8rem;margin-top:.35rem">Os alunos verão esta mensagem como um aviso quando abrirem o jogo.</p>
         </div>
@@ -377,7 +379,7 @@
 
     <p class="t-foot">
         <a href="javascript:history.back()">← Voltar pro jogo</a>
-        • <a href="#">Privacidade</a>
+        • <a href="privacy.html">Privacidade</a>
     </p>
 </div>
 
@@ -453,7 +455,6 @@
     </div>
 </div>
 
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
 (function() {
     const $ = window.$;
@@ -514,6 +515,10 @@
     });
 
     $('btnAuth').addEventListener('click', async () => {
+        if (!window.MQ_BACKEND_CONFIGURED) {
+            $('authError').textContent = 'Backend Supabase ainda não configurado. Preencha config.js antes de usar o painel.';
+            return;
+        }
         const email = $('email').value.trim();
         const pwd = $('pwd').value;
         if (!email || !pwd) {
@@ -559,6 +564,14 @@
         $('dashView').style.display = '';
         $('t-loader').style.display = 'none';
         const { data: { user } } = await sb.auth.getUser();
+        const { data: profile, error } = await sb.from('profiles')
+            .select('role').eq('user_id', user?.id).maybeSingle();
+        if (error || profile?.role !== 'teacher') {
+            await sb.auth.signOut();
+            showLogin();
+            $('authError').textContent = 'Conta sem permissão de professor. Solicite a liberação ao administrador.';
+            return;
+        }
         $('hdrEmail').textContent = user?.email || '';
         await loadClasses();
     }
@@ -737,7 +750,7 @@
             const tr = document.createElement('tr');
             if (justArrived.includes(r.user_id) && lastRosterUserIds.size > 0) { tr.className = 'just-arrived'; setTimeout(() => tr.classList.remove('just-arrived'), 4000); }
             const nickHtml = r.nickname ? `<b>${esc(r.nickname)}</b>` : `<span class="t-no-progress" title="Aluno entrou mas ainda não terminou nenhuma fase">entrou agora</span>`;
-            tr.innerHTML = `<td>${nickHtml}</td><td>${phases}/181</td><td class="t-stars">★ ${totalStars}</td><td>${r.xp}</td><td>${fmtTime(r.updated_at)}</td>`;
+            tr.innerHTML = `<td>${nickHtml}</td><td>${phases}/201</td><td class="t-stars">★ ${totalStars}</td><td>${r.xp}</td><td>${fmtTime(r.updated_at)}</td>`;
             tr.addEventListener('click', () => openStudent(r));
             tbody.appendChild(tr);
         });
@@ -779,7 +792,7 @@
         const content = $('stuckContent');
         const now = Date.now();
         const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000;
-        const stuck = roster.filter(r => { if (r.phases >= 181) return false; if (!r.last) return false; return (now - new Date(r.last).getTime()) > THREE_DAYS_MS; }).map(r => { const days = Math.floor((now - new Date(r.last).getTime()) / (24 * 60 * 60 * 1000)); return { ...r, daysAgo: days }; }).sort((a, b) => b.daysAgo - a.daysAgo);
+        const stuck = roster.filter(r => { if (r.phases >= 201) return false; if (!r.last) return false; return (now - new Date(r.last).getTime()) > THREE_DAYS_MS; }).map(r => { const days = Math.floor((now - new Date(r.last).getTime()) / (24 * 60 * 60 * 1000)); return { ...r, daysAgo: days }; }).sort((a, b) => b.daysAgo - a.daysAgo);
         section.style.display = '';
         if (!stuck.length) { content.innerHTML = '<p class="t-stuck-ok">✅ Todos ativos!</p>'; return; }
         content.innerHTML = `<ul class="t-stuck-list">${stuck.map(r => `<li><span>${esc(r.nickname || '(sem apelido)')}</span><span class="days">parado há ${r.daysAgo} dia${r.daysAgo === 1 ? '' : 's'}</span></li>`).join('')}</ul>`;
@@ -806,15 +819,13 @@
         const btn = $('btnUnlockRegion');
         btn.disabled = true; btn.textContent = 'Desbloqueando…';
         try {
-            const { data: prog, error: e1 } = await sb.from('mathquest_progress').select('achievements').eq('user_id', currentStudentData.user_id).single();
-            if (e1 && e1.code !== 'PGRST116') throw e1;
-            const current = (prog && prog.achievements) ? prog.achievements : [];
-            if (current.includes(key)) { toast(`Região ${regionNum} já está desbloqueada para este aluno.`, 'info'); return; }
-            const updated = [...current, key];
-            const { error: e2 } = await sb.from('mathquest_progress').upsert({ user_id: currentStudentData.user_id, achievements: updated }, { onConflict: 'user_id' });
+            const { error: e2 } = await sb.from('teacher_unlocks').upsert({
+                user_id: currentStudentData.user_id,
+                class_code: currentClassCode,
+                region: regionNum,
+            }, { onConflict: 'class_code,user_id,region' });
             if (e2) throw e2;
             toast(`Região ${regionNum} desbloqueada para ${currentStudentData.nickname || 'aluno'}!`, 'success');
-            currentStudentData.achievements = updated;
         } catch (err) {
             toast('Erro ao desbloquear: ' + (err.message || err), 'error');
         } finally { btn.disabled = false; btn.textContent = 'Desbloquear'; }
@@ -847,6 +858,11 @@
     document.querySelectorAll('.t-modal').forEach(m => { m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }); });
 
     (async function init() {
+        if (!window.MQ_BACKEND_CONFIGURED) {
+            showLogin();
+            $('authError').textContent = 'Backend Supabase ainda não configurado. Preencha config.js antes de usar o painel.';
+            return;
+        }
         const { data: { session } } = await sb.auth.getSession();
         if (session) showDash(); else showLogin();
     })();
@@ -862,7 +878,7 @@
         const overlay = document.createElement('div');
         overlay.className = 'projector-overlay';
         overlay.id = 'projectorOverlay';
-        overlay.innerHTML = `<button class="proj-close" onclick="document.getElementById('projectorOverlay').remove()">✕</button><div class="projector-title">🏫 ${currentClassName || 'Turma'}</div><div class="projector-ranking" id="projRanking"></div><div class="projector-stats" id="projStats"></div>`;
+        overlay.innerHTML = `<button class="proj-close" onclick="document.getElementById('projectorOverlay').remove()">✕</button><div class="projector-title">🏫 ${esc(currentClassName || 'Turma')}</div><div class="projector-ranking" id="projRanking"></div><div class="projector-stats" id="projStats"></div>`;
         document.body.appendChild(overlay);
         overlay.requestFullscreen?.().catch(() => {});
         renderProjector();
@@ -884,9 +900,10 @@
     async function sendClassMessage() {
         const msg = document.getElementById('classMessageInput')?.value.trim();
         if (!msg) return;
-        const code = document.getElementById('classCodeDisplay')?.textContent || currentClassCode;
+        const code = currentClassCode;
         try {
-            await sb.from('class_messages').insert({ class_code: code, message: msg, teacher_note: true, created_at: new Date().toISOString() });
+            const { error } = await sb.from('class_messages').insert({ class_code: code, message: msg });
+            if (error) throw error;
             document.getElementById('classMessageInput').value = '';
             toast('Mensagem enviada!', 'success');
         } catch(e) { toast('Erro ao enviar: ' + e.message, 'error'); }
@@ -895,16 +912,17 @@
     function renderRegionAnalysis() {
         const analysisEl = document.getElementById('regionAnalysis');
         if (!analysisEl || !roster.length) return;
-        const REGION_NAMES = ['', 'Vila dos Números', 'Bosque das Operações', 'Vale das Tabuadas', 'Caverna das Frações', 'Lago dos Decimais', 'Montanha dos Inteiros', 'Deserto das Equações', 'Templo das Potências', 'Cidadela do Mestre'];
-        const regionData = Array.from({length: 9}, (_, i) => {
-            const regId = i + 1;
-            const regionStart = (regId - 1) * 20 + 1;
-            const regionEnd = regId === 9 ? 181 : regId * 20;
+        const regionData = REGIONS.map(reg => {
+            const regId = reg.id;
+            const [regionStart, regionEnd] = reg.range;
             const students = roster.filter(s => { const starsObj = s.rawStars || {}; return Object.keys(starsObj).some(id => { const phaseId = parseInt(id); return phaseId >= regionStart && phaseId <= regionEnd; }); }).length;
-            return { id: regId, name: REGION_NAMES[regId], started: students, total: roster.length };
+            return { id: regId, name: reg.name, started: students, total: roster.length };
         });
         analysisEl.innerHTML = `<h3 style="margin-bottom:.75rem">📊 Alcance por região</h3>` + regionData.map(r => { const pct = r.total ? Math.round(r.started / r.total * 100) : 0; const color = pct >= 70 ? '#3fb950' : pct >= 40 ? '#d29922' : '#f85149'; return `<div style="margin-bottom:.5rem"><div style="display:flex;justify-content:space-between;font-size:.85rem;margin-bottom:.2rem"><span>${esc(r.name)}</span><span style="color:${color}">${r.started}/${r.total} alunos (${pct}%)</span></div><div style="height:6px;background:#161b22;border-radius:3px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:width .4s"></div></div></div>`; }).join('');
     }
+
+    $('btnProjector').addEventListener('click', showProjector);
+    $('btnSendClassMessage').addEventListener('click', sendClassMessage);
 
 })();
 </script>
