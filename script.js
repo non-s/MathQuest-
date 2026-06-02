@@ -1951,11 +1951,29 @@ async function loadRemote() {
     return true;
 }
 
-const persist = () => { saveLocal(); saveRemote(); };
+let remoteSaveTimer = null;
+let remoteSaveChain = Promise.resolve();
+
+function scheduleRemoteSave() {
+    clearTimeout(remoteSaveTimer);
+    remoteSaveTimer = setTimeout(() => {
+        remoteSaveTimer = null;
+        remoteSaveChain = remoteSaveChain.then(() => saveRemote());
+    }, 750);
+}
+
+async function flushRemoteSave() {
+    clearTimeout(remoteSaveTimer);
+    remoteSaveTimer = null;
+    remoteSaveChain = remoteSaveChain.then(() => saveRemote());
+    await remoteSaveChain;
+}
+
+const persist = () => { saveLocal(); scheduleRemoteSave(); };
 // Variante que espera o write remoto terminar.  Usada quando precisamos
 // garantir que o servidor tem a linha (ex: antes de o aluno entrar numa
 // turma, pra que o professor já veja o apelido em vez de "entrou agora").
-const persistAwait = async () => { saveLocal(); await saveRemote(); };
+const persistAwait = async () => { saveLocal(); await flushRemoteSave(); };
 
 /* ─── Auth anônima ─────────────────────────────────────────────────────── */
 async function initAuth() {
@@ -2375,6 +2393,8 @@ function endPhase(completed) {
     } else {
         updateMissions('correct', state.correct);
     }
+
+    renderHud();
 
     // Gap detector (falha)
     if (!completed) {
@@ -3107,6 +3127,7 @@ window.endPhase = function(completed) {
             state.xp += bonus;
             toast(`${event.icon} Bônus da semana: +${bonus} XP!`, 'success');
             persist?.();
+            renderHud();
         }
     }
 };
