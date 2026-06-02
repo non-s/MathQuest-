@@ -1,4 +1,4 @@
-const CACHE = 'mathquest-v2';
+const CACHE = 'mathquest-v3';
 const CORE = ['./', './index.html', './style.css', './script.js', './config.js', './privacy.html', './manifest.json'];
 
 self.addEventListener('install', event => {
@@ -16,7 +16,7 @@ self.addEventListener('fetch', event => {
     const url = new URL(event.request.url);
     const networkFirst = url.origin === location.origin && (url.pathname.endsWith('/') || url.pathname.endsWith('.html') || url.pathname.endsWith('.js'));
     if (networkFirst) {
-        event.respondWith(fetch(event.request).then(response => {
+        event.respondWith(fetch(event.request, { cache: 'no-store' }).then(response => {
             const copy = response.clone();
             caches.open(CACHE).then(cache => cache.put(event.request, copy));
             return response;

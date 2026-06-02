@@ -2934,7 +2934,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (savedFont) document.documentElement.style.setProperty('--font-scale', savedFont);
 
     // Service Worker
-    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
     if (new URLSearchParams(location.search).get('view') !== ROLES.TEACHER) {
         ensureConsent().then(init);
     }
