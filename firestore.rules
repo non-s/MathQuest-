@@ -1,0 +1,279 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function ownerEmail() {
+      return signedIn()
+        && request.auth.token.email in ['sourcenaiomiocc@gmail.com'];
+    }
+
+    function upliftCategory(cat) {
+      return cat in ['motivacao', 'sucesso', 'amor', 'vida', 'sabedoria'];
+    }
+
+    function validUpliftFavorite(data) {
+      return data.quote_text is string
+        && data.quote_text.size() >= 1
+        && data.quote_text.size() <= 500
+        && data.quote_author is string
+        && data.quote_author.size() >= 1
+        && data.quote_author.size() <= 120
+        && upliftCategory(data.quote_cat);
+    }
+
+    function hasTakProfile() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/takstud_profiles/$(request.auth.uid));
+    }
+
+    function takProfile() {
+      return get(/databases/$(database)/documents/takstud_profiles/$(request.auth.uid)).data;
+    }
+
+    function takRole(roles) {
+      return hasTakProfile() && takProfile().role in roles;
+    }
+
+    function takSameSchool(data) {
+      return hasTakProfile() && data.school_id == takProfile().school_id;
+    }
+
+    function hasChamadaProfile() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/chamada_profiles/$(request.auth.uid));
+    }
+
+    function chamadaProfile() {
+      return get(/databases/$(database)/documents/chamada_profiles/$(request.auth.uid)).data;
+    }
+
+    function chamadaRole(roles) {
+      return hasChamadaProfile() && chamadaProfile().role in roles;
+    }
+
+    function chamadaSameSchool(data) {
+      return hasChamadaProfile() && data.school_id == chamadaProfile().school_id;
+    }
+
+    function hasMqProfile() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/profiles/$(request.auth.uid));
+    }
+
+    function mqProfile() {
+      return get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data;
+    }
+
+    function mqTeacher() {
+      return hasMqProfile() && mqProfile().role == 'teacher';
+    }
+
+    function mqClassOwnedByTeacher(classCode) {
+      return mqTeacher()
+        && get(/databases/$(database)/documents/classes/$(classCode)).data.teacher_id == request.auth.uid;
+    }
+
+    function mqMemberOfClass(classCode) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/class_members/$(classCode + '_' + request.auth.uid));
+    }
+
+    match /portfolio_mensagens/{messageId} {
+      allow create: if request.resource.data.nome is string
+        && request.resource.data.nome.size() >= 1
+        && request.resource.data.nome.size() <= 120
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 240
+        && request.resource.data.mensagem is string
+        && request.resource.data.mensagem.size() >= 1
+        && request.resource.data.mensagem.size() <= 3000;
+      allow read: if ownerEmail();
+      allow update, delete: if false;
+    }
+
+    match /uplift_users/{userId}/favorites/{favoriteId} {
+      allow read, delete: if signedIn() && request.auth.uid == userId;
+      allow create, update: if signedIn()
+        && request.auth.uid == userId
+        && validUpliftFavorite(request.resource.data);
+    }
+
+    match /uplift_quote_submissions/{submissionId} {
+      allow create: if signedIn()
+        && request.resource.data.submitted_by == request.auth.uid
+        && request.resource.data.text is string
+        && request.resource.data.text.size() >= 1
+        && request.resource.data.text.size() <= 500
+        && request.resource.data.author is string
+        && request.resource.data.author.size() >= 1
+        && request.resource.data.author.size() <= 120
+        && request.resource.data.cat in ['motivacao', 'sucesso', 'amor', 'vida', 'sabedoria'];
+      allow read, update, delete: if false;
+    }
+
+    match /takstud_schools/{schoolId} {
+      allow read: if hasTakProfile() && takProfile().school_id == schoolId;
+      allow create: if signedIn() && request.resource.data.owner_id == request.auth.uid;
+      allow update, delete: if takRole(['admin']) && takProfile().school_id == schoolId;
+    }
+
+    match /takstud_profiles/{userId} {
+      allow read: if signedIn()
+        && (userId == request.auth.uid || takSameSchool(resource.data));
+      allow create: if signedIn()
+        && userId == request.auth.uid
+        && request.resource.data.role in ['admin', 'teacher', 'student'];
+      allow update: if signedIn()
+        && (
+          (userId == request.auth.uid
+            && request.resource.data.school_id == resource.data.school_id
+            && request.resource.data.role == resource.data.role)
+          || (takRole(['admin']) && takSameSchool(resource.data))
+        );
+      allow delete: if takRole(['admin']) && takSameSchool(resource.data);
+    }
+
+    match /takstud_students/{studentId} {
+      allow read: if takSameSchool(resource.data);
+      allow create: if takSameSchool(request.resource.data) && takRole(['admin', 'teacher']);
+      allow update, delete: if takSameSchool(resource.data) && takRole(['admin', 'teacher']);
+    }
+
+    match /takstud_tasks/{taskId} {
+      allow read: if takSameSchool(resource.data);
+      allow create: if takSameSchool(request.resource.data) && takRole(['admin', 'teacher']);
+      allow update, delete: if takSameSchool(resource.data) && takRole(['admin', 'teacher']);
+    }
+
+    match /takstud_notices/{noticeId} {
+      allow read: if takSameSchool(resource.data);
+      allow create: if takSameSchool(request.resource.data) && takRole(['admin', 'teacher']);
+      allow update, delete: if takSameSchool(resource.data) && takRole(['admin', 'teacher']);
+    }
+
+    match /takstud_schedules/{scheduleId} {
+      allow read: if takSameSchool(resource.data);
+      allow create: if takSameSchool(request.resource.data) && takRole(['admin']);
+      allow update, delete: if takSameSchool(resource.data) && takRole(['admin']);
+    }
+
+    match /chamada_schools/{schoolId} {
+      allow read: if hasChamadaProfile() && chamadaProfile().school_id == schoolId;
+      allow create: if signedIn() && request.resource.data.owner_id == request.auth.uid;
+      allow update, delete: if chamadaRole(['admin']) && chamadaProfile().school_id == schoolId;
+    }
+
+    match /chamada_join_codes/{joinCode} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn()
+        && request.resource.data.created_by == request.auth.uid
+        && request.resource.data.school_id is string;
+      allow update, delete: if chamadaRole(['admin']) && chamadaSameSchool(resource.data);
+    }
+
+    match /chamada_profiles/{userId} {
+      allow read: if signedIn()
+        && (userId == request.auth.uid || chamadaSameSchool(resource.data));
+      allow create: if signedIn()
+        && userId == request.auth.uid
+        && request.resource.data.role in ['admin', 'teacher'];
+      allow update: if signedIn()
+        && (
+          (userId == request.auth.uid
+            && request.resource.data.school_id == resource.data.school_id
+            && request.resource.data.role == resource.data.role)
+          || (chamadaRole(['admin']) && chamadaSameSchool(resource.data))
+        );
+      allow delete: if chamadaRole(['admin']) && chamadaSameSchool(resource.data);
+    }
+
+    match /chamada_turmas/{turmaId} {
+      allow read: if chamadaSameSchool(resource.data);
+      allow create: if chamadaSameSchool(request.resource.data) && chamadaRole(['admin']);
+      allow update, delete: if chamadaSameSchool(resource.data) && chamadaRole(['admin']);
+    }
+
+    match /chamada_alunos/{alunoId} {
+      allow read: if chamadaSameSchool(resource.data);
+      allow create: if chamadaSameSchool(request.resource.data) && chamadaRole(['admin']);
+      allow update, delete: if chamadaSameSchool(resource.data) && chamadaRole(['admin']);
+    }
+
+    match /chamada_chamadas/{chamadaId} {
+      allow read: if chamadaSameSchool(resource.data);
+      allow create: if chamadaSameSchool(request.resource.data) && chamadaRole(['admin', 'teacher']);
+      allow update, delete: if false;
+    }
+
+    match /chamada_presencas/{presencaId} {
+      allow read: if chamadaSameSchool(resource.data);
+      allow create: if chamadaSameSchool(request.resource.data) && chamadaRole(['admin', 'teacher']);
+      allow update, delete: if false;
+    }
+
+    match /profiles/{userId} {
+      allow read: if signedIn() && (userId == request.auth.uid || mqTeacher());
+      allow create, update: if signedIn()
+        && userId == request.auth.uid
+        && request.resource.data.role == 'teacher';
+      allow delete: if false;
+    }
+
+    match /mathquest_progress/{userId} {
+      allow read: if signedIn() && (userId == request.auth.uid || mqTeacher());
+      allow create, update: if signedIn()
+        && userId == request.auth.uid
+        && request.resource.data.user_id == request.auth.uid;
+      allow delete: if false;
+    }
+
+    match /classes/{classCode} {
+      allow get: if signedIn();
+      allow list: if mqTeacher() && resource.data.teacher_id == request.auth.uid;
+      allow create: if mqTeacher()
+        && request.resource.data.teacher_id == request.auth.uid
+        && request.resource.data.code == classCode;
+      allow update, delete: if mqTeacher() && resource.data.teacher_id == request.auth.uid;
+    }
+
+    match /class_members/{memberId} {
+      allow read: if signedIn()
+        && (resource.data.user_id == request.auth.uid || mqClassOwnedByTeacher(resource.data.class_code));
+      allow create, update: if signedIn()
+        && request.resource.data.user_id == request.auth.uid
+        && memberId == request.resource.data.class_code + '_' + request.auth.uid
+        && exists(/databases/$(database)/documents/classes/$(request.resource.data.class_code));
+      allow delete: if mqClassOwnedByTeacher(resource.data.class_code);
+    }
+
+    match /teacher_unlocks/{unlockId} {
+      allow read: if signedIn()
+        && (resource.data.user_id == request.auth.uid || mqClassOwnedByTeacher(resource.data.class_code));
+      allow create, update: if request.resource.data.user_id is string
+        && request.resource.data.class_code is string
+        && request.resource.data.region is int
+        && mqClassOwnedByTeacher(request.resource.data.class_code);
+      allow delete: if mqClassOwnedByTeacher(resource.data.class_code);
+    }
+
+    match /class_messages/{messageId} {
+      allow read: if signedIn()
+        && (mqMemberOfClass(resource.data.class_code) || mqClassOwnedByTeacher(resource.data.class_code));
+      allow create: if request.resource.data.class_code is string
+        && request.resource.data.message is string
+        && request.resource.data.message.size() >= 1
+        && request.resource.data.message.size() <= 1000
+        && mqClassOwnedByTeacher(request.resource.data.class_code);
+      allow update, delete: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
