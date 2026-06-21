@@ -1,4 +1,288 @@
 window.MATHQUEST_CONFIG = {
-    supabaseUrl: 'https://tlxckwsqzuedospqqyfw.supabase.co',
-    supabaseAnonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRseGNrd3NxenVlZG9zcHFxeWZ3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1ODM5NjAsImV4cCI6MjA5NDE1OTk2MH0.NIAf7zjDStOPgt10cza5s_1Kwk6a_uWkkpjLJ4UGKyw',
+    firebaseConfig: {
+        apiKey: 'AIzaSyA2xD3W8W8uqoc8nTG2FExgDDDj4u0zono',
+        authDomain: 'non-s-firebase-20260621.firebaseapp.com',
+        databaseURL: 'https://non-s-firebase-20260621-default-rtdb.firebaseio.com',
+        projectId: 'non-s-firebase-20260621',
+        storageBucket: 'non-s-firebase-20260621.firebasestorage.app',
+        messagingSenderId: '459551505638',
+        appId: '1:459551505638:web:a51eadf0ed941c22af8f27',
+    },
+};
+
+firebase.initializeApp(window.MATHQUEST_CONFIG.firebaseConfig);
+const mqAuth = firebase.auth();
+const mqDb = firebase.firestore();
+
+window.MQ_BACKEND_CONFIGURED = true;
+
+const TABLE_COLLECTIONS = {
+    profiles: 'profiles',
+    mathquest_progress: 'mathquest_progress',
+    classes: 'classes',
+    class_members: 'class_members',
+    teacher_unlocks: 'teacher_unlocks',
+    class_messages: 'class_messages',
+};
+
+function mqNow() {
+    return new Date().toISOString();
+}
+
+function mqSnapshotToRecord(doc) {
+    const data = doc.data() || {};
+    const normalized = {};
+    Object.entries(data).forEach(([key, value]) => {
+        normalized[key] = value && typeof value.toDate === 'function' ? value.toDate().toISOString() : value;
+    });
+    return { id: doc.id, ...normalized };
+}
+
+function mqRecordMatches(record, filter) {
+    const value = record[filter.field];
+    if (filter.op === 'eq') return value === filter.value;
+    if (filter.op === 'in') return filter.value.includes(value);
+    if (filter.op === 'gte') return String(value ?? '') >= String(filter.value ?? '');
+    return true;
+}
+
+function mqSortBy(field, ascending = true) {
+    return (a, b) => {
+        const result = String(a[field] ?? '').localeCompare(String(b[field] ?? ''), undefined, { numeric: true });
+        return ascending ? result : -result;
+    };
+}
+
+function mqDocId(collectionName, payload) {
+    if (collectionName === 'profiles') return payload.user_id;
+    if (collectionName === 'mathquest_progress') return payload.user_id;
+    if (collectionName === 'classes') return payload.code;
+    if (collectionName === 'class_members') return `${payload.class_code}_${payload.user_id}`;
+    if (collectionName === 'teacher_unlocks') return `${payload.class_code}_${payload.user_id}_${payload.region}`;
+    return null;
+}
+
+class MathQuestQuery {
+    constructor(table) {
+        this.collectionName = TABLE_COLLECTIONS[table] || table;
+        this.filters = [];
+        this.orders = [];
+        this.limitCount = null;
+        this.expectSingle = false;
+        this.mode = 'select';
+        this.payload = null;
+    }
+
+    select() {
+        this.mode = 'select';
+        return this;
+    }
+
+    eq(field, value) {
+        this.filters.push({ field, op: 'eq', value });
+        return this;
+    }
+
+    in(field, value) {
+        this.filters.push({ field, op: 'in', value });
+        return this;
+    }
+
+    gte(field, value) {
+        this.filters.push({ field, op: 'gte', value });
+        return this;
+    }
+
+    order(field, options = {}) {
+        this.orders.push({ field, ascending: options.ascending !== false });
+        return this;
+    }
+
+    limit(count) {
+        this.limitCount = count;
+        return this;
+    }
+
+    maybeSingle() {
+        this.expectSingle = true;
+        return this.execute();
+    }
+
+    single() {
+        this.expectSingle = true;
+        return this.execute();
+    }
+
+    insert(payload) {
+        this.mode = 'insert';
+        this.payload = Array.isArray(payload) ? payload[0] : payload;
+        return this.execute();
+    }
+
+    upsert(payload) {
+        this.mode = 'upsert';
+        this.payload = Array.isArray(payload) ? payload[0] : payload;
+        return this.execute();
+    }
+
+    delete() {
+        this.mode = 'delete';
+        return this;
+    }
+
+    then(resolve, reject) {
+        return this.execute().then(resolve, reject);
+    }
+
+    async execute() {
+        try {
+            if (this.mode === 'insert' || this.mode === 'upsert') {
+                const payload = {
+                    ...this.payload,
+                    created_at: this.payload.created_at || mqNow(),
+                    updated_at: this.payload.updated_at || mqNow(),
+                };
+                const id = mqDocId(this.collectionName, payload);
+                if (id) {
+                    await mqDb.collection(this.collectionName).doc(id).set(payload, { merge: this.mode === 'upsert' });
+                    return { data: [{ id, ...payload }], error: null };
+                }
+                const ref = await mqDb.collection(this.collectionName).add(payload);
+                return { data: [{ id: ref.id, ...payload }], error: null };
+            }
+
+            if (this.mode === 'delete') {
+                const codeFilter = this.filters.find(filter => filter.field === 'code' && filter.op === 'eq');
+                const idFilter = this.filters.find(filter => filter.field === 'id' && filter.op === 'eq');
+                const id = codeFilter?.value || idFilter?.value;
+                if (!id) throw new Error('Exclusao requer filtro por id ou code.');
+                await mqDb.collection(this.collectionName).doc(id).delete();
+                return { data: null, error: null };
+            }
+
+            let ref = mqDb.collection(this.collectionName);
+            const idFilter = this.filters.find(filter => filter.field === 'id' && filter.op === 'eq');
+            let docs;
+            if (idFilter) {
+                const doc = await ref.doc(idFilter.value).get();
+                docs = doc.exists ? [doc] : [];
+            } else {
+                const equalityFilters = this.filters.filter(filter => filter.op === 'eq');
+                equalityFilters.forEach(filter => {
+                    ref = ref.where(filter.field, '==', filter.value);
+                });
+                docs = (await ref.get()).docs;
+            }
+
+            let data = docs.map(mqSnapshotToRecord).filter(record => this.filters.every(filter => mqRecordMatches(record, filter)));
+            for (const order of [...this.orders].reverse()) data = data.sort(mqSortBy(order.field, order.ascending));
+            if (this.limitCount) data = data.slice(0, this.limitCount);
+            return { data: this.expectSingle ? (data[0] || null) : data, error: null };
+        } catch (error) {
+            return { data: this.expectSingle ? null : [], error };
+        }
+    }
+}
+
+function mqAuthSession(user) {
+    return user ? { user: { id: user.uid, email: user.email, uid: user.uid } } : null;
+}
+
+async function mqGetCurrentUser() {
+    if (mqAuth.currentUser) return mqAuth.currentUser;
+    return new Promise(resolve => {
+        const unsubscribe = mqAuth.onAuthStateChanged(user => {
+            unsubscribe();
+            resolve(user);
+        });
+    });
+}
+
+async function mqJoinClass(code) {
+    const user = await mqGetCurrentUser();
+    if (!user) throw new Error('Usuario nao autenticado.');
+    const clsDoc = await mqDb.collection('classes').doc(code).get();
+    if (!clsDoc.exists) return null;
+    const cls = { code: clsDoc.id, ...clsDoc.data() };
+    await mqDb.collection('class_members').doc(`${code}_${user.uid}`).set({
+        class_code: code,
+        user_id: user.uid,
+        joined_at: mqNow(),
+    }, { merge: true });
+    return cls;
+}
+
+async function mqClassLeaderboard(code) {
+    const members = await mqDb.collection('class_members').where('class_code', '==', code).get();
+    const rows = [];
+    for (const memberDoc of members.docs) {
+        const member = memberDoc.data();
+        const progressDoc = await mqDb.collection('mathquest_progress').doc(member.user_id).get();
+        if (progressDoc.exists) rows.push({ user_id: member.user_id, ...progressDoc.data() });
+    }
+    return rows.sort((a, b) => (b.xp || 0) - (a.xp || 0));
+}
+
+window.sb = {
+    auth: {
+        async getSession() {
+            const user = await mqGetCurrentUser();
+            return { data: { session: mqAuthSession(user) }, error: null };
+        },
+        async getUser() {
+            const user = await mqGetCurrentUser();
+            return { data: { user: user ? { id: user.uid, email: user.email, uid: user.uid } : null }, error: null };
+        },
+        async signInAnonymously() {
+            try {
+                const credential = await mqAuth.signInAnonymously();
+                return { data: { user: { id: credential.user.uid, uid: credential.user.uid } }, error: null };
+            } catch (error) {
+                return { data: null, error };
+            }
+        },
+        async signInWithPassword({ email, password }) {
+            try {
+                const credential = await mqAuth.signInWithEmailAndPassword(email, password);
+                return { data: { user: { id: credential.user.uid, email: credential.user.email }, session: mqAuthSession(credential.user) }, error: null };
+            } catch (error) {
+                return { data: null, error };
+            }
+        },
+        async signUp({ email, password }) {
+            try {
+                const credential = await mqAuth.createUserWithEmailAndPassword(email, password);
+                await mqDb.collection('profiles').doc(credential.user.uid).set({
+                    user_id: credential.user.uid,
+                    email,
+                    role: 'teacher',
+                    created_at: mqNow(),
+                    updated_at: mqNow(),
+                }, { merge: true });
+                return { data: { user: { id: credential.user.uid, email }, session: mqAuthSession(credential.user) }, error: null };
+            } catch (error) {
+                return { data: null, error };
+            }
+        },
+        async signOut() {
+            await mqAuth.signOut();
+        },
+        onAuthStateChange(callback) {
+            return mqAuth.onAuthStateChanged(user => {
+                callback(user ? 'SIGNED_IN' : 'SIGNED_OUT', mqAuthSession(user));
+            });
+        },
+    },
+    from(table) {
+        return new MathQuestQuery(table);
+    },
+    async rpc(name, params) {
+        try {
+            if (name === 'join_class') return { data: await mqJoinClass(params.p_code), error: null };
+            if (name === 'class_leaderboard') return { data: await mqClassLeaderboard(params.p_class_code), error: null };
+            throw new Error(`RPC Firebase nao implementada: ${name}`);
+        } catch (error) {
+            return { data: null, error };
+        }
+    },
 };
