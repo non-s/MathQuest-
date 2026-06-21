@@ -1562,7 +1562,7 @@ const g_matrizBasica = () => Q(5, () => {
         { s: 'Uma matriz 2×3 tem quantos elementos?', r: 6, d: [5, 8, 2],
           e: 'Elementos = linhas × colunas = 2×3 = <b>6</b>.' },
         { s: 'Matriz transposta de [[1,2],[3,4]] é:', r: '[[1,3],[2,4]]', d: ['[[4,2],[3,1]]', '[[1,2],[3,4]]', '[[3,1],[4,2]]'],
-          e: '<b>Transposta:</b> troca linhas por colunas. (Aáµ€)áµ¢â±¼ = Aâ±¼áµ¢.' },
+          e: '<b>Transposta:</b> troca linhas por colunas. (A^T)[i,j] = A[j,i].' },
     ];
     const it = pick(items);
     return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
