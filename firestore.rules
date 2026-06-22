@@ -11,18 +11,63 @@ service cloud.firestore {
         && request.auth.token.email in ['sourcenaiomiocc@gmail.com'];
     }
 
+    function portfolioString(value, min, max) {
+      return value is string
+        && value.size() >= min
+        && value.size() <= max;
+    }
+
+    function portfolioOptionalPath(data) {
+      return !data.keys().hasAny(['page_path'])
+        || (data.page_path is string && data.page_path.size() <= 120);
+    }
+
+    function portfolioEmailValid(data) {
+      return data.email is string
+        && data.email.size() <= 240
+        && (data.email == '' || data.email.matches('^[^\\s@]+@[^\\s@]+\\.[^\\s@]{2,}$'));
+    }
+
+    function validPortfolioMessage(data) {
+      return data.keys().hasOnly(['nome', 'email', 'mensagem', 'page_path', 'submitted_by', 'created_at'])
+        && data.keys().hasAll(['nome', 'email', 'mensagem', 'submitted_by', 'created_at'])
+        && portfolioString(data.nome, 1, 80)
+        && portfolioEmailValid(data)
+        && portfolioString(data.mensagem, 1, 2000)
+        && data.submitted_by == request.auth.uid
+        && data.created_at == request.time
+        && portfolioOptionalPath(data);
+    }
+
     function upliftCategory(cat) {
       return cat in ['motivacao', 'sucesso', 'amor', 'vida', 'sabedoria'];
     }
 
     function validUpliftFavorite(data) {
-      return data.quote_text is string
+      return data.keys().hasOnly(['quote_text', 'quote_author', 'quote_cat', 'created_at'])
+        && data.keys().hasAll(['quote_text', 'quote_author', 'quote_cat', 'created_at'])
+        && data.quote_text is string
         && data.quote_text.size() >= 1
         && data.quote_text.size() <= 500
         && data.quote_author is string
         && data.quote_author.size() >= 1
         && data.quote_author.size() <= 120
-        && upliftCategory(data.quote_cat);
+        && upliftCategory(data.quote_cat)
+        && data.created_at == request.time;
+    }
+
+    function validUpliftSubmission(data) {
+      return data.keys().hasOnly(['text', 'author', 'cat', 'submitted_by', 'created_at'])
+        && data.keys().hasAll(['text', 'author', 'cat', 'submitted_by', 'created_at'])
+        && data.submitted_by == request.auth.uid
+        && data.text is string
+        && data.text.size() >= 1
+        && data.text.size() <= 500
+        && data.author is string
+        && data.author.size() >= 1
+        && data.author.size() <= 120
+        && upliftCategory(data.cat)
+        && data.created_at == request.time;
     }
 
     function hasTakProfile() {
@@ -42,6 +87,118 @@ service cloud.firestore {
       return hasTakProfile() && data.school_id == takProfile().school_id;
     }
 
+    function takString(value, min, max) {
+      return value is string && value.size() >= min && value.size() <= max;
+    }
+
+    function takOptionalString(data, field, max) {
+      return !(field in data)
+        || data[field] == null
+        || (data[field] is string && data[field].size() <= max);
+    }
+
+    function takOptionalTimestamp(data, field) {
+      return !(field in data) || data[field] is timestamp;
+    }
+
+    function validTakSchoolCreate(data) {
+      return data.keys().hasOnly(['name', 'owner_id', 'created_at', 'updated_at'])
+        && takString(data.name, 1, 120)
+        && data.owner_id == request.auth.uid
+        && takOptionalTimestamp(data, 'created_at')
+        && takOptionalTimestamp(data, 'updated_at');
+    }
+
+    function validTakSchoolUpdate(data) {
+      return data.keys().hasOnly(['name', 'owner_id', 'created_at', 'updated_at'])
+        && takString(data.name, 1, 120)
+        && data.owner_id == resource.data.owner_id
+        && takOptionalTimestamp(data, 'created_at')
+        && takOptionalTimestamp(data, 'updated_at');
+    }
+
+    function takSchoolOwnedAfter(schoolId) {
+      return existsAfter(/databases/$(database)/documents/takstud_schools/$(schoolId))
+        && getAfter(/databases/$(database)/documents/takstud_schools/$(schoolId)).data.owner_id == request.auth.uid;
+    }
+
+    function validTakProfile(data) {
+      return data.keys().hasOnly(['full_name', 'role', 'school_id', 'created_at', 'updated_at'])
+        && takString(data.full_name, 1, 120)
+        && data.role in ['admin', 'teacher', 'student']
+        && takString(data.school_id, 1, 128)
+        && takOptionalTimestamp(data, 'created_at')
+        && takOptionalTimestamp(data, 'updated_at');
+    }
+
+    function validTakProfileCreate(userId, data) {
+      return userId == request.auth.uid
+        && validTakProfile(data)
+        && data.role == 'admin'
+        && takSchoolOwnedAfter(data.school_id);
+    }
+
+    function validTakProfileSelfUpdate(userId, data) {
+      return userId == request.auth.uid
+        && validTakProfile(data)
+        && data.school_id == resource.data.school_id
+        && data.role == resource.data.role;
+    }
+
+    function validTakProfileAdminUpdate(data) {
+      return takRole(['admin'])
+        && takSameSchool(resource.data)
+        && validTakProfile(data)
+        && data.school_id == resource.data.school_id;
+    }
+
+    function validTakStudent(data) {
+      return data.keys().hasOnly(['name', 'cls', 'email', 'school_id', 'created_at', 'updated_at'])
+        && takString(data.name, 1, 120)
+        && takString(data.cls, 1, 80)
+        && takOptionalString(data, 'email', 240)
+        && takString(data.school_id, 1, 128)
+        && takOptionalTimestamp(data, 'created_at')
+        && takOptionalTimestamp(data, 'updated_at');
+    }
+
+    function validTakTask(data) {
+      return data.keys().hasOnly(['title', 'subject', 'due_date', 'description', 'done', 'school_id', 'created_at', 'updated_at'])
+        && takString(data.title, 1, 160)
+        && takOptionalString(data, 'subject', 120)
+        && takOptionalString(data, 'due_date', 20)
+        && takOptionalString(data, 'description', 2000)
+        && data.done is bool
+        && takString(data.school_id, 1, 128)
+        && takOptionalTimestamp(data, 'created_at')
+        && takOptionalTimestamp(data, 'updated_at');
+    }
+
+    function validTakNotice(data) {
+      return data.keys().hasOnly(['title', 'content', 'school_id', 'created_at', 'updated_at'])
+        && takString(data.title, 1, 160)
+        && takString(data.content, 1, 3000)
+        && takString(data.school_id, 1, 128)
+        && takOptionalTimestamp(data, 'created_at')
+        && takOptionalTimestamp(data, 'updated_at');
+    }
+
+    function validTakSchedule(data) {
+      return data.keys().hasOnly(['time_slot', 'mon', 'tue', 'wed', 'thu', 'fri', 'school_id', 'sort_order', 'created_at', 'updated_at'])
+        && takString(data.time_slot, 1, 40)
+        && takOptionalString(data, 'mon', 120)
+        && takOptionalString(data, 'tue', 120)
+        && takOptionalString(data, 'wed', 120)
+        && takOptionalString(data, 'thu', 120)
+        && takOptionalString(data, 'fri', 120)
+        && takString(data.school_id, 1, 128)
+        && data.sort_order is int
+        && data.sort_order >= 0
+        && data.sort_order <= 200
+        && takOptionalTimestamp(data, 'created_at')
+        && takOptionalTimestamp(data, 'updated_at');
+    }
+
     function hasChamadaProfile() {
       return signedIn()
         && exists(/databases/$(database)/documents/chamada_profiles/$(request.auth.uid));
@@ -57,6 +214,158 @@ service cloud.firestore {
 
     function chamadaSameSchool(data) {
       return hasChamadaProfile() && data.school_id == chamadaProfile().school_id;
+    }
+
+    function chamadaString(value, min, max) {
+      return value is string && value.size() >= min && value.size() <= max;
+    }
+
+    function chamadaOptionalTimestamp(data, field) {
+      return !(field in data) || data[field] is timestamp;
+    }
+
+    function chamadaOptionalString(data, field, max) {
+      return !(field in data)
+        || data[field] == null
+        || (data[field] is string && data[field].size() <= max);
+    }
+
+    function chamadaSchoolOwnedAfter(schoolId) {
+      return existsAfter(/databases/$(database)/documents/chamada_schools/$(schoolId))
+        && getAfter(/databases/$(database)/documents/chamada_schools/$(schoolId)).data.owner_id == request.auth.uid;
+    }
+
+    function chamadaJoinCodeMatches(joinCode, schoolId) {
+      return exists(/databases/$(database)/documents/chamada_join_codes/$(joinCode))
+        && get(/databases/$(database)/documents/chamada_join_codes/$(joinCode)).data.school_id == schoolId;
+    }
+
+    function chamadaJoinCodeMatchesAfter(joinCode, schoolId) {
+      return existsAfter(/databases/$(database)/documents/chamada_join_codes/$(joinCode))
+        && getAfter(/databases/$(database)/documents/chamada_join_codes/$(joinCode)).data.school_id == schoolId
+        && getAfter(/databases/$(database)/documents/chamada_join_codes/$(joinCode)).data.created_by == request.auth.uid;
+    }
+
+    function validChamadaSchoolCreate(schoolId, data) {
+      return data.keys().hasOnly(['name', 'join_code', 'owner_id', 'created_at', 'updated_at'])
+        && chamadaString(data.name, 1, 120)
+        && chamadaString(data.join_code, 4, 32)
+        && data.owner_id == request.auth.uid
+        && chamadaJoinCodeMatchesAfter(data.join_code, schoolId)
+        && chamadaOptionalTimestamp(data, 'created_at')
+        && chamadaOptionalTimestamp(data, 'updated_at');
+    }
+
+    function validChamadaSchoolUpdate(data) {
+      return data.keys().hasOnly(['name', 'join_code', 'owner_id', 'created_at', 'updated_at'])
+        && chamadaString(data.name, 1, 120)
+        && data.join_code == resource.data.join_code
+        && data.owner_id == resource.data.owner_id
+        && chamadaOptionalTimestamp(data, 'created_at')
+        && chamadaOptionalTimestamp(data, 'updated_at');
+    }
+
+    function validChamadaJoinCodeCreate(joinCode, data) {
+      return data.keys().hasOnly(['school_id', 'school_name', 'created_at', 'created_by'])
+        && chamadaString(joinCode, 4, 32)
+        && chamadaString(data.school_id, 1, 128)
+        && chamadaString(data.school_name, 1, 120)
+        && data.created_by == request.auth.uid
+        && chamadaSchoolOwnedAfter(data.school_id)
+        && getAfter(/databases/$(database)/documents/chamada_schools/$(data.school_id)).data.join_code == joinCode
+        && chamadaOptionalTimestamp(data, 'created_at');
+    }
+
+    function validChamadaProfile(data) {
+      return data.keys().hasOnly(['full_name', 'role', 'school_id', 'join_code', 'created_at', 'updated_at'])
+        && chamadaString(data.full_name, 1, 120)
+        && data.role in ['admin', 'teacher']
+        && chamadaString(data.school_id, 1, 128)
+        && chamadaOptionalString(data, 'join_code', 32)
+        && chamadaOptionalTimestamp(data, 'created_at')
+        && chamadaOptionalTimestamp(data, 'updated_at');
+    }
+
+    function validChamadaProfileCreate(userId, data) {
+      return userId == request.auth.uid
+        && validChamadaProfile(data)
+        && (
+          (data.role == 'admin' && chamadaSchoolOwnedAfter(data.school_id))
+          || (data.role == 'teacher'
+            && chamadaString(data.join_code, 4, 32)
+            && chamadaJoinCodeMatches(data.join_code, data.school_id))
+        );
+    }
+
+    function validChamadaProfileSelfUpdate(userId, data) {
+      return userId == request.auth.uid
+        && validChamadaProfile(data)
+        && data.school_id == resource.data.school_id
+        && data.role == resource.data.role
+        && data.join_code == resource.data.join_code;
+    }
+
+    function validChamadaProfileAdminUpdate(data) {
+      return chamadaRole(['admin'])
+        && chamadaSameSchool(resource.data)
+        && validChamadaProfile(data)
+        && data.school_id == resource.data.school_id;
+    }
+
+    function validChamadaTurma(data) {
+      return data.keys().hasOnly(['name', 'shift', 'teacher_id', 'school_id', 'created_at', 'updated_at'])
+        && chamadaString(data.name, 1, 120)
+        && data.shift in ['morning', 'afternoon']
+        && chamadaOptionalString(data, 'teacher_id', 128)
+        && chamadaString(data.school_id, 1, 128)
+        && chamadaOptionalTimestamp(data, 'created_at')
+        && chamadaOptionalTimestamp(data, 'updated_at');
+    }
+
+    function validChamadaAluno(data) {
+      return data.keys().hasOnly(['name', 'turma_id', 'school_id', 'active', 'created_at', 'updated_at'])
+        && chamadaString(data.name, 1, 120)
+        && chamadaString(data.turma_id, 1, 128)
+        && chamadaString(data.school_id, 1, 128)
+        && data.active is bool
+        && exists(/databases/$(database)/documents/chamada_turmas/$(data.turma_id))
+        && get(/databases/$(database)/documents/chamada_turmas/$(data.turma_id)).data.school_id == data.school_id
+        && chamadaOptionalTimestamp(data, 'created_at')
+        && chamadaOptionalTimestamp(data, 'updated_at');
+    }
+
+    function chamadaCanWriteTurma(turmaId) {
+      return chamadaRole(['admin'])
+        || (
+          chamadaRole(['teacher'])
+          && exists(/databases/$(database)/documents/chamada_turmas/$(turmaId))
+          && get(/databases/$(database)/documents/chamada_turmas/$(turmaId)).data.teacher_id == request.auth.uid
+        );
+    }
+
+    function validChamadaRecord(data) {
+      return data.keys().hasOnly(['turma_id', 'date', 'teacher_id', 'school_id', 'created_at'])
+        && chamadaString(data.turma_id, 1, 128)
+        && chamadaString(data.date, 10, 10)
+        && data.teacher_id == request.auth.uid
+        && chamadaString(data.school_id, 1, 128)
+        && chamadaCanWriteTurma(data.turma_id)
+        && exists(/databases/$(database)/documents/chamada_turmas/$(data.turma_id))
+        && get(/databases/$(database)/documents/chamada_turmas/$(data.turma_id)).data.school_id == data.school_id
+        && chamadaOptionalTimestamp(data, 'created_at');
+    }
+
+    function validChamadaPresenca(data) {
+      return data.keys().hasOnly(['chamada_id', 'aluno_id', 'aluno_name', 'turma_id', 'turma_name', 'present', 'school_id', 'chamada_date', 'created_at'])
+        && chamadaString(data.chamada_id, 1, 128)
+        && chamadaString(data.aluno_id, 1, 128)
+        && chamadaString(data.aluno_name, 1, 120)
+        && chamadaString(data.turma_id, 1, 128)
+        && chamadaString(data.turma_name, 1, 120)
+        && data.present is bool
+        && chamadaString(data.school_id, 1, 128)
+        && chamadaString(data.chamada_date, 10, 10)
+        && chamadaOptionalTimestamp(data, 'created_at');
     }
 
     function hasMqProfile() {
@@ -225,14 +534,7 @@ service cloud.firestore {
     }
 
     match /portfolio_mensagens/{messageId} {
-      allow create: if request.resource.data.nome is string
-        && request.resource.data.nome.size() >= 1
-        && request.resource.data.nome.size() <= 120
-        && request.resource.data.email is string
-        && request.resource.data.email.size() <= 240
-        && request.resource.data.mensagem is string
-        && request.resource.data.mensagem.size() >= 1
-        && request.resource.data.mensagem.size() <= 3000;
+      allow create: if signedIn() && validPortfolioMessage(request.resource.data);
       allow read: if ownerEmail();
       allow update, delete: if false;
     }
@@ -246,75 +548,94 @@ service cloud.firestore {
 
     match /uplift_quote_submissions/{submissionId} {
       allow create: if signedIn()
-        && request.resource.data.submitted_by == request.auth.uid
-        && request.resource.data.text is string
-        && request.resource.data.text.size() >= 1
-        && request.resource.data.text.size() <= 500
-        && request.resource.data.author is string
-        && request.resource.data.author.size() >= 1
-        && request.resource.data.author.size() <= 120
-        && request.resource.data.cat in ['motivacao', 'sucesso', 'amor', 'vida', 'sabedoria'];
+        && validUpliftSubmission(request.resource.data);
       allow read, update, delete: if false;
     }
 
     match /takstud_schools/{schoolId} {
       allow read: if hasTakProfile() && takProfile().school_id == schoolId;
-      allow create: if signedIn() && request.resource.data.owner_id == request.auth.uid;
-      allow update, delete: if takRole(['admin']) && takProfile().school_id == schoolId;
+      allow create: if signedIn() && validTakSchoolCreate(request.resource.data);
+      allow update: if takRole(['admin'])
+        && takProfile().school_id == schoolId
+        && validTakSchoolUpdate(request.resource.data);
+      allow delete: if false;
     }
 
     match /takstud_profiles/{userId} {
       allow read: if signedIn()
         && (userId == request.auth.uid || takSameSchool(resource.data));
       allow create: if signedIn()
-        && userId == request.auth.uid
-        && request.resource.data.role in ['admin', 'teacher', 'student'];
+        && validTakProfileCreate(userId, request.resource.data);
       allow update: if signedIn()
         && (
-          (userId == request.auth.uid
-            && request.resource.data.school_id == resource.data.school_id
-            && request.resource.data.role == resource.data.role)
-          || (takRole(['admin']) && takSameSchool(resource.data))
+          validTakProfileSelfUpdate(userId, request.resource.data)
+          || validTakProfileAdminUpdate(request.resource.data)
         );
       allow delete: if takRole(['admin']) && takSameSchool(resource.data);
     }
 
     match /takstud_students/{studentId} {
       allow read: if takSameSchool(resource.data);
-      allow create: if takSameSchool(request.resource.data) && takRole(['admin', 'teacher']);
-      allow update, delete: if takSameSchool(resource.data) && takRole(['admin', 'teacher']);
+      allow create: if takSameSchool(request.resource.data)
+        && takRole(['admin', 'teacher'])
+        && validTakStudent(request.resource.data);
+      allow update: if takSameSchool(resource.data)
+        && takRole(['admin', 'teacher'])
+        && request.resource.data.school_id == resource.data.school_id
+        && validTakStudent(request.resource.data);
+      allow delete: if takSameSchool(resource.data) && takRole(['admin', 'teacher']);
     }
 
     match /takstud_tasks/{taskId} {
       allow read: if takSameSchool(resource.data);
-      allow create: if takSameSchool(request.resource.data) && takRole(['admin', 'teacher']);
-      allow update, delete: if takSameSchool(resource.data) && takRole(['admin', 'teacher']);
+      allow create: if takSameSchool(request.resource.data)
+        && takRole(['admin', 'teacher'])
+        && validTakTask(request.resource.data);
+      allow update: if takSameSchool(resource.data)
+        && takRole(['admin', 'teacher'])
+        && request.resource.data.school_id == resource.data.school_id
+        && validTakTask(request.resource.data);
+      allow delete: if takSameSchool(resource.data) && takRole(['admin', 'teacher']);
     }
 
     match /takstud_notices/{noticeId} {
       allow read: if takSameSchool(resource.data);
-      allow create: if takSameSchool(request.resource.data) && takRole(['admin', 'teacher']);
-      allow update, delete: if takSameSchool(resource.data) && takRole(['admin', 'teacher']);
+      allow create: if takSameSchool(request.resource.data)
+        && takRole(['admin', 'teacher'])
+        && validTakNotice(request.resource.data);
+      allow update: if takSameSchool(resource.data)
+        && takRole(['admin', 'teacher'])
+        && request.resource.data.school_id == resource.data.school_id
+        && validTakNotice(request.resource.data);
+      allow delete: if takSameSchool(resource.data) && takRole(['admin', 'teacher']);
     }
 
     match /takstud_schedules/{scheduleId} {
       allow read: if takSameSchool(resource.data);
-      allow create: if takSameSchool(request.resource.data) && takRole(['admin']);
-      allow update, delete: if takSameSchool(resource.data) && takRole(['admin']);
+      allow create: if takSameSchool(request.resource.data)
+        && takRole(['admin'])
+        && validTakSchedule(request.resource.data);
+      allow update: if takSameSchool(resource.data)
+        && takRole(['admin'])
+        && request.resource.data.school_id == resource.data.school_id
+        && validTakSchedule(request.resource.data);
+      allow delete: if takSameSchool(resource.data) && takRole(['admin']);
     }
 
     match /chamada_schools/{schoolId} {
       allow read: if hasChamadaProfile() && chamadaProfile().school_id == schoolId;
-      allow create: if signedIn() && request.resource.data.owner_id == request.auth.uid;
-      allow update, delete: if chamadaRole(['admin']) && chamadaProfile().school_id == schoolId;
+      allow create: if signedIn() && validChamadaSchoolCreate(schoolId, request.resource.data);
+      allow update: if chamadaRole(['admin'])
+        && chamadaProfile().school_id == schoolId
+        && validChamadaSchoolUpdate(request.resource.data);
+      allow delete: if false;
     }
 
     match /chamada_join_codes/{joinCode} {
       allow get: if signedIn();
       allow list: if false;
       allow create: if signedIn()
-        && request.resource.data.created_by == request.auth.uid
-        && request.resource.data.school_id is string;
+        && validChamadaJoinCodeCreate(joinCode, request.resource.data);
       allow update, delete: if chamadaRole(['admin']) && chamadaSameSchool(resource.data);
     }
 
@@ -322,39 +643,50 @@ service cloud.firestore {
       allow read: if signedIn()
         && (userId == request.auth.uid || chamadaSameSchool(resource.data));
       allow create: if signedIn()
-        && userId == request.auth.uid
-        && request.resource.data.role in ['admin', 'teacher'];
+        && validChamadaProfileCreate(userId, request.resource.data);
       allow update: if signedIn()
         && (
-          (userId == request.auth.uid
-            && request.resource.data.school_id == resource.data.school_id
-            && request.resource.data.role == resource.data.role)
-          || (chamadaRole(['admin']) && chamadaSameSchool(resource.data))
+          validChamadaProfileSelfUpdate(userId, request.resource.data)
+          || validChamadaProfileAdminUpdate(request.resource.data)
         );
       allow delete: if chamadaRole(['admin']) && chamadaSameSchool(resource.data);
     }
 
     match /chamada_turmas/{turmaId} {
       allow read: if chamadaSameSchool(resource.data);
-      allow create: if chamadaSameSchool(request.resource.data) && chamadaRole(['admin']);
-      allow update, delete: if chamadaSameSchool(resource.data) && chamadaRole(['admin']);
+      allow create: if chamadaSameSchool(request.resource.data)
+        && chamadaRole(['admin'])
+        && validChamadaTurma(request.resource.data);
+      allow update: if chamadaSameSchool(resource.data)
+        && chamadaRole(['admin'])
+        && request.resource.data.school_id == resource.data.school_id
+        && validChamadaTurma(request.resource.data);
+      allow delete: if chamadaSameSchool(resource.data) && chamadaRole(['admin']);
     }
 
     match /chamada_alunos/{alunoId} {
       allow read: if chamadaSameSchool(resource.data);
-      allow create: if chamadaSameSchool(request.resource.data) && chamadaRole(['admin']);
-      allow update, delete: if chamadaSameSchool(resource.data) && chamadaRole(['admin']);
+      allow create: if chamadaSameSchool(request.resource.data)
+        && chamadaRole(['admin'])
+        && validChamadaAluno(request.resource.data);
+      allow update: if chamadaSameSchool(resource.data)
+        && chamadaRole(['admin'])
+        && request.resource.data.school_id == resource.data.school_id
+        && validChamadaAluno(request.resource.data);
+      allow delete: if chamadaSameSchool(resource.data) && chamadaRole(['admin']);
     }
 
     match /chamada_chamadas/{chamadaId} {
       allow read: if chamadaSameSchool(resource.data);
-      allow create: if chamadaSameSchool(request.resource.data) && chamadaRole(['admin', 'teacher']);
+      allow create: if chamadaSameSchool(request.resource.data)
+        && validChamadaRecord(request.resource.data);
       allow update, delete: if false;
     }
 
     match /chamada_presencas/{presencaId} {
       allow read: if chamadaSameSchool(resource.data);
-      allow create: if chamadaSameSchool(request.resource.data) && chamadaRole(['admin', 'teacher']);
+      allow create: if chamadaSameSchool(request.resource.data)
+        && validChamadaPresenca(request.resource.data);
       allow update, delete: if false;
     }
 
