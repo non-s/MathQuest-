@@ -53,6 +53,12 @@ function mqSortBy(field, ascending = true) {
     };
 }
 
+function mqChunks(items, size) {
+    const chunks = [];
+    for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
+    return chunks;
+}
+
 function mqDocId(collectionName, payload) {
     if (collectionName === 'profiles') return payload.user_id;
     if (collectionName === 'mathquest_progress') return payload.user_id;
@@ -167,11 +173,36 @@ class MathQuestQuery {
                 const doc = await ref.doc(idFilter.value).get();
                 docs = doc.exists ? [doc] : [];
             } else {
-                const equalityFilters = this.filters.filter(filter => filter.op === 'eq');
-                equalityFilters.forEach(filter => {
-                    ref = ref.where(filter.field, '==', filter.value);
-                });
-                docs = (await ref.get()).docs;
+                const applyServerFilters = (baseRef, filters) => {
+                    let nextRef = baseRef;
+                    filters.forEach(filter => {
+                        if (filter.op === 'eq') nextRef = nextRef.where(filter.field, '==', filter.value);
+                        if (filter.op === 'in' && Array.isArray(filter.value) && filter.value.length) {
+                            nextRef = nextRef.where(filter.field, 'in', filter.value);
+                        }
+                        if (filter.op === 'gte') nextRef = nextRef.where(filter.field, '>=', filter.value);
+                    });
+                    this.orders.forEach(order => {
+                        nextRef = nextRef.orderBy(order.field, order.ascending ? 'asc' : 'desc');
+                    });
+                    if (this.limitCount) nextRef = nextRef.limit(this.limitCount);
+                    return nextRef;
+                };
+                const oversizedIn = this.filters.find(filter =>
+                    filter.op === 'in' && Array.isArray(filter.value) && filter.value.length > 30);
+                if (oversizedIn) {
+                    const otherFilters = this.filters.filter(filter => filter !== oversizedIn);
+                    const batches = await Promise.all(mqChunks(oversizedIn.value, 30).map(chunk => {
+                        const refForChunk = applyServerFilters(ref, [
+                            ...otherFilters,
+                            { ...oversizedIn, value: chunk },
+                        ]);
+                        return refForChunk.get();
+                    }));
+                    docs = batches.flatMap(snapshot => snapshot.docs);
+                } else {
+                    docs = (await applyServerFilters(ref, this.filters).get()).docs;
+                }
             }
 
             let data = docs.map(mqSnapshotToRecord).filter(record => this.filters.every(filter => mqRecordMatches(record, filter)));
