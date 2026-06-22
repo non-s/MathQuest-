@@ -25,6 +25,17 @@ const TABLE_COLLECTIONS = {
     class_messages: 'class_messages',
 };
 
+const MQ_FIRESTORE_IN_LIMIT = 30;
+const MQ_LIMITS = Object.freeze({
+    classes: 100,
+    classMembers: 200,
+    classMemberCounts: 1000,
+    leaderboard: 100,
+    teacherUnlocks: 500,
+    classMessages: 50,
+    progressRows: 200,
+});
+
 function mqNow() {
     return new Date().toISOString();
 }
@@ -57,6 +68,15 @@ function mqChunks(items, size) {
     const chunks = [];
     for (let i = 0; i < items.length; i += size) chunks.push(items.slice(i, i + size));
     return chunks;
+}
+
+function mqDefaultLimit(collectionName) {
+    if (collectionName === 'classes') return MQ_LIMITS.classes;
+    if (collectionName === 'class_members') return MQ_LIMITS.classMemberCounts;
+    if (collectionName === 'teacher_unlocks') return MQ_LIMITS.teacherUnlocks;
+    if (collectionName === 'class_messages') return MQ_LIMITS.classMessages;
+    if (collectionName === 'mathquest_progress') return MQ_LIMITS.progressRows;
+    return null;
 }
 
 function mqDocId(collectionName, payload) {
@@ -168,6 +188,7 @@ class MathQuestQuery {
 
             let ref = mqDb.collection(this.collectionName);
             const idFilter = this.filters.find(filter => filter.field === 'id' && filter.op === 'eq');
+            const effectiveLimit = this.expectSingle ? 1 : (this.limitCount || mqDefaultLimit(this.collectionName));
             let docs;
             if (idFilter) {
                 const doc = await ref.doc(idFilter.value).get();
@@ -185,14 +206,14 @@ class MathQuestQuery {
                     this.orders.forEach(order => {
                         nextRef = nextRef.orderBy(order.field, order.ascending ? 'asc' : 'desc');
                     });
-                    if (this.limitCount) nextRef = nextRef.limit(this.limitCount);
+                    if (effectiveLimit) nextRef = nextRef.limit(effectiveLimit);
                     return nextRef;
                 };
                 const oversizedIn = this.filters.find(filter =>
-                    filter.op === 'in' && Array.isArray(filter.value) && filter.value.length > 30);
+                    filter.op === 'in' && Array.isArray(filter.value) && filter.value.length > MQ_FIRESTORE_IN_LIMIT);
                 if (oversizedIn) {
                     const otherFilters = this.filters.filter(filter => filter !== oversizedIn);
-                    const batches = await Promise.all(mqChunks(oversizedIn.value, 30).map(chunk => {
+                    const batches = await Promise.all(mqChunks(oversizedIn.value, MQ_FIRESTORE_IN_LIMIT).map(chunk => {
                         const refForChunk = applyServerFilters(ref, [
                             ...otherFilters,
                             { ...oversizedIn, value: chunk },
@@ -207,7 +228,7 @@ class MathQuestQuery {
 
             let data = docs.map(mqSnapshotToRecord).filter(record => this.filters.every(filter => mqRecordMatches(record, filter)));
             for (const order of [...this.orders].reverse()) data = data.sort(mqSortBy(order.field, order.ascending));
-            if (this.limitCount) data = data.slice(0, this.limitCount);
+            if (this.limitCount || effectiveLimit) data = data.slice(0, this.limitCount || effectiveLimit);
             return { data: this.expectSingle ? (data[0] || null) : data, error: null };
         } catch (error) {
             return { data: this.expectSingle ? null : [], error };
@@ -237,6 +258,7 @@ async function mqJoinClass(code) {
     const cls = { code: clsDoc.id, ...clsDoc.data() };
     await mqDb.collection('class_members').doc(`${code}_${user.uid}`).set({
         class_code: code,
+        teacher_id: cls.teacher_id,
         user_id: user.uid,
         joined_at: mqNow(),
     }, { merge: true });
@@ -244,15 +266,17 @@ async function mqJoinClass(code) {
 }
 
 async function mqClassLeaderboard(code) {
-    const members = await mqDb.collection('class_members').where('class_code', '==', code).get();
-    const rows = [];
-    for (const memberDoc of members.docs) {
-        const member = memberDoc.data();
-        const progressDoc = await mqDb.collection('mathquest_progress').doc(member.user_id).get();
-        if (progressDoc.exists) rows.push({ user_id: member.user_id, ...progressDoc.data() });
-    }
-    return rows.sort((a, b) => (b.xp || 0) - (a.xp || 0));
+    const progress = await mqDb.collection('mathquest_progress')
+        .where('class_code', '==', code)
+        .limit(MQ_LIMITS.leaderboard)
+        .get();
+    return progress.docs
+        .map(mqSnapshotToRecord)
+        .sort((a, b) => (b.xp || 0) - (a.xp || 0))
+        .slice(0, MQ_LIMITS.leaderboard);
 }
+
+window.MQ_LIMITS = MQ_LIMITS;
 
 window.sb = {
     auth: {
