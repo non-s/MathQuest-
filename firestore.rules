@@ -74,12 +74,154 @@ service cloud.firestore {
 
     function mqClassOwnedByTeacher(classCode) {
       return mqTeacher()
+        && exists(/databases/$(database)/documents/classes/$(classCode))
         && get(/databases/$(database)/documents/classes/$(classCode)).data.teacher_id == request.auth.uid;
     }
 
     function mqMemberOfClass(classCode) {
       return signedIn()
         && exists(/databases/$(database)/documents/class_members/$(classCode + '_' + request.auth.uid));
+    }
+
+    function mqString(value, min, max) {
+      return value is string
+        && value.size() >= min
+        && value.size() <= max;
+    }
+
+    function mqOptionalString(data, field, max) {
+      return !data.keys().hasAny([field])
+        || (data[field] is string && data[field].size() <= max);
+    }
+
+    function mqOptionalIsoString(data, field) {
+      return !data.keys().hasAny([field])
+        || mqString(data[field], 1, 40);
+    }
+
+    function mqValidClassCode(value) {
+      return value is string
+        && value.size() >= 4
+        && value.size() <= 10
+        && value.matches('^[A-Z0-9]+$');
+    }
+
+    function mqOptionalClassCode(data) {
+      return !data.keys().hasAny(['class_code'])
+        || (data.class_code is string
+          && (data.class_code == '' || mqValidClassCode(data.class_code)));
+    }
+
+    function mqOptionalGrade(data) {
+      return !data.keys().hasAny(['grade'])
+        || data.grade == null
+        || (data.grade is int && data.grade >= 1 && data.grade <= 13);
+    }
+
+    function mqProgressClassVisible(data) {
+      return data.keys().hasAny(['class_code'])
+        && data.class_code is string
+        && data.class_code.size() > 0
+        && mqMemberOfClass(data.class_code);
+    }
+
+    function mqProgressVisibleToTeacher(data) {
+      return data.keys().hasAny(['class_code'])
+        && data.class_code is string
+        && data.class_code.size() > 0
+        && mqClassOwnedByTeacher(data.class_code);
+    }
+
+    function mqProgressClassBindingValid(userId, data) {
+      return !data.keys().hasAny(['class_code'])
+        || data.class_code == ''
+        || (mqValidClassCode(data.class_code)
+          && exists(/databases/$(database)/documents/class_members/$(data.class_code + '_' + userId)));
+    }
+
+    function mqClassMemberTeacherIdValid(data) {
+      return data.keys().hasAny(['teacher_id'])
+        && data.teacher_id is string
+        && data.teacher_id == get(/databases/$(database)/documents/classes/$(data.class_code)).data.teacher_id;
+    }
+
+    function mqClassMemberReadableByTeacher(data) {
+      return mqTeacher()
+        && (
+          (data.keys().hasAny(['teacher_id']) && data.teacher_id == request.auth.uid)
+          || mqClassOwnedByTeacher(data.class_code)
+        );
+    }
+
+    function validMqProfile(data, userId) {
+      return data.keys().hasOnly(['user_id', 'email', 'full_name', 'role', 'created_at', 'updated_at'])
+        && data.user_id == userId
+        && data.role == 'teacher'
+        && mqOptionalString(data, 'email', 254)
+        && mqOptionalString(data, 'full_name', 120)
+        && mqOptionalIsoString(data, 'created_at')
+        && mqOptionalIsoString(data, 'updated_at');
+    }
+
+    function validMqProgress(data, userId) {
+      return data.keys().hasOnly(['user_id', 'nickname', 'xp', 'stars', 'achievements', 'class_code', 'created_at', 'updated_at'])
+        && data.user_id == userId
+        && mqString(data.nickname, 1, 30)
+        && data.xp is number
+        && data.xp >= 0
+        && data.xp <= 10000000
+        && data.stars is map
+        && data.stars.size() <= 220
+        && data.achievements is list
+        && data.achievements.size() <= 100
+        && mqOptionalClassCode(data)
+        && mqOptionalIsoString(data, 'created_at')
+        && mqOptionalIsoString(data, 'updated_at');
+    }
+
+    function validMqClass(data, classCode) {
+      return data.keys().hasOnly(['code', 'teacher_id', 'name', 'grade', 'created_at', 'updated_at'])
+        && data.code == classCode
+        && data.teacher_id == request.auth.uid
+        && mqValidClassCode(data.code)
+        && mqString(data.name, 1, 80)
+        && mqOptionalGrade(data)
+        && mqOptionalIsoString(data, 'created_at')
+        && mqOptionalIsoString(data, 'updated_at');
+    }
+
+    function validMqClassMember(data, memberId) {
+      return data.keys().hasOnly(['class_code', 'teacher_id', 'user_id', 'joined_at', 'created_at', 'updated_at'])
+        && mqValidClassCode(data.class_code)
+        && data.user_id == request.auth.uid
+        && memberId == data.class_code + '_' + request.auth.uid
+        && mqString(data.joined_at, 1, 40)
+        && exists(/databases/$(database)/documents/classes/$(data.class_code))
+        && mqClassMemberTeacherIdValid(data)
+        && mqOptionalIsoString(data, 'created_at')
+        && mqOptionalIsoString(data, 'updated_at');
+    }
+
+    function validMqTeacherUnlock(data) {
+      return data.keys().hasOnly(['class_code', 'user_id', 'region', 'created_at', 'updated_at'])
+        && mqValidClassCode(data.class_code)
+        && mqString(data.user_id, 1, 128)
+        && data.region is int
+        && data.region >= 1
+        && data.region <= 10
+        && mqClassOwnedByTeacher(data.class_code)
+        && exists(/databases/$(database)/documents/class_members/$(data.class_code + '_' + data.user_id))
+        && mqOptionalIsoString(data, 'created_at')
+        && mqOptionalIsoString(data, 'updated_at');
+    }
+
+    function validMqClassMessage(data) {
+      return data.keys().hasOnly(['class_code', 'message', 'created_at', 'updated_at'])
+        && mqValidClassCode(data.class_code)
+        && mqString(data.message, 1, 500)
+        && mqClassOwnedByTeacher(data.class_code)
+        && mqOptionalIsoString(data, 'created_at')
+        && mqOptionalIsoString(data, 'updated_at');
     }
 
     match /portfolio_mensagens/{messageId} {
@@ -218,17 +360,24 @@ service cloud.firestore {
 
     match /profiles/{userId} {
       allow read: if signedIn() && (userId == request.auth.uid || mqTeacher());
-      allow create, update: if signedIn()
+      allow create: if signedIn()
         && userId == request.auth.uid
-        && request.resource.data.role == 'teacher';
+        && validMqProfile(request.resource.data, userId);
+      allow update: if signedIn()
+        && userId == request.auth.uid
+        && validMqProfile(request.resource.data, userId)
+        && request.resource.data.user_id == resource.data.user_id
+        && request.resource.data.role == resource.data.role;
       allow delete: if false;
     }
 
     match /mathquest_progress/{userId} {
-      allow read: if signedIn() && (userId == request.auth.uid || mqTeacher());
+      allow read: if signedIn()
+        && (userId == request.auth.uid || mqProgressVisibleToTeacher(resource.data) || mqProgressClassVisible(resource.data));
       allow create, update: if signedIn()
         && userId == request.auth.uid
-        && request.resource.data.user_id == request.auth.uid;
+        && validMqProgress(request.resource.data, userId)
+        && mqProgressClassBindingValid(userId, request.resource.data);
       allow delete: if false;
     }
 
@@ -236,39 +385,43 @@ service cloud.firestore {
       allow get: if signedIn();
       allow list: if mqTeacher() && resource.data.teacher_id == request.auth.uid;
       allow create: if mqTeacher()
-        && request.resource.data.teacher_id == request.auth.uid
-        && request.resource.data.code == classCode;
-      allow update, delete: if mqTeacher() && resource.data.teacher_id == request.auth.uid;
+        && validMqClass(request.resource.data, classCode);
+      allow update: if mqTeacher()
+        && resource.data.teacher_id == request.auth.uid
+        && validMqClass(request.resource.data, classCode)
+        && request.resource.data.teacher_id == resource.data.teacher_id
+        && request.resource.data.code == resource.data.code;
+      allow delete: if mqTeacher() && resource.data.teacher_id == request.auth.uid;
     }
 
     match /class_members/{memberId} {
       allow read: if signedIn()
-        && (resource.data.user_id == request.auth.uid || mqClassOwnedByTeacher(resource.data.class_code));
-      allow create, update: if signedIn()
-        && request.resource.data.user_id == request.auth.uid
-        && memberId == request.resource.data.class_code + '_' + request.auth.uid
-        && exists(/databases/$(database)/documents/classes/$(request.resource.data.class_code));
-      allow delete: if mqClassOwnedByTeacher(resource.data.class_code);
+        && (resource.data.user_id == request.auth.uid || mqClassMemberReadableByTeacher(resource.data));
+      allow create: if signedIn()
+        && validMqClassMember(request.resource.data, memberId);
+      allow update: if signedIn()
+        && validMqClassMember(request.resource.data, memberId)
+        && request.resource.data.class_code == resource.data.class_code
+        && request.resource.data.teacher_id == resource.data.teacher_id
+        && request.resource.data.user_id == resource.data.user_id;
+      allow delete: if mqClassMemberReadableByTeacher(resource.data);
     }
 
     match /teacher_unlocks/{unlockId} {
       allow read: if signedIn()
         && (resource.data.user_id == request.auth.uid || mqClassOwnedByTeacher(resource.data.class_code));
-      allow create, update: if request.resource.data.user_id is string
-        && request.resource.data.class_code is string
-        && request.resource.data.region is int
-        && mqClassOwnedByTeacher(request.resource.data.class_code);
+      allow create: if validMqTeacherUnlock(request.resource.data);
+      allow update: if validMqTeacherUnlock(request.resource.data)
+        && request.resource.data.class_code == resource.data.class_code
+        && request.resource.data.user_id == resource.data.user_id
+        && request.resource.data.region == resource.data.region;
       allow delete: if mqClassOwnedByTeacher(resource.data.class_code);
     }
 
     match /class_messages/{messageId} {
       allow read: if signedIn()
         && (mqMemberOfClass(resource.data.class_code) || mqClassOwnedByTeacher(resource.data.class_code));
-      allow create: if request.resource.data.class_code is string
-        && request.resource.data.message is string
-        && request.resource.data.message.size() >= 1
-        && request.resource.data.message.size() <= 1000
-        && mqClassOwnedByTeacher(request.resource.data.class_code);
+      allow create: if validMqClassMessage(request.resource.data);
       allow update, delete: if false;
     }
 

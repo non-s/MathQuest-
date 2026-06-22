@@ -1919,6 +1919,7 @@ async function saveRemote() {
             xp:           state.xp,
             stars:        state.stars,
             achievements: state.achievements,
+            class_code:   state.classCode || '',
             updated_at:   new Date().toISOString(),
         });
         if (error) {
@@ -1935,14 +1936,18 @@ async function saveRemote() {
 async function loadRemote() {
     if (!state.userId || !BACKEND_CONFIGURED || state.userId.startsWith('local-')) return false;
     const { data, error } = await sb.from('mathquest_progress')
-        .select('nickname, xp, stars, achievements')
+        .select('nickname, xp, stars, achievements, class_code')
         .eq('user_id', state.userId).maybeSingle();
     if (error || !data) return false;
     state.nickname     = data.nickname     || state.nickname;
     state.xp           = data.xp           || 0;
     state.stars        = data.stars        || {};
     state.achievements = data.achievements || [];
-    const { data: unlocks } = await sb.from('teacher_unlocks').select('region').eq('user_id', state.userId);
+    if (data.class_code && !state.classCode) {
+        state.classCode = data.class_code;
+        localStorage.setItem('mq_class_code', data.class_code);
+    }
+    const { data: unlocks } = await sb.from('teacher_unlocks').select('region').eq('user_id', state.userId).limit(500);
     state.teacherUnlocks = (unlocks || []).map(({ region }) => region);
     return true;
 }
@@ -2537,6 +2542,7 @@ async function startGame() {
         if (!joined) { return; }  // joinClass já mostrou o erro
         state.classCode = codeRaw;
         localStorage.setItem('mq_class_code', codeRaw);
+        await persistAwait();
     } else {
         persist();
     }

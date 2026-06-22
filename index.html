@@ -732,12 +732,12 @@
     async function loadRoster(code, opts = {}) {
         const tbody = $('rosterBody');
         if (opts.initial) tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim)">Carregando…</td></tr>';
-        const { data: members, error: e1 } = await sb.from('class_members').select('user_id, joined_at').eq('class_code', code);
+        const { data: members, error: e1 } = await sb.from('class_members').select('user_id, joined_at').eq('class_code', code).limit(200);
         if (e1) { tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger)">${esc(e1.message)}</td></tr>`; return; }
         if (!members.length) { tbody.innerHTML = ''; $('rosterEmpty').style.display = ''; $('lastSync').textContent = 'Atualizado agora'; return; }
         $('rosterEmpty').style.display = 'none';
         const userIds = members.map(m => m.user_id);
-        const { data: progress, error: e2 } = await sb.from('mathquest_progress').select('user_id, nickname, xp, stars, achievements, updated_at').in('user_id', userIds);
+        const { data: progress, error: e2 } = await sb.from('mathquest_progress').select('user_id, nickname, xp, stars, achievements, updated_at').eq('class_code', code).limit(200);
         if (e2) { tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger)">${esc(e2.message)}</td></tr>`; return; }
         const rows = members.map(m => {
             const p = (progress || []).find(x => x.user_id === m.user_id) || {};
