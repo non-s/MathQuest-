@@ -588,7 +588,18 @@
         const { data: { user } } = await sb.auth.getUser();
         const { data: profile, error } = await sb.from('profiles')
             .select('role').eq('user_id', user?.id).maybeSingle();
-        if (error || profile?.role !== 'teacher') {
+        if (error || !profile) {
+            // Perfil não existe — cria automaticamente como professor.
+            // Acontece quando a conta foi criada externamente ou antes
+            // desta versão que cria o perfil no cadastro.
+            await sb.from('profiles').upsert({
+                user_id: user?.id,
+                email: user?.email || '',
+                role: 'teacher',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            });
+        } else if (profile?.role !== 'teacher') {
             await sb.auth.signOut();
             showLogin();
             $('authError').textContent = 'Conta sem permissão de professor. Solicite a liberação ao administrador.';
