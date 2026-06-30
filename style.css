@@ -1185,3 +1185,23 @@ body { font-size: calc(1rem * var(--font-scale, 1)); }
         }
         .message-section h3 { font-size: 1rem; margin-bottom: .25rem; }
     
+
+/* ── Timer de 60 segundos ──────────────────────────────────────────── */
+.q-timer {
+    position: relative; height: 8px; border-radius: 4px;
+    background: var(--bg-soft); margin-bottom: 1rem; overflow: visible;
+}
+.q-timer-bar {
+    position: absolute; left: 0; top: 0; height: 100%;
+    border-radius: 4px; background: var(--accent);
+    transition: width 1s linear, background .3s;
+    width: 100%;
+}
+.q-timer-bar.urgent { background: #f85149; }
+.q-timer-num {
+    position: absolute; right: 0; top: -22px;
+    font-size: .8rem; font-weight: 700; color: var(--accent);
+    font-family: 'Fira Code', monospace;
+    transition: color .3s;
+}
+.q-timer-num.urgent { color: #f85149; }
