@@ -2227,6 +2227,7 @@ const OPT_LABELS = ['A', 'B', 'C', 'D'];
 
 /** Renders the current question in the active game session. */
 function renderQuestion() {
+    window._mqQuestionStartTime = Date.now();
     const q = state.questions[state.qIndex];
     const isPlacement = state.currentPhase?.isPlacement;
     state.wrongCount = 0;
@@ -2296,6 +2297,19 @@ function answer(i) {
     if (state.answered) return;
     state.answered = true;
     const q = state.questions[state.qIndex];
+    // Tracking de tempo de resposta (inline — mais robusto do que monkeypatch de window.answer)
+    const _elapsed = Date.now() - (window._mqQuestionStartTime || 0);
+    try {
+        const _key = 'mq_avg_time';
+        const _prev = JSON.parse(localStorage.getItem(_key) || '{"sum":0,"count":0}');
+        _prev.sum += _elapsed; _prev.count++;
+        localStorage.setItem(_key, JSON.stringify(_prev));
+    } catch(_e) { /* localStorage indisponível */ }
+    if (_elapsed < 5000 && q && i === q.correctIndex) {
+        state._correctStreak = (state._correctStreak || 0) + 1;
+    } else {
+        state._correctStreak = 0;
+    }
     const isPlacement = state.currentPhase?.isPlacement;
     const buttons = $('qOpts').querySelectorAll('.opt');
     buttons.forEach((b, idx) => {
@@ -3132,33 +3146,6 @@ window.endPhase = function(completed) {
             renderHud();
         }
     }
-};
-
-/* ── Tracking de tempo de resposta ──────────────────────────────────── */
-let questionStartTime = 0;
-
-const _origRenderQuestion = window.renderQuestion;
-window.renderQuestion = function() {
-    _origRenderQuestion?.apply(this, arguments);
-    questionStartTime = Date.now();
-};
-
-const _origAnswer = window.answer;
-window.answer = function(i) {
-    const elapsed = Date.now() - questionStartTime;
-    // Armazena tempo médio de resposta
-    const key = 'mq_avg_time';
-    const prev = JSON.parse(localStorage.getItem(key) || '{"sum":0,"count":0}');
-    prev.sum += elapsed; prev.count++;
-    localStorage.setItem(key, JSON.stringify(prev));
-    // Conquista relâmpago: resposta em menos de 5 segundos
-    const q = state.questions[state.qIndex];
-    if (elapsed < 5000 && q && i === q.correctIndex) {
-        state._correctStreak = (state._correctStreak || 0) + 1;
-    } else {
-        state._correctStreak = 0;
-    }
-    _origAnswer?.apply(this, arguments);
 };
 
 /* ── LGPD / Consentimento ──────────────────────────────────────────── */

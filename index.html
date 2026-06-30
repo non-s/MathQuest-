@@ -136,7 +136,7 @@
             <div class="ob-emoji">🎓</div>
             <div class="ob-item-text">
                 <h3>Qual é o seu ano escolar?</h3>
-                <p>Vamos abrir direto o módulo certo para você!</p>
+                <p>Vamos destacar o módulo do seu ano. Você começa sempre no Módulo 1 e pode usar o 🧪 Testar nível para pular para o seu ano se já souber o conteúdo.</p>
                 <div class="ob-year-grid" style="margin-top:.65rem">
                     <button class="ob-year-btn" data-year="1">1º ano</button>
                     <button class="ob-year-btn" data-year="2">2º ano</button>
@@ -297,6 +297,7 @@
         <input id="pwd" class="field" type="password" placeholder="Senha (mínimo 8 caracteres)" autocomplete="current-password">
         <button id="btnAuth" class="btn-primary">Entrar</button>
         <p id="authError" class="t-error"></p>
+        <p id="forgotPwdLink" style="text-align:center;margin-top:.25rem"><a href="#" id="btnForgotPwd" style="color:var(--accent);font-size:.85rem">Esqueci a senha</a></p>
         <p class="t-info">Suas turmas e o progresso dos alunos só você vê. Os dados pessoais dos alunos não ficam aqui — só o apelido e o progresso.<br><a href="privacy.html" style="color:var(--accent)">Política de privacidade</a></p>
     </div>
 </div>
@@ -507,6 +508,7 @@
         $('tabSignup').classList.remove('active');
         $('btnAuth').textContent = 'Entrar';
         $('authError').textContent = '';
+        $('forgotPwdLink').style.display = '';
     });
     $('tabSignup').addEventListener('click', () => {
         mode = 'signup';
@@ -514,6 +516,7 @@
         $('tabLogin').classList.remove('active');
         $('btnAuth').textContent = 'Criar conta';
         $('authError').textContent = '';
+        $('forgotPwdLink').style.display = 'none';
     });
 
     $('btnAuth').addEventListener('click', async () => {
@@ -554,6 +557,23 @@
         showLogin();
     });
 
+    $('btnForgotPwd').addEventListener('click', async (e) => {
+        e.preventDefault();
+        const email = $('email').value.trim();
+        if (!email) {
+            $('authError').textContent = 'Digite seu e-mail primeiro.';
+            return;
+        }
+        try {
+            await mqAuth.sendPasswordResetEmail(email);
+            $('authError').style.color = '#3fb950';
+            $('authError').textContent = '✅ E-mail de redefinição enviado! Verifique sua caixa de entrada.';
+        } catch (e) {
+            $('authError').style.color = '';
+            $('authError').textContent = e.message || 'Não consegui enviar o e-mail.';
+        }
+    });
+
     /* ─── Views ────────────────────────────────────────────────────────── */
     function showLogin() {
         $('loginView').style.display = '';
@@ -568,7 +588,18 @@
         const { data: { user } } = await sb.auth.getUser();
         const { data: profile, error } = await sb.from('profiles')
             .select('role').eq('user_id', user?.id).maybeSingle();
-        if (error || profile?.role !== 'teacher') {
+        if (error || !profile) {
+            // Perfil não existe — cria automaticamente como professor.
+            // Acontece quando a conta foi criada externamente ou antes
+            // desta versão que cria o perfil no cadastro.
+            await sb.from('profiles').upsert({
+                user_id: user?.id,
+                email: user?.email || '',
+                role: 'teacher',
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            });
+        } else if (profile?.role !== 'teacher') {
             await sb.auth.signOut();
             showLogin();
             $('authError').textContent = 'Conta sem permissão de professor. Solicite a liberação ao administrador.';
