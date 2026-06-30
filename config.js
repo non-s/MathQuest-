@@ -13,6 +13,11 @@ window.MATHQUEST_CONFIG = {
 firebase.initializeApp(window.MATHQUEST_CONFIG.firebaseConfig);
 const mqAuth = firebase.auth();
 const mqDb = firebase.firestore();
+// Redes de escola/proxy bloqueiam WebSocket/HTTP2 streaming do Firestore,
+// causando o ciclo 503 → retry que trava o loader por 10-20s.
+// experimentalAutoDetectLongPolling detecta isso e muda pra long-polling
+// automaticamente, reduzindo o tempo de carregamento nesses ambientes.
+mqDb.settings({ experimentalAutoDetectLongPolling: true, merge: true });
 
 window.MQ_BACKEND_CONFIGURED = true;
 
