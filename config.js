@@ -13,6 +13,7 @@ window.MATHQUEST_CONFIG = {
 firebase.initializeApp(window.MATHQUEST_CONFIG.firebaseConfig);
 const mqAuth = firebase.auth();
 const mqDb = firebase.firestore();
+mqDb.settings({ experimentalAutoDetectLongPolling: true, merge: true });
 
 window.MQ_BACKEND_CONFIGURED = true;
 
