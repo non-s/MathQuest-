@@ -58,6 +58,9 @@ mustMatch("index.html", /live_answer_keys'\)\.insert\(/, "teacher live mode must
 mustMatch("index.html", /id="liveDurationSelect"/, "teacher live mode must allow a per-question timer");
 mustMatch("index.html", /question_duration_sec:\s*questionDurationSec/, "live sessions must persist the per-question duration");
 mustMatch("index.html", /question_deadline_at:\s*liveQuestionDeadlineAt/, "live sessions must persist question deadlines");
+mustMatch("index.html", /function renderProjectorLive\(/, "projector mode must render live classroom questions");
+mustMatch("index.html", /id="projLive"/, "projector overlay must include a live challenge region");
+mustMatch("index.html", /currentLiveRows\.filter\(row => row\.question_index === qIndex\)/, "projector live view must aggregate current question responses");
 mustNotMatch("index.html", /correctIndex:\s*Number/, "public live session payload must not include correct answers");
 mustNotMatch("index.html", /score_delta/, "teacher scoreboard must compute scores from private answer keys, not persisted student scores");
 

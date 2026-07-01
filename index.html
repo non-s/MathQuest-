@@ -892,6 +892,7 @@
 
     let currentLiveSession = null;
     let currentLiveAnswerKey = null;
+    let currentLiveRows = [];
     let liveStatsInterval = null;
     let liveStatsUnsubscribe = null;
     let liveCountdownInterval = null;
@@ -1047,10 +1048,11 @@
 
     function renderLiveStats(rows) {
         if (!currentLiveSession) return;
+        currentLiveRows = rows || [];
         const q = currentLiveSession.questions[currentLiveSession.question_index];
         const correctIndex = currentLiveAnswerKey?.answers?.[currentLiveSession.question_index];
         const counts = q.options.map(() => 0);
-        rows.filter(row => row.question_index === currentLiveSession.question_index).forEach(row => {
+        currentLiveRows.filter(row => row.question_index === currentLiveSession.question_index).forEach(row => {
             if (Number.isInteger(row.answer_index) && counts[row.answer_index] !== undefined) counts[row.answer_index]++;
         });
         counts.forEach((count, index) => {
@@ -1060,7 +1062,8 @@
         const total = counts.reduce((sum, count) => sum + count, 0);
         const correct = Number.isInteger(correctIndex) ? (counts[correctIndex] || 0) : 0;
         $('liveAnswerStats').innerHTML = `<b>${total}</b> respostas · <b>${correct}</b> corretas`;
-        renderLiveScoreboard(rows);
+        renderLiveScoreboard(currentLiveRows);
+        renderProjector();
     }
 
     function renderLiveScoreboard(rows) {
@@ -1159,6 +1162,7 @@
             }
             currentLiveSession = session;
             currentLiveAnswerKey = answerKey;
+            currentLiveRows = [];
             toast('Desafio ao vivo iniciado!', 'success');
             renderLiveTeacherControl();
         } catch (error) {
@@ -1206,6 +1210,7 @@
             $('liveStatus').textContent = 'Sessão encerrada';
             currentLiveSession = null;
             currentLiveAnswerKey = null;
+            currentLiveRows = [];
             $('liveControl').style.display = 'none';
             $('liveSetup').style.display = '';
         } catch (error) {
@@ -1236,17 +1241,47 @@
     window.addEventListener('beforeunload', stopRosterPolling);
 
     function showProjector() {
+        document.getElementById('projectorOverlay')?.remove();
         const overlay = document.createElement('div');
         overlay.className = 'projector-overlay';
         overlay.id = 'projectorOverlay';
-        overlay.innerHTML = `<button class="proj-close" onclick="document.getElementById('projectorOverlay').remove()">✕</button><div class="projector-title">🏫 ${esc(currentClassName || 'Turma')}</div><div class="projector-ranking" id="projRanking"></div><div class="projector-stats" id="projStats"></div>`;
+        overlay.innerHTML = `<button class="proj-close" id="projClose" title="Fechar">x</button><div class="projector-title" id="projTitle">${esc(currentClassName || 'Turma')}</div><div class="projector-live" id="projLive"></div><div class="projector-ranking" id="projRanking"></div><div class="projector-stats" id="projStats"></div>`;
         document.body.appendChild(overlay);
+        document.getElementById('projClose')?.addEventListener('click', () => overlay.remove());
         overlay.requestFullscreen?.().catch(() => {});
         renderProjector();
-        const interval = setInterval(() => { if (!document.getElementById('projectorOverlay')) { clearInterval(interval); return; } renderProjector(); }, 5000);
+        const interval = setInterval(() => { if (!document.getElementById('projectorOverlay')) { clearInterval(interval); return; } renderProjector(); }, 1000);
+        const responseInterval = setInterval(() => {
+            if (!document.getElementById('projectorOverlay')) {
+                clearInterval(responseInterval);
+                return;
+            }
+            if (currentLiveSession) refreshLiveStats();
+        }, 2500);
     }
 
     function renderProjector() {
+        const projectorLiveEl = document.getElementById('projLive');
+        const projectorTitleEl = document.getElementById('projTitle');
+        const projectorRankEl = document.getElementById('projRanking');
+        const projectorStatsEl = document.getElementById('projStats');
+        if (currentLiveSession?.status === 'question') {
+            if (projectorTitleEl) projectorTitleEl.textContent = currentClassName || 'Turma';
+            if (projectorRankEl) projectorRankEl.style.display = 'none';
+            if (projectorStatsEl) projectorStatsEl.style.display = 'none';
+            if (projectorLiveEl) {
+                projectorLiveEl.style.display = 'grid';
+                renderProjectorLive(projectorLiveEl);
+            }
+            return;
+        }
+        if (projectorLiveEl) {
+            projectorLiveEl.style.display = 'none';
+            projectorLiveEl.innerHTML = '';
+        }
+        if (projectorRankEl) projectorRankEl.style.display = '';
+        if (projectorStatsEl) projectorStatsEl.style.display = '';
+        if (projectorTitleEl) projectorTitleEl.textContent = currentClassName || 'Turma';
         const top5 = [...roster].sort((a, b) => b.xp - a.xp).slice(0, 5);
         const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
         const rankEl = document.getElementById('projRanking');
@@ -1256,6 +1291,36 @@
         const avgStars = roster.length ? Math.round(roster.reduce((a, s) => a + s.totalStars, 0) / roster.length) : 0;
         const statsEl = document.getElementById('projStats');
         if (statsEl) statsEl.innerHTML = `<div><b>${roster.length}</b>alunos</div><div><b>${avgPhases}</b>média de fases</div><div><b>${avgStars}★</b>média de estrelas</div><div><b>${total}</b>fases no total</div>`;
+    }
+
+    function renderProjectorLive(container) {
+        const qIndex = Number(currentLiveSession.question_index || 0);
+        const q = currentLiveSession.questions[qIndex] || currentLiveSession.questions[0];
+        if (!q) {
+            container.innerHTML = '<div class="proj-live-empty">Aguardando pergunta ao vivo...</div>';
+            return;
+        }
+        const counts = (q.options || []).map(() => 0);
+        currentLiveRows.filter(row => row.question_index === qIndex).forEach(row => {
+            if (Number.isInteger(row.answer_index) && counts[row.answer_index] !== undefined) counts[row.answer_index]++;
+        });
+        const totalAnswers = counts.reduce((sum, count) => sum + count, 0);
+        const remaining = liveRemainingSeconds(currentLiveSession);
+        const timerClass = remaining !== null && remaining <= 0 ? ' expired' : '';
+        const optionsHtml = (q.options || []).map((opt, index) => {
+            const pct = totalAnswers ? Math.round((counts[index] || 0) / totalAnswers * 100) : 0;
+            return `<div class="proj-live-option"><i style="width:${pct}%"></i><span><em>${esc(String.fromCharCode(65 + index))}</em>${formatOpt(opt)}</span><b>${counts[index] || 0}</b></div>`;
+        }).join('');
+        container.innerHTML = `
+            <div class="proj-live-meta">
+                <span>${esc(currentLiveSession.title || 'Desafio ao vivo')}</span>
+                <strong class="${timerClass}">${esc(liveCountdownText(currentLiveSession))}</strong>
+                <span>${totalAnswers} respostas</span>
+            </div>
+            <div class="proj-live-progress">Pergunta ${qIndex + 1}/${currentLiveSession.questions.length}</div>
+            <div class="proj-live-question">${q.stem}</div>
+            <div class="proj-live-options">${optionsHtml}</div>
+        `;
     }
 
     async function sendClassMessage() {

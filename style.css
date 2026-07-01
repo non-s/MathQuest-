@@ -1328,6 +1328,100 @@ body { font-size: calc(1rem * var(--font-scale, 1)); }
             padding: 2rem;
         }
         .projector-title { font-size: 3rem; font-weight: 700; color: #f0883e; }
+        .projector-live {
+            width: min(1100px, 94vw);
+            display: grid;
+            gap: 1rem;
+        }
+        .proj-live-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            color: #8b949e;
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+        .proj-live-meta strong {
+            color: #f0c419;
+            font-size: 2rem;
+            font-variant-numeric: tabular-nums;
+        }
+        .proj-live-meta strong.expired { color: #f85149; }
+        .proj-live-progress {
+            color: #58a6ff;
+            font-size: 1.2rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .proj-live-question {
+            color: #e6edf3;
+            font-size: clamp(2rem, 4vw, 4.4rem);
+            line-height: 1.08;
+            font-weight: 900;
+            text-align: center;
+            margin: .5rem 0 1rem;
+        }
+        .proj-live-options {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1rem;
+        }
+        .proj-live-option {
+            position: relative;
+            overflow: hidden;
+            min-height: 5.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 1rem 1.25rem;
+            border: 1px solid #30363d;
+            border-radius: 12px;
+            background: #161b22;
+            color: #e6edf3;
+            font-size: clamp(1.15rem, 2vw, 2rem);
+            font-weight: 800;
+        }
+        .proj-live-option i {
+            position: absolute;
+            inset: 0 auto 0 0;
+            background: rgba(88, 166, 255, .18);
+            z-index: 0;
+        }
+        .proj-live-option span,
+        .proj-live-option b {
+            position: relative;
+            z-index: 1;
+        }
+        .proj-live-option span {
+            display: flex;
+            align-items: center;
+            gap: .85rem;
+            min-width: 0;
+        }
+        .proj-live-option em {
+            display: inline-grid;
+            place-items: center;
+            width: 2.4rem;
+            height: 2.4rem;
+            flex: 0 0 2.4rem;
+            border-radius: 50%;
+            background: #58a6ff;
+            color: #07111f;
+            font-style: normal;
+            font-size: 1.15rem;
+        }
+        .proj-live-option b {
+            color: #f0c419;
+            font-size: 2rem;
+            font-variant-numeric: tabular-nums;
+        }
+        .proj-live-empty {
+            color: #8b949e;
+            font-size: 2rem;
+            text-align: center;
+        }
         .projector-ranking { width: 100%; max-width: 700px; display: grid; gap: 1rem; }
         .proj-row {
             display: flex; align-items: center; gap: 1rem;
@@ -1347,6 +1441,13 @@ body { font-size: calc(1rem * var(--font-scale, 1)); }
             background: #30363d; color: #e6edf3; border: none;
             border-radius: 50%; width: 48px; height: 48px;
             font-size: 1.3rem; cursor: pointer;
+        }
+        @media (max-width: 760px) {
+            .projector-overlay { justify-content: flex-start; padding-top: 4.5rem; }
+            .projector-title { font-size: 2rem; }
+            .proj-live-meta { align-items: flex-start; flex-direction: column; }
+            .proj-live-options { grid-template-columns: 1fr; }
+            .proj-live-option { min-height: 4.8rem; }
         }
 
         /* ── Mensagem para a turma ─────────────────────────────────────────── */

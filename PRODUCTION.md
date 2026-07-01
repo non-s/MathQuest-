@@ -55,6 +55,7 @@ Then verify GitHub Actions on the PR:
 - Teachers can start a live phase challenge from a class roster.
 - Students in the class see a live challenge banner and answer in-browser.
 - Teachers choose a per-question timer, and teacher/student live views show the same countdown for the current question.
+- Projector mode switches to the live question automatically while a challenge is active, showing options, countdown, and response counts without revealing the answer key.
 - The teacher sees answer counts and an accumulated live scoreboard.
 - Live sessions and scoreboards use Firestore realtime listeners, with polling fallback if a browser cannot attach a listener.
 - Live session documents contain only public question text/options. Answer keys live in `live_answer_keys/{sessionId}` and are readable only by the teacher who owns the session.
