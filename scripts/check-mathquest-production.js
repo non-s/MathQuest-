@@ -26,6 +26,9 @@ mustMatch("config.js", /live_sessions:\s*'live_sessions'/, "adapter must expose 
 mustMatch("config.js", /live_responses:\s*'live_responses'/, "adapter must expose live response storage");
 mustMatch("config.js", /liveSessions:\s*10/, "live session reads must be bounded");
 mustMatch("config.js", /liveResponses:\s*1000/, "live response reads must be bounded");
+mustMatch("config.js", /watchClassSessions\(classCode, onRows, onError\)/, "live sessions must use realtime class listeners");
+mustMatch("config.js", /watchSessionResponses\(sessionId, onRows, onError\)/, "live responses must use realtime response listeners");
+mustMatch("config.js", /\.onSnapshot\(/, "live classroom mode must use Firestore realtime listeners");
 mustMatch("config.js", /where\('class_code',\s*'==',\s*code\)/, "leaderboard must query progress by class_code");
 mustMatch("config.js", /\.limit\(MQ_LIMITS\.leaderboard\)/, "leaderboard must be bounded");
 mustMatch("config.js", /teacher_id:\s*cls\.teacher_id/, "class membership must persist teacher_id for scalable rules");
@@ -34,12 +37,15 @@ mustMatch("script.js", /class_code:\s*state\.classCode\s*\|\|\s*''/, "progress s
 mustMatch("script.js", /select\('nickname, xp, stars, achievements, class_code'\)/, "remote progress load must restore class_code");
 mustMatch("script.js", /teacher_unlocks'\)\.select\('region'\)\.eq\('user_id', state\.userId\)\.limit\(500\)/, "teacher unlock reads must be bounded");
 mustMatch("script.js", /localStorage\.setItem\('mq_class_code', codeRaw\);\s*await persistAwait\(\);/s, "joining a class must flush progress with class_code");
+mustMatch("script.js", /function startLiveSessionWatch\(/, "students must attach a live session watcher");
+mustMatch("script.js", /mqLive\.watchClassSessions/, "student live mode must subscribe to class sessions");
 
 mustMatch("index.html", /class_members'\)\.select\('user_id, joined_at'\)\.eq\('class_code', code\)\.limit\(200\)/, "roster membership reads must be bounded");
 mustMatch("index.html", /mathquest_progress'\)\.select\('user_id, nickname, xp, stars, achievements, updated_at'\)\.eq\('class_code', code\)\.limit\(200\)/, "teacher roster progress reads must be class-scoped and bounded");
 mustNotMatch("index.html", /id="tabSignup"|Criar conta/, "teacher panel must not expose public signup");
 mustMatch("index.html", /id="liveScoreboard"/, "live classroom mode must render a teacher scoreboard");
 mustMatch("index.html", /function renderLiveScoreboard\(/, "live classroom mode must aggregate session scores");
+mustMatch("index.html", /mqLive\.watchSessionResponses/, "teacher live scoreboard must subscribe to session responses");
 
 mustMatch("firestore.rules", /function validMqProgress\(/, "rules must validate MathQuest progress schema");
 mustMatch("firestore.rules", /match \/profiles\/\{userId\}[\s\S]*allow create: if false;/, "teacher profiles must not be publicly creatable");

@@ -55,4 +55,5 @@ Then verify GitHub Actions on the PR:
 - Teachers can start a live phase challenge from a class roster.
 - Students in the class see a live challenge banner and answer in-browser.
 - The teacher sees answer counts and an accumulated live scoreboard.
+- Live sessions and scoreboards use Firestore realtime listeners, with polling fallback if a browser cannot attach a listener.
 - Current scoring is client-side. For high-stakes anti-cheat, move scoring to a trusted backend such as Cloud Functions.

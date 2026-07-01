@@ -1396,6 +1396,7 @@ async function startGame() {
     } else {
         persist();
     }
+    startLiveSessionWatch();
     hideWelcome();
     // Primeiro acesso: mostra tutorial antes do mapa.  Depois disso a flag fica
     // em localStorage e o aluno vai direto pro mapa nas próximas visitas.
@@ -1468,6 +1469,7 @@ async function init() {
         renderMap();
         $('loader').style.display = 'none';
     }
+    startLiveSessionWatch();
 }
 
 /* ─── Streak ────────────────────────────────────────────────────────────── */
@@ -2094,9 +2096,21 @@ async function checkClassMessages() {
 
 /* ── Desafio ao vivo (modo sala tipo Kahoot) ────────────────────────── */
 let livePollTimer = null;
+let liveSessionUnsubscribe = null;
 
 function liveResponseId(session, questionIndex) {
     return `${session.session_id}_${state.userId}_${questionIndex}`;
+}
+
+function stopLiveSessionWatch() {
+    if (liveSessionUnsubscribe) {
+        liveSessionUnsubscribe();
+        liveSessionUnsubscribe = null;
+    }
+    if (livePollTimer) {
+        clearInterval(livePollTimer);
+        livePollTimer = null;
+    }
 }
 
 function removeLiveBanner() {
@@ -2133,19 +2147,47 @@ async function findActiveLiveSession() {
 async function checkLiveSession() {
     try {
         const session = await findActiveLiveSession();
-        if (!session) {
-            removeLiveBanner();
-            removeLiveStudentModal();
-            return;
-        }
-        showLiveBanner(session);
-        const openModal = document.getElementById('mqLiveStudentModal');
-        if (openModal && openModal.dataset.liveKey !== `${session.session_id}:${session.question_index}`) {
-            openLiveStudentModal(session);
-        }
+        renderActiveLiveSession(session);
     } catch (_) {
         /* modo ao vivo não deve interromper o jogo normal */
     }
+}
+
+function renderActiveLiveSession(session) {
+    if (!session) {
+        removeLiveBanner();
+        removeLiveStudentModal();
+        return;
+    }
+    showLiveBanner(session);
+    const openModal = document.getElementById('mqLiveStudentModal');
+    if (openModal && openModal.dataset.liveKey !== `${session.session_id}:${session.question_index}`) {
+        openLiveStudentModal(session);
+    }
+}
+
+function handleLiveSessionRows(rows) {
+    renderActiveLiveSession((rows || []).find(session => session.status === 'question') || null);
+}
+
+function startLiveSessionWatch() {
+    stopLiveSessionWatch();
+    if (!localStorage.getItem('mq_lgpd_ok') || !state.userId || !state.classCode || !window.sb || !BACKEND_CONFIGURED) return;
+    if (window.mqLive?.watchClassSessions) {
+        liveSessionUnsubscribe = window.mqLive.watchClassSessions(
+            state.classCode,
+            handleLiveSessionRows,
+            error => {
+                console.warn('[mathquest] live session listener falhou:', error?.message || error);
+                stopLiveSessionWatch();
+                checkLiveSession();
+                livePollTimer = setInterval(checkLiveSession, 4000);
+            },
+        );
+        return;
+    }
+    checkLiveSession();
+    livePollTimer = setInterval(checkLiveSession, 4000);
 }
 
 function openLiveStudentModal(session) {
@@ -2250,9 +2292,8 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(checkClassMessages, 3000);
     setInterval(checkClassMessages, 5 * 60 * 1000);
 
-    // Desafio ao vivo (checa com frequência curta para uso em sala)
-    setTimeout(checkLiveSession, 3500);
-    livePollTimer = setInterval(checkLiveSession, 4000);
+    // Desafio ao vivo usa listener em tempo real; cai para polling se indisponivel.
+    setTimeout(startLiveSessionWatch, 3500);
 
     // Evento semanal: mostra banner ao abrir o mapa
     const _origRenderMap = window.renderMap;

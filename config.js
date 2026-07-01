@@ -287,6 +287,43 @@ async function mqClassLeaderboard(code) {
 
 window.MQ_LIMITS = MQ_LIMITS;
 
+function mqSnapshotRows(snapshot) {
+    return snapshot.docs.map(mqSnapshotToRecord);
+}
+
+function mqWatchQuery(query, onRows, onError) {
+    return query.onSnapshot(
+        snapshot => onRows(mqSnapshotRows(snapshot)),
+        error => {
+            if (typeof onError === 'function') onError(error);
+        },
+    );
+}
+
+window.mqLive = {
+    watchClassSessions(classCode, onRows, onError) {
+        if (!classCode) return () => {};
+        return mqWatchQuery(
+            mqDb.collection('live_sessions')
+                .where('class_code', '==', classCode)
+                .orderBy('updated_at', 'desc')
+                .limit(MQ_LIMITS.liveSessions),
+            onRows,
+            onError,
+        );
+    },
+    watchSessionResponses(sessionId, onRows, onError) {
+        if (!sessionId) return () => {};
+        return mqWatchQuery(
+            mqDb.collection('live_responses')
+                .where('session_id', '==', sessionId)
+                .limit(MQ_LIMITS.liveResponses),
+            onRows,
+            onError,
+        );
+    },
+};
+
 window.sb = {
     auth: {
         async getSession() {

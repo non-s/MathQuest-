@@ -881,6 +881,7 @@
 
     let currentLiveSession = null;
     let liveStatsInterval = null;
+    let liveStatsUnsubscribe = null;
 
     function liveSessionId() {
         return `${currentClassCode}_${Date.now().toString(36)}`;
@@ -917,6 +918,10 @@
     }
 
     function stopLiveStats() {
+        if (liveStatsUnsubscribe) {
+            liveStatsUnsubscribe();
+            liveStatsUnsubscribe = null;
+        }
         if (liveStatsInterval) {
             clearInterval(liveStatsInterval);
             liveStatsInterval = null;
@@ -934,15 +939,31 @@
             const correct = index === q.correctIndex ? ' correct' : '';
             return `<div class="t-live-option${correct}"><span>${esc(String.fromCharCode(65 + index))}. ${formatOpt(opt)}</span><b id="liveCount${index}">0</b></div>`;
         }).join('');
-        refreshLiveStats();
         stopLiveStats();
+        watchLiveStats();
+    }
+
+    function watchLiveStats() {
+        if (window.mqLive?.watchSessionResponses) {
+            liveStatsUnsubscribe = window.mqLive.watchSessionResponses(
+                currentLiveSession.session_id,
+                renderLiveStats,
+                error => {
+                    $('liveAnswerStats').textContent = 'Tempo real indisponível, tentando por atualização periódica.';
+                    console.warn('[mathquest] live response listener falhou:', error?.message || error);
+                    stopLiveStats();
+                    refreshLiveStats();
+                    liveStatsInterval = setInterval(refreshLiveStats, 3000);
+                },
+            );
+            return;
+        }
+        refreshLiveStats();
         liveStatsInterval = setInterval(refreshLiveStats, 3000);
     }
 
     async function refreshLiveStats() {
         if (!currentLiveSession) return;
-        const q = currentLiveSession.questions[currentLiveSession.question_index];
-        const counts = q.options.map(() => 0);
         const { data, error } = await sb.from('live_responses')
             .select('*')
             .eq('session_id', currentLiveSession.session_id)
@@ -951,7 +972,13 @@
             $('liveAnswerStats').textContent = 'Erro lendo respostas: ' + error.message;
             return;
         }
-        const rows = data || [];
+        renderLiveStats(data || []);
+    }
+
+    function renderLiveStats(rows) {
+        if (!currentLiveSession) return;
+        const q = currentLiveSession.questions[currentLiveSession.question_index];
+        const counts = q.options.map(() => 0);
         rows.filter(row => row.question_index === currentLiveSession.question_index).forEach(row => {
             if (Number.isInteger(row.answer_index) && counts[row.answer_index] !== undefined) counts[row.answer_index]++;
         });
