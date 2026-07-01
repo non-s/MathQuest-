@@ -13,8 +13,15 @@ function mustMatch(relPath, pattern, message) {
   if (!pattern.test(text)) failures.push(`${relPath}: ${message}`);
 }
 
+function mustNotMatch(relPath, pattern, message) {
+  const text = read(relPath);
+  if (pattern.test(text)) failures.push(`${relPath}: ${message}`);
+}
+
 mustMatch("config.js", /const MQ_LIMITS = Object\.freeze\(/, "must define central production read limits");
 mustMatch("config.js", /function mqDefaultLimit\(/, "must enforce default Firestore query limits");
+mustMatch("config.js", /Cadastro publico de professores desativado/, "teacher signup must stay disabled in the client adapter");
+mustNotMatch("config.js", /createUserWithEmailAndPassword/, "client adapter must not create teacher accounts directly");
 mustMatch("config.js", /live_sessions:\s*'live_sessions'/, "adapter must expose live session storage");
 mustMatch("config.js", /live_responses:\s*'live_responses'/, "adapter must expose live response storage");
 mustMatch("config.js", /liveSessions:\s*10/, "live session reads must be bounded");
@@ -30,8 +37,10 @@ mustMatch("script.js", /localStorage\.setItem\('mq_class_code', codeRaw\);\s*awa
 
 mustMatch("index.html", /class_members'\)\.select\('user_id, joined_at'\)\.eq\('class_code', code\)\.limit\(200\)/, "roster membership reads must be bounded");
 mustMatch("index.html", /mathquest_progress'\)\.select\('user_id, nickname, xp, stars, achievements, updated_at'\)\.eq\('class_code', code\)\.limit\(200\)/, "teacher roster progress reads must be class-scoped and bounded");
+mustNotMatch("index.html", /id="tabSignup"|Criar conta/, "teacher panel must not expose public signup");
 
 mustMatch("firestore.rules", /function validMqProgress\(/, "rules must validate MathQuest progress schema");
+mustMatch("firestore.rules", /match \/profiles\/\{userId\}[\s\S]*allow create: if false;/, "teacher profiles must not be publicly creatable");
 mustMatch("firestore.rules", /function mqProgressClassBindingValid\(/, "rules must validate progress-to-class membership");
 mustMatch("firestore.rules", /function mqProgressClassVisible\(/, "rules must allow class-scoped leaderboard reads");
 mustMatch("firestore.rules", /function mqProgressVisibleToTeacher\(/, "teacher progress reads must be class-scoped");

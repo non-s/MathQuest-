@@ -19,6 +19,7 @@ Arquivos principais:
 
 - Alunos usam Firebase Anonymous Auth.
 - Professores usam Email/Password.
+- Cadastro publico de professor fica desativado no cliente. Crie/libere contas de professor pela administracao do Firebase, com `profiles/{uid}.role = "teacher"`.
 
 ## Dados
 
