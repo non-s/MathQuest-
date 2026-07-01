@@ -2105,7 +2105,10 @@ function liveResponseId(session, questionIndex) {
 }
 
 function liveQuestionRemainingSeconds(session) {
-    const deadlineMs = Date.parse(session?.question_deadline_at || '');
+    const numericDeadline = Number(session?.question_deadline_ms);
+    const deadlineMs = Number.isFinite(numericDeadline) && numericDeadline > 0
+        ? numericDeadline
+        : Date.parse(session?.question_deadline_at || '');
     if (!Number.isFinite(deadlineMs)) return null;
     return Math.max(0, Math.ceil((deadlineMs - Date.now()) / 1000));
 }

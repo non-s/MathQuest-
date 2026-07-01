@@ -563,8 +563,14 @@ service cloud.firestore {
           && data.revealed_answer_index <= 9);
     }
 
+    function mqLiveDeadlineValid(data) {
+      return data.keys().hasAny(['question_deadline_ms'])
+        && data.question_deadline_ms is int
+        && data.question_deadline_ms > 0;
+    }
+
     function validMqLiveSession(data, sessionId) {
-      return data.keys().hasOnly(['session_id', 'class_code', 'teacher_id', 'title', 'status', 'phase_id', 'question_index', 'questions', 'revealed_answer_index', 'question_duration_sec', 'question_started_at', 'question_deadline_at', 'created_at', 'updated_at', 'started_at', 'ended_at'])
+      return data.keys().hasOnly(['session_id', 'class_code', 'teacher_id', 'title', 'status', 'phase_id', 'question_index', 'questions', 'revealed_answer_index', 'question_duration_sec', 'question_started_at', 'question_deadline_at', 'question_deadline_ms', 'created_at', 'updated_at', 'started_at', 'ended_at'])
         && data.session_id == sessionId
         && mqValidClassCode(data.class_code)
         && data.teacher_id == request.auth.uid
@@ -584,6 +590,7 @@ service cloud.firestore {
         && mqOptionalLiveDuration(data)
         && mqOptionalIsoString(data, 'question_started_at')
         && mqOptionalIsoString(data, 'question_deadline_at')
+        && (data.status == 'ended' || mqLiveDeadlineValid(data))
         && mqOptionalIsoString(data, 'created_at')
         && mqOptionalIsoString(data, 'updated_at')
         && mqOptionalIsoString(data, 'started_at')
@@ -609,7 +616,9 @@ service cloud.firestore {
     function mqLiveAnswerOpen(data) {
       return exists(/databases/$(database)/documents/live_sessions/$(data.session_id))
         && get(/databases/$(database)/documents/live_sessions/$(data.session_id)).data.status == 'question'
-        && get(/databases/$(database)/documents/live_sessions/$(data.session_id)).data.question_index == data.question_index;
+        && get(/databases/$(database)/documents/live_sessions/$(data.session_id)).data.question_index == data.question_index
+        && get(/databases/$(database)/documents/live_sessions/$(data.session_id)).data.keys().hasAny(['question_deadline_ms'])
+        && request.time.toMillis() <= get(/databases/$(database)/documents/live_sessions/$(data.session_id)).data.question_deadline_ms;
     }
 
     function validMqLiveResponse(data, responseId) {

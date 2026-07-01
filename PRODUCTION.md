@@ -64,4 +64,4 @@ Then verify GitHub Actions on the PR:
 - Live responses are immutable after creation: the first submitted answer for each student/question is the one counted.
 - Live response listeners/read fallbacks are bounded at 2,500 rows, enough for a 200-student class across 10 live questions with operational margin.
 - Starting a new live challenge closes older open live sessions for the same class.
-- Current scoring and timer enforcement are computed in the browser from public session metadata. For high-stakes anti-cheat, move scoring and deadline enforcement to a trusted backend such as Cloud Functions.
+- Firestore rules reject live responses after `question_deadline_ms`; current scoring is still computed in the teacher client from private answer keys. For high-stakes anti-cheat, move authoritative scoring to a trusted backend such as Cloud Functions.

@@ -914,13 +914,24 @@
     }
 
     function liveQuestionDeadlineAt(startedAt, durationSeconds) {
+        return new Date(liveQuestionDeadlineMs(startedAt, durationSeconds)).toISOString();
+    }
+
+    function liveQuestionDeadlineMs(startedAt, durationSeconds) {
         const startMs = Date.parse(startedAt);
         const safeStartMs = Number.isFinite(startMs) ? startMs : Date.now();
-        return new Date(safeStartMs + durationSeconds * 1000).toISOString();
+        return safeStartMs + durationSeconds * 1000;
+    }
+
+    function liveSessionDeadlineMs(session) {
+        const numericDeadline = Number(session?.question_deadline_ms);
+        if (Number.isFinite(numericDeadline) && numericDeadline > 0) return numericDeadline;
+        const parsedDeadline = Date.parse(session?.question_deadline_at || '');
+        return Number.isFinite(parsedDeadline) ? parsedDeadline : null;
     }
 
     function liveRemainingSeconds(session) {
-        const deadlineMs = Date.parse(session?.question_deadline_at || '');
+        const deadlineMs = liveSessionDeadlineMs(session);
         if (!Number.isFinite(deadlineMs)) return null;
         return Math.max(0, Math.ceil((deadlineMs - Date.now()) / 1000));
     }
@@ -1174,6 +1185,7 @@
         const answerKey = liveAnswerKeyPayload(generatedQuestions);
         const questionDurationSec = liveDurationSeconds();
         const now = new Date().toISOString();
+        const questionDeadlineMs = liveQuestionDeadlineMs(now, questionDurationSec);
         const session = {
             session_id: liveSessionId(),
             class_code: currentClassCode,
@@ -1186,7 +1198,8 @@
             revealed_answer_index: -1,
             question_duration_sec: questionDurationSec,
             question_started_at: now,
-            question_deadline_at: liveQuestionDeadlineAt(now, questionDurationSec),
+            question_deadline_at: new Date(questionDeadlineMs).toISOString(),
+            question_deadline_ms: questionDeadlineMs,
             started_at: now,
             created_at: now,
             updated_at: now,
@@ -1258,12 +1271,14 @@
         try {
             const questionStartedAt = new Date().toISOString();
             const duration = currentLiveSession.question_duration_sec || 60;
+            const questionDeadlineMs = liveQuestionDeadlineMs(questionStartedAt, duration);
             await saveLiveSession({
                 status: 'question',
                 question_index: nextIndex,
                 revealed_answer_index: -1,
                 question_started_at: questionStartedAt,
-                question_deadline_at: liveQuestionDeadlineAt(questionStartedAt, duration),
+                question_deadline_at: new Date(questionDeadlineMs).toISOString(),
+                question_deadline_ms: questionDeadlineMs,
             });
             renderLiveTeacherControl();
         } catch (error) {
