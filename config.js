@@ -179,7 +179,9 @@ class MathQuestQuery {
                 };
                 const id = mqDocId(this.collectionName, payload);
                 if (id) {
-                    await mqDb.collection(this.collectionName).doc(id).set(payload, { merge: this.mode === 'upsert' });
+                    const docRef = mqDb.collection(this.collectionName).doc(id);
+                    if (this.mode === 'insert') await docRef.create(payload);
+                    else await docRef.set(payload, { merge: true });
                     return { data: [{ id, ...payload }], error: null };
                 }
                 const ref = await mqDb.collection(this.collectionName).add(payload);

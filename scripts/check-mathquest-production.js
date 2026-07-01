@@ -29,6 +29,7 @@ mustMatch("config.js", /liveResponses:\s*1000/, "live response reads must be bou
 mustMatch("config.js", /watchClassSessions\(classCode, onRows, onError\)/, "live sessions must use realtime class listeners");
 mustMatch("config.js", /watchSessionResponses\(sessionId, onRows, onError\)/, "live responses must use realtime response listeners");
 mustMatch("config.js", /\.onSnapshot\(/, "live classroom mode must use Firestore realtime listeners");
+mustMatch("config.js", /\.create\(payload\)/, "deterministic inserts must use Firestore create to avoid overwrites");
 mustMatch("config.js", /where\('class_code',\s*'==',\s*code\)/, "leaderboard must query progress by class_code");
 mustMatch("config.js", /\.limit\(MQ_LIMITS\.leaderboard\)/, "leaderboard must be bounded");
 mustMatch("config.js", /teacher_id:\s*cls\.teacher_id/, "class membership must persist teacher_id for scalable rules");
@@ -39,6 +40,7 @@ mustMatch("script.js", /teacher_unlocks'\)\.select\('region'\)\.eq\('user_id', s
 mustMatch("script.js", /localStorage\.setItem\('mq_class_code', codeRaw\);\s*await persistAwait\(\);/s, "joining a class must flush progress with class_code");
 mustMatch("script.js", /function startLiveSessionWatch\(/, "students must attach a live session watcher");
 mustMatch("script.js", /mqLive\.watchClassSessions/, "student live mode must subscribe to class sessions");
+mustMatch("script.js", /live_responses'\)\.insert\(/, "student live answers must be first-write-only inserts");
 
 mustMatch("index.html", /class_members'\)\.select\('user_id, joined_at'\)\.eq\('class_code', code\)\.limit\(200\)/, "roster membership reads must be bounded");
 mustMatch("index.html", /mathquest_progress'\)\.select\('user_id, nickname, xp, stars, achievements, updated_at'\)\.eq\('class_code', code\)\.limit\(200\)/, "teacher roster progress reads must be class-scoped and bounded");
@@ -60,6 +62,7 @@ mustMatch("firestore.rules", /function validMqLiveSession\(/, "rules must valida
 mustMatch("firestore.rules", /function validMqLiveResponse\(/, "rules must validate live response schema");
 mustMatch("firestore.rules", /match \/live_sessions\/\{sessionId\}/, "rules must protect live sessions");
 mustMatch("firestore.rules", /match \/live_responses\/\{responseId\}/, "rules must protect live responses");
+mustMatch("firestore.rules", /match \/live_responses\/\{responseId\}[\s\S]*allow update, delete: if false;/, "live responses must be immutable after creation");
 mustMatch("firestore.indexes.json", /"collectionGroup": "live_sessions"/, "indexes must support live session lookups");
 mustMatch("firestore.indexes.json", /"collectionGroup": "live_responses"/, "indexes must support live response aggregation");
 

@@ -2237,7 +2237,7 @@ async function submitLiveAnswer(session, questionIndex, answerIndex, question) {
     if (result) result.textContent = correct ? 'Resposta enviada: correta!' : 'Resposta enviada.';
     try {
         const questionKey = String(questionIndex);
-        const { error } = await sb.from('live_responses').upsert({
+        const { error } = await sb.from('live_responses').insert({
             response_id: responseId,
             session_id: session.session_id,
             class_code: session.class_code,
@@ -2252,6 +2252,11 @@ async function submitLiveAnswer(session, questionIndex, answerIndex, question) {
         });
         if (error) throw error;
     } catch (error) {
+        if ((error?.code || error?.message || '').includes('already-exists')) {
+            if (result) result.textContent = 'Resposta já enviada. Aguarde a próxima pergunta.';
+            state.liveResponses[responseId] = true;
+            return;
+        }
         state.liveResponses[responseId] = false;
         document.querySelectorAll('#mqLiveOptions .opt').forEach(btn => {
             btn.disabled = false;

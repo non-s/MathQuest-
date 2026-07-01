@@ -846,13 +846,7 @@ service cloud.firestore {
         && (resource.data.user_id == request.auth.uid || mqClassOwnedByTeacher(resource.data.class_code));
       allow create: if signedIn()
         && validMqLiveResponse(request.resource.data, responseId);
-      allow update: if signedIn()
-        && validMqLiveResponse(request.resource.data, responseId)
-        && request.resource.data.session_id == resource.data.session_id
-        && request.resource.data.class_code == resource.data.class_code
-        && request.resource.data.user_id == resource.data.user_id
-        && request.resource.data.question_index == resource.data.question_index;
-      allow delete: if false;
+      allow update, delete: if false;
     }
 
     match /{document=**} {
