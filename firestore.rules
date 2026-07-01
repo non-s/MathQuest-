@@ -549,8 +549,15 @@ service cloud.firestore {
       return value in ['lobby', 'question', 'ended'];
     }
 
+    function mqOptionalLiveDuration(data) {
+      return !data.keys().hasAny(['question_duration_sec'])
+        || (data.question_duration_sec is int
+          && data.question_duration_sec >= 15
+          && data.question_duration_sec <= 180);
+    }
+
     function validMqLiveSession(data, sessionId) {
-      return data.keys().hasOnly(['session_id', 'class_code', 'teacher_id', 'title', 'status', 'phase_id', 'question_index', 'questions', 'created_at', 'updated_at', 'started_at', 'ended_at'])
+      return data.keys().hasOnly(['session_id', 'class_code', 'teacher_id', 'title', 'status', 'phase_id', 'question_index', 'questions', 'question_duration_sec', 'question_started_at', 'question_deadline_at', 'created_at', 'updated_at', 'started_at', 'ended_at'])
         && data.session_id == sessionId
         && mqValidClassCode(data.class_code)
         && data.teacher_id == request.auth.uid
@@ -566,6 +573,9 @@ service cloud.firestore {
         && data.questions is list
         && data.questions.size() >= 1
         && data.questions.size() <= 10
+        && mqOptionalLiveDuration(data)
+        && mqOptionalIsoString(data, 'question_started_at')
+        && mqOptionalIsoString(data, 'question_deadline_at')
         && mqOptionalIsoString(data, 'created_at')
         && mqOptionalIsoString(data, 'updated_at')
         && mqOptionalIsoString(data, 'started_at')

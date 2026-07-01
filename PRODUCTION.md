@@ -54,9 +54,10 @@ Then verify GitHub Actions on the PR:
 
 - Teachers can start a live phase challenge from a class roster.
 - Students in the class see a live challenge banner and answer in-browser.
+- Teachers choose a per-question timer, and teacher/student live views show the same countdown for the current question.
 - The teacher sees answer counts and an accumulated live scoreboard.
 - Live sessions and scoreboards use Firestore realtime listeners, with polling fallback if a browser cannot attach a listener.
 - Live session documents contain only public question text/options. Answer keys live in `live_answer_keys/{sessionId}` and are readable only by the teacher who owns the session.
 - Live responses are immutable after creation: the first submitted answer for each student/question is the one counted.
 - Starting a new live challenge closes older open live sessions for the same class.
-- Current scoring is computed in the teacher client from the private answer key. For high-stakes anti-cheat, move scoring to a trusted backend such as Cloud Functions.
+- Current scoring and timer enforcement are computed in the browser from public session metadata. For high-stakes anti-cheat, move scoring and deadline enforcement to a trusted backend such as Cloud Functions.

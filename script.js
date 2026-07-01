@@ -2097,9 +2097,66 @@ async function checkClassMessages() {
 /* ── Desafio ao vivo (modo sala tipo Kahoot) ────────────────────────── */
 let livePollTimer = null;
 let liveSessionUnsubscribe = null;
+let liveStudentCountdownTimer = null;
+let currentLiveStudentSession = null;
 
 function liveResponseId(session, questionIndex) {
     return `${session.session_id}_${state.userId}_${questionIndex}`;
+}
+
+function liveQuestionRemainingSeconds(session) {
+    const deadlineMs = Date.parse(session?.question_deadline_at || '');
+    if (!Number.isFinite(deadlineMs)) return null;
+    return Math.max(0, Math.ceil((deadlineMs - Date.now()) / 1000));
+}
+
+function liveQuestionExpired(session) {
+    const remaining = liveQuestionRemainingSeconds(session);
+    return remaining !== null && remaining <= 0;
+}
+
+function liveQuestionCountdownText(session) {
+    const remaining = liveQuestionRemainingSeconds(session);
+    if (remaining === null) return 'Sem limite de tempo';
+    return remaining > 0 ? `${remaining}s restantes` : 'Tempo esgotado';
+}
+
+function updateLiveStudentCountdown() {
+    if (!currentLiveStudentSession) return;
+    const text = liveQuestionCountdownText(currentLiveStudentSession);
+    const expired = liveQuestionExpired(currentLiveStudentSession);
+    const bannerCountdown = document.getElementById('mqLiveBannerCountdown');
+    if (bannerCountdown) {
+        bannerCountdown.textContent = text;
+        bannerCountdown.classList.toggle('expired', expired);
+    }
+    const modalCountdown = document.getElementById('mqLiveStudentCountdown');
+    if (modalCountdown) {
+        modalCountdown.textContent = text;
+        modalCountdown.classList.toggle('expired', expired);
+    }
+    if (expired) {
+        document.querySelectorAll('#mqLiveOptions .opt').forEach(btn => { btn.disabled = true; });
+        const result = document.getElementById('mqLiveResult');
+        if (result && !result.textContent) result.textContent = 'Tempo esgotado. Aguarde a proxima pergunta.';
+    }
+}
+
+function stopLiveStudentCountdown() {
+    if (liveStudentCountdownTimer) {
+        clearInterval(liveStudentCountdownTimer);
+        liveStudentCountdownTimer = null;
+    }
+    currentLiveStudentSession = null;
+}
+
+function startLiveStudentCountdown(session) {
+    stopLiveStudentCountdown();
+    currentLiveStudentSession = session;
+    updateLiveStudentCountdown();
+    if (liveQuestionRemainingSeconds(session) !== null) {
+        liveStudentCountdownTimer = setInterval(updateLiveStudentCountdown, 1000);
+    }
 }
 
 function stopLiveSessionWatch() {
@@ -2111,6 +2168,7 @@ function stopLiveSessionWatch() {
         clearInterval(livePollTimer);
         livePollTimer = null;
     }
+    stopLiveStudentCountdown();
 }
 
 function removeLiveBanner() {
@@ -2129,7 +2187,7 @@ function showLiveBanner(session) {
         banner.className = 'mq-live-banner';
         document.body.appendChild(banner);
     }
-    banner.innerHTML = `<div><strong>Desafio ao vivo da turma</strong><span>${esc(session.title || 'Raciocínio lógico')} · pergunta ${Number(session.question_index || 0) + 1}</span></div><button id="btnOpenLiveStudent">Entrar</button>`;
+    banner.innerHTML = `<div><strong>Desafio ao vivo da turma</strong><span>${esc(session.title || 'Raciocinio logico')} · pergunta ${Number(session.question_index || 0) + 1} · <b id="mqLiveBannerCountdown">${esc(liveQuestionCountdownText(session))}</b></span></div><button id="btnOpenLiveStudent">Entrar</button>`;
     banner.querySelector('#btnOpenLiveStudent').addEventListener('click', () => openLiveStudentModal(session));
 }
 
@@ -2157,9 +2215,11 @@ function renderActiveLiveSession(session) {
     if (!session) {
         removeLiveBanner();
         removeLiveStudentModal();
+        stopLiveStudentCountdown();
         return;
     }
     showLiveBanner(session);
+    startLiveStudentCountdown(session);
     const openModal = document.getElementById('mqLiveStudentModal');
     if (openModal && openModal.dataset.liveKey !== `${session.session_id}:${session.question_index}`) {
         openLiveStudentModal(session);
@@ -2197,6 +2257,10 @@ function openLiveStudentModal(session) {
     removeLiveStudentModal();
     const responseId = liveResponseId(session, qIndex);
     const answered = state.liveResponses[responseId];
+    const expired = liveQuestionExpired(session);
+    const resultText = answered
+        ? 'Resposta enviada. Aguarde a proxima pergunta.'
+        : (expired ? 'Tempo esgotado. Aguarde a proxima pergunta.' : '');
     const modal = document.createElement('div');
     modal.id = 'mqLiveStudentModal';
     modal.className = 'mq-live-student-modal';
@@ -2205,9 +2269,10 @@ function openLiveStudentModal(session) {
         <div class="mq-live-student-card">
             <button class="t-modal-close" data-live-close style="float:right">✕</button>
             <h3>${esc(session.title || 'Desafio ao vivo')}</h3>
+            <div id="mqLiveStudentCountdown" class="mq-live-student-countdown">${esc(liveQuestionCountdownText(session))}</div>
             <div class="q-stem">${q.stem}</div>
             <div id="mqLiveOptions"></div>
-            <div id="mqLiveResult" class="mq-live-student-result">${answered ? 'Resposta enviada. Aguarde a próxima pergunta.' : ''}</div>
+            <div id="mqLiveResult" class="mq-live-student-result">${resultText}</div>
         </div>
     `;
     document.body.appendChild(modal);
@@ -2216,23 +2281,30 @@ function openLiveStudentModal(session) {
     (q.options || []).forEach((opt, index) => {
         const btn = document.createElement('button');
         btn.className = 'opt';
-        btn.disabled = Boolean(answered);
+        btn.disabled = Boolean(answered || expired);
         btn.innerHTML = `<span class="opt-label-badge">${OPT_LABELS[index] || String(index + 1)}</span><span class="opt-text">${formatOpt(opt)}</span>`;
         btn.addEventListener('click', () => submitLiveAnswer(session, qIndex, index, q));
         options.appendChild(btn);
     });
+    updateLiveStudentCountdown();
 }
 
 async function submitLiveAnswer(session, questionIndex, answerIndex, question) {
     const responseId = liveResponseId(session, questionIndex);
     if (state.liveResponses[responseId]) return;
+    if (liveQuestionExpired(session)) {
+        document.querySelectorAll('#mqLiveOptions .opt').forEach(btn => { btn.disabled = true; });
+        const result = document.getElementById('mqLiveResult');
+        if (result) result.textContent = 'Tempo esgotado. Aguarde a proxima pergunta.';
+        return;
+    }
     state.liveResponses[responseId] = true;
     document.querySelectorAll('#mqLiveOptions .opt').forEach((btn, idx) => {
         btn.disabled = true;
         if (idx === answerIndex) btn.classList.add('selected');
     });
     const result = document.getElementById('mqLiveResult');
-    if (result) result.textContent = 'Resposta enviada. Aguarde a próxima pergunta.';
+    if (result) result.textContent = 'Resposta enviada. Aguarde a proxima pergunta.';
     try {
         const questionKey = String(questionIndex);
         const { error } = await sb.from('live_responses').insert({
@@ -2255,10 +2327,12 @@ async function submitLiveAnswer(session, questionIndex, answerIndex, question) {
         }
         state.liveResponses[responseId] = false;
         document.querySelectorAll('#mqLiveOptions .opt').forEach(btn => {
-            btn.disabled = false;
+            btn.disabled = liveQuestionExpired(session);
             btn.classList.remove('selected');
         });
-        if (result) result.textContent = 'Não consegui enviar. Tente novamente.';
+        if (result) result.textContent = liveQuestionExpired(session)
+            ? 'Tempo esgotado. Aguarde a proxima pergunta.'
+            : 'Nao consegui enviar. Tente novamente.';
         toast('Erro no desafio ao vivo: ' + (error.message || error), 'error');
     }
 }

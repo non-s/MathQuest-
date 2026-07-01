@@ -41,6 +41,9 @@ mustMatch("script.js", /teacher_unlocks'\)\.select\('region'\)\.eq\('user_id', s
 mustMatch("script.js", /localStorage\.setItem\('mq_class_code', codeRaw\);\s*await persistAwait\(\);/s, "joining a class must flush progress with class_code");
 mustMatch("script.js", /function startLiveSessionWatch\(/, "students must attach a live session watcher");
 mustMatch("script.js", /mqLive\.watchClassSessions/, "student live mode must subscribe to class sessions");
+mustMatch("script.js", /function liveQuestionRemainingSeconds\(/, "student live mode must render question countdowns");
+mustMatch("script.js", /mqLiveStudentCountdown/, "student live modal must show the question countdown");
+mustMatch("script.js", /function submitLiveAnswer\([\s\S]*liveQuestionExpired\(session\)/, "student live answers must be blocked after the visible deadline");
 mustMatch("script.js", /live_responses'\)\.insert\(/, "student live answers must be first-write-only inserts");
 
 mustMatch("index.html", /class_members'\)\.select\('user_id, joined_at'\)\.eq\('class_code', code\)\.limit\(200\)/, "roster membership reads must be bounded");
@@ -52,6 +55,9 @@ mustMatch("index.html", /mqLive\.watchSessionResponses/, "teacher live scoreboar
 mustMatch("index.html", /function closeExistingLiveSessions\(classCode\)/, "teacher live mode must close stale sessions before starting another");
 mustMatch("index.html", /await closeExistingLiveSessions\(currentClassCode\);/, "starting a live session must enforce one active session per class");
 mustMatch("index.html", /live_answer_keys'\)\.insert\(/, "teacher live mode must store answer keys outside public sessions");
+mustMatch("index.html", /id="liveDurationSelect"/, "teacher live mode must allow a per-question timer");
+mustMatch("index.html", /question_duration_sec:\s*questionDurationSec/, "live sessions must persist the per-question duration");
+mustMatch("index.html", /question_deadline_at:\s*liveQuestionDeadlineAt/, "live sessions must persist question deadlines");
 mustNotMatch("index.html", /correctIndex:\s*Number/, "public live session payload must not include correct answers");
 mustNotMatch("index.html", /score_delta/, "teacher scoreboard must compute scores from private answer keys, not persisted student scores");
 
@@ -67,6 +73,8 @@ mustMatch("firestore.rules", /mqString\(data\.message, 1, 500\)/, "class message
 mustMatch("firestore.rules", /function validMqLiveSession\(/, "rules must validate live session schema");
 mustMatch("firestore.rules", /function validMqLiveAnswerKey\(/, "rules must validate private live answer keys");
 mustMatch("firestore.rules", /function validMqLiveResponse\(/, "rules must validate live response schema");
+mustMatch("firestore.rules", /function mqOptionalLiveDuration\(/, "rules must validate live question timer bounds");
+mustMatch("firestore.rules", /question_deadline_at/, "rules must allow validated live question deadlines");
 mustMatch("firestore.rules", /match \/live_sessions\/\{sessionId\}/, "rules must protect live sessions");
 mustMatch("firestore.rules", /match \/live_answer_keys\/\{sessionId\}[\s\S]*allow read: if mqLiveSessionOwnedByTeacher\(sessionId\);/, "live answer keys must be teacher-only");
 mustMatch("firestore.rules", /match \/live_responses\/\{responseId\}/, "rules must protect live responses");

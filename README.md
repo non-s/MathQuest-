@@ -35,6 +35,8 @@ Colecoes usadas no Firestore:
 - `live_answer_keys/{sessionId}`
 - `live_responses/{sessionId_uid_questionIndex}`
 
+O modo ao vivo armazena apenas perguntas/opcoes publicas em `live_sessions`, mantem gabaritos em `live_answer_keys` e usa um temporizador por pergunta para coordenar a sala.
+
 ## Desenvolvimento local
 
 Sirva por HTTP:

@@ -1076,10 +1076,35 @@ body { font-size: calc(1rem * var(--font-scale, 1)); }
         .t-drill-phase.done { border-color: var(--success); }
         .t-drill-phase.locked { opacity: .3; }
         .t-live-modal-card { max-width: 720px; }
+        .t-live-duration-control {
+            display: grid;
+            gap: .35rem;
+            margin: .75rem 0 1rem;
+            color: var(--text-dim);
+            font-size: .85rem;
+            font-weight: 700;
+        }
         .t-live-status {
             color: var(--text-dim);
             font-size: .85rem;
+            margin-bottom: .45rem;
+        }
+        .t-live-countdown {
+            display: inline-flex;
+            align-items: center;
+            min-height: 2rem;
             margin-bottom: .75rem;
+            padding: .3rem .65rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg-soft);
+            color: var(--warning);
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+        }
+        .t-live-countdown.expired {
+            color: var(--danger);
+            border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
         }
         .t-live-question {
             background: var(--bg-soft);
@@ -1152,6 +1177,11 @@ body { font-size: calc(1rem * var(--font-scale, 1)); }
         }
         .mq-live-banner strong { display: block; font-size: .95rem; }
         .mq-live-banner span { color: var(--text-dim); font-size: .8rem; }
+        .mq-live-banner b {
+            color: var(--warning);
+            font-variant-numeric: tabular-nums;
+        }
+        .mq-live-banner b.expired { color: var(--danger); }
         .mq-live-banner button {
             background: var(--success);
             color: #07130a;
@@ -1178,6 +1208,22 @@ body { font-size: calc(1rem * var(--font-scale, 1)); }
             box-shadow: var(--shadow);
         }
         .mq-live-student-card h3 { margin-bottom: .75rem; }
+        .mq-live-student-countdown {
+            display: inline-flex;
+            margin-bottom: .75rem;
+            padding: .3rem .6rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            color: var(--warning);
+            background: var(--bg-soft);
+            font-size: .85rem;
+            font-weight: 800;
+            font-variant-numeric: tabular-nums;
+        }
+        .mq-live-student-countdown.expired {
+            color: var(--danger);
+            border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+        }
         .mq-live-student-card .opt {
             width: 100%;
             margin-top: .55rem;
