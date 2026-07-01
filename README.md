@@ -41,6 +41,8 @@ Links de entrada aceitam `?class=CODIGO`, `?turma=CODIGO` ou `?code=CODIGO`; o m
 
 Desafios ao vivo comecam em `lobby`, permitindo que os alunos entrem antes de o professor iniciar a primeira pergunta cronometrada. O painel do professor e o Projetor mostram a contagem/lista de alunos que ja entraram, ajudando a turma a confirmar quem esta pronto antes da largada.
 
+Durante o desafio, o professor revela o resultado antes de avancar; o controle de proxima pergunta fica travado enquanto a pergunta ainda esta ativa.
+
 ## Desenvolvimento local
 
 Sirva por HTTP:

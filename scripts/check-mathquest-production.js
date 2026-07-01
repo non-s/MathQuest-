@@ -78,7 +78,7 @@ mustMatch("index.html", /function closeExistingLiveSessions\(classCode\)/, "teac
 mustMatch("index.html", /await closeExistingLiveSessions\(currentClassCode\);/, "starting a live session must enforce one active session per class");
 mustMatch("index.html", /live_answer_keys'\)\.insert\(/, "teacher live mode must store answer keys outside public sessions");
 mustMatch("index.html", /status:\s*'lobby'/, "teacher live mode must create a lobby before the first question");
-mustMatch("index.html", /currentLiveSession\.status === 'lobby' \? 'Comecar perguntas'/, "teacher live mode must expose a start-from-lobby control");
+mustMatch("index.html", /currentLiveSession\.status === 'lobby'[\s\S]*\? 'Comecar perguntas'/, "teacher live mode must expose a start-from-lobby control");
 mustMatch("index.html", /function liveLobbyListHtml\(/, "live lobby must render joined students before the first question");
 mustMatch("index.html", /function renderLiveLobbyIfVisible\(/, "teacher roster refreshes must redraw visible live lobbies");
 mustMatch("index.html", /function renderProjectorLobby\(/, "projector mode must render the live lobby");
@@ -92,6 +92,8 @@ mustMatch("index.html", /question_deadline_ms:\s*questionDeadlineMs/, "live sess
 mustMatch("index.html", /id="btnRevealLiveAnswer"/, "teacher live mode must include a result reveal control");
 mustMatch("index.html", /async function revealLiveAnswer\(/, "teacher live mode must reveal results explicitly");
 mustMatch("index.html", /status:\s*'review'/, "revealing a live answer must move the session into review");
+mustMatch("index.html", /\$\('btnNextLiveQuestion'\)\.disabled = waitingForReveal;/, "teacher live mode must disable next-question advance until results are revealed");
+mustMatch("index.html", /currentLiveSession\.status !== 'review'[\s\S]*Mostre o resultado antes de avancar/, "teacher live mode must guard next-question advance before review state");
 mustMatch("index.html", /revealed_answer_index:\s*-1/, "new live questions must reset public revealed answers");
 mustMatch("index.html", /function renderProjectorLive\(/, "projector mode must render live classroom questions");
 mustMatch("index.html", /id="projLive"/, "projector overlay must include a live challenge region");

@@ -1067,7 +1067,11 @@
         $('btnRevealLiveAnswer').textContent = !currentLiveAnswerKey
             ? 'Gabarito indisponivel'
             : (currentLiveSession.status === 'review' ? 'Resultado exibido' : 'Mostrar resultado');
-        $('btnNextLiveQuestion').textContent = currentLiveSession.status === 'lobby' ? 'Comecar perguntas' : 'Proxima';
+        const waitingForReveal = currentLiveSession.status === 'question';
+        $('btnNextLiveQuestion').disabled = waitingForReveal;
+        $('btnNextLiveQuestion').textContent = currentLiveSession.status === 'lobby'
+            ? 'Comecar perguntas'
+            : (waitingForReveal ? 'Mostre resultado' : (currentLiveSession.question_index >= total - 1 ? 'Encerrar' : 'Proxima'));
         if (currentLiveSession.status === 'lobby') {
             $('btnRevealLiveAnswer').disabled = true;
             $('liveQuestionPreview').innerHTML = `<h4>${esc(currentLiveSession.title || 'Desafio ao vivo')}</h4><p class="t-live-empty">Lobby aberto. Mostre o projetor para os alunos entrarem com o QR Code ou codigo da turma.</p>${liveLobbyListHtml('t-live-lobby-list', 't-live-lobby-name', 18)}`;
@@ -1330,6 +1334,11 @@
             } catch (error) {
                 toast('Erro iniciando perguntas: ' + (error.message || error), 'error');
             }
+            return;
+        }
+        if (currentLiveSession.status !== 'review') {
+            toast('Mostre o resultado antes de avancar.', 'error');
+            renderLiveTeacherControl();
             return;
         }
         const nextIndex = currentLiveSession.question_index + 1;
