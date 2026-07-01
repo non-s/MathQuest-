@@ -24,6 +24,9 @@ const TABLE_COLLECTIONS = {
     class_members: 'class_members',
     teacher_unlocks: 'teacher_unlocks',
     class_messages: 'class_messages',
+    live_sessions: 'live_sessions',
+    live_answer_keys: 'live_answer_keys',
+    live_responses: 'live_responses',
 };
 
 const MQ_FIRESTORE_IN_LIMIT = 30;
@@ -34,6 +37,8 @@ const MQ_LIMITS = Object.freeze({
     leaderboard: 100,
     teacherUnlocks: 500,
     classMessages: 50,
+    liveSessions: 10,
+    liveResponses: 2500,
     progressRows: 200,
 });
 
@@ -76,6 +81,8 @@ function mqDefaultLimit(collectionName) {
     if (collectionName === 'class_members') return MQ_LIMITS.classMemberCounts;
     if (collectionName === 'teacher_unlocks') return MQ_LIMITS.teacherUnlocks;
     if (collectionName === 'class_messages') return MQ_LIMITS.classMessages;
+    if (collectionName === 'live_sessions') return MQ_LIMITS.liveSessions;
+    if (collectionName === 'live_responses') return MQ_LIMITS.liveResponses;
     if (collectionName === 'mathquest_progress') return MQ_LIMITS.progressRows;
     return null;
 }
@@ -86,6 +93,9 @@ function mqDocId(collectionName, payload) {
     if (collectionName === 'classes') return payload.code;
     if (collectionName === 'class_members') return `${payload.class_code}_${payload.user_id}`;
     if (collectionName === 'teacher_unlocks') return `${payload.class_code}_${payload.user_id}_${payload.region}`;
+    if (collectionName === 'live_sessions') return payload.session_id;
+    if (collectionName === 'live_answer_keys') return payload.session_id;
+    if (collectionName === 'live_responses') return payload.response_id || `${payload.session_id}_${payload.user_id}_${payload.question_index}`;
     return null;
 }
 
@@ -171,7 +181,9 @@ class MathQuestQuery {
                 };
                 const id = mqDocId(this.collectionName, payload);
                 if (id) {
-                    await mqDb.collection(this.collectionName).doc(id).set(payload, { merge: this.mode === 'upsert' });
+                    const docRef = mqDb.collection(this.collectionName).doc(id);
+                    if (this.mode === 'insert') await docRef.create(payload);
+                    else await docRef.set(payload, { merge: true });
                     return { data: [{ id, ...payload }], error: null };
                 }
                 const ref = await mqDb.collection(this.collectionName).add(payload);
@@ -279,6 +291,43 @@ async function mqClassLeaderboard(code) {
 
 window.MQ_LIMITS = MQ_LIMITS;
 
+function mqSnapshotRows(snapshot) {
+    return snapshot.docs.map(mqSnapshotToRecord);
+}
+
+function mqWatchQuery(query, onRows, onError) {
+    return query.onSnapshot(
+        snapshot => onRows(mqSnapshotRows(snapshot)),
+        error => {
+            if (typeof onError === 'function') onError(error);
+        },
+    );
+}
+
+window.mqLive = {
+    watchClassSessions(classCode, onRows, onError) {
+        if (!classCode) return () => {};
+        return mqWatchQuery(
+            mqDb.collection('live_sessions')
+                .where('class_code', '==', classCode)
+                .orderBy('updated_at', 'desc')
+                .limit(MQ_LIMITS.liveSessions),
+            onRows,
+            onError,
+        );
+    },
+    watchSessionResponses(sessionId, onRows, onError) {
+        if (!sessionId) return () => {};
+        return mqWatchQuery(
+            mqDb.collection('live_responses')
+                .where('session_id', '==', sessionId)
+                .limit(MQ_LIMITS.liveResponses),
+            onRows,
+            onError,
+        );
+    },
+};
+
 window.sb = {
     auth: {
         async getSession() {
@@ -305,20 +354,11 @@ window.sb = {
                 return { data: null, error };
             }
         },
-        async signUp({ email, password }) {
-            try {
-                const credential = await mqAuth.createUserWithEmailAndPassword(email, password);
-                await mqDb.collection('profiles').doc(credential.user.uid).set({
-                    user_id: credential.user.uid,
-                    email,
-                    role: 'teacher',
-                    created_at: mqNow(),
-                    updated_at: mqNow(),
-                }, { merge: true });
-                return { data: { user: { id: credential.user.uid, email }, session: mqAuthSession(credential.user) }, error: null };
-            } catch (error) {
-                return { data: null, error };
-            }
+        async signUp() {
+            return {
+                data: null,
+                error: new Error('Cadastro publico de professores desativado. Solicite acesso a administracao da plataforma.'),
+            };
         },
         async signOut() {
             await mqAuth.signOut();

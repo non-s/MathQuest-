@@ -289,19 +289,16 @@
     <p>Carregando o painel…</p>
 </div>
 
-<!-- Login / Signup -->
+<!-- Login -->
 <div id="loginView" class="t-login" style="display:none">
     <div class="t-login-card">
         <div class="t-logo">∑ MathQuest</div>
         <h1>Painel do professor</h1>
-        <div class="t-tabs">
-            <button id="tabLogin" class="active">Entrar</button>
-            <button id="tabSignup">Criar conta</button>
-        </div>
         <input id="email" class="field" type="email" placeholder="Seu e-mail" autocomplete="email">
         <input id="pwd" class="field" type="password" placeholder="Senha (mínimo 8 caracteres)" autocomplete="current-password">
         <button id="btnAuth" class="btn-primary">Entrar</button>
         <p id="authError" class="t-error"></p>
+        <p class="t-info">Acesso de professor liberado pela administracao da plataforma.</p>
         <p class="t-info">Suas turmas e o progresso dos alunos só você vê. Os dados pessoais dos alunos não ficam aqui — só o apelido e o progresso.<br><a href="privacy.html" style="color:var(--accent)">Política de privacidade</a></p>
     </div>
 </div>
@@ -337,6 +334,7 @@
                 <div id="rosterStats" class="t-roster-stats"></div>
                 <div class="t-roster-actions">
                     <button id="btnProjector" style="padding:.55rem 1rem;background:#161b22;border:1px solid #30363d;color:#e6edf3;border-radius:8px;cursor:pointer;font-family:inherit">📺 Projetor</button>
+                    <button id="btnLiveSession" class="t-live-btn" title="Iniciar desafio ao vivo">▶ Ao vivo</button>
                     <button id="btnExportCSV" class="t-export-btn" title="Baixar dados da turma em CSV">📥 Exportar CSV</button>
                     <button id="btnRefreshRoster" class="t-refresh-btn" title="Atualizar agora"><span>↻</span> Atualizar</button>
                     <button id="rosterCode" class="t-code-pill" title="Clique para copiar">Código</button>
@@ -464,11 +462,51 @@
     </div>
 </div>
 
+<!-- Modal: desafio ao vivo -->
+<div id="liveSessionModal" class="t-modal">
+    <div class="t-modal-card t-live-modal-card">
+        <div class="t-modal-head">
+            <h3>Desafio ao vivo</h3>
+            <button class="t-modal-close" data-close="liveSessionModal">✕</button>
+        </div>
+        <div id="liveSetup">
+            <p class="t-confirm-text">Escolha uma fase para projetar como desafio em tempo real para esta turma.</p>
+            <select id="livePhaseSelect" class="field"></select>
+            <label class="t-live-duration-control" for="liveDurationSelect">
+                <span>Tempo por pergunta</span>
+                <select id="liveDurationSelect" class="field">
+                    <option value="30">30 segundos</option>
+                    <option value="45">45 segundos</option>
+                    <option value="60" selected>60 segundos</option>
+                    <option value="90">90 segundos</option>
+                    <option value="120">120 segundos</option>
+                </select>
+            </label>
+            <button id="btnStartLiveSession" class="btn-primary">Criar lobby ao vivo</button>
+            <p id="liveError" class="t-error"></p>
+        </div>
+        <div id="liveControl" style="display:none">
+            <div class="t-live-status" id="liveStatus">Sessão pronta</div>
+            <div class="t-live-countdown" id="liveCountdown">--</div>
+            <div id="liveQuestionPreview" class="t-live-question"></div>
+            <div id="liveAnswerStats" class="t-live-stats"></div>
+            <div id="liveScoreboard" class="t-live-scoreboard"></div>
+            <div class="t-confirm-actions">
+                <button id="btnRevealLiveAnswer" class="btn-secondary" style="width:auto">Mostrar resultado</button>
+                <button id="btnNextLiveQuestion" class="btn-secondary" style="width:auto">Próxima</button>
+                <button id="btnEndLiveSession" class="btn-danger">Encerrar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
 (function() {
     const $ = window.$;
     const esc = window.esc;
+    const formatOpt = window.formatOpt;
     const REGIONS = window.REGIONS || [];
+    const PHASES = window.PHASES || [];
     const sb = window.sb;
 
     /* ─── Configuração ─────────────────────────────────────────────────── */
@@ -518,23 +556,6 @@
     }
 
     /* ─── Auth ─────────────────────────────────────────────────────────── */
-    let mode = 'login';
-
-    $('tabLogin').addEventListener('click', () => {
-        mode = 'login';
-        $('tabLogin').classList.add('active');
-        $('tabSignup').classList.remove('active');
-        $('btnAuth').textContent = 'Entrar';
-        $('authError').textContent = '';
-    });
-    $('tabSignup').addEventListener('click', () => {
-        mode = 'signup';
-        $('tabSignup').classList.add('active');
-        $('tabLogin').classList.remove('active');
-        $('btnAuth').textContent = 'Criar conta';
-        $('authError').textContent = '';
-    });
-
     $('btnAuth').addEventListener('click', async () => {
         if (!window.MQ_BACKEND_CONFIGURED) {
             $('authError').textContent = 'Backend Firebase ainda não configurado. Preencha config.js antes de usar o painel.';
@@ -552,14 +573,9 @@
         }
         $('btnAuth').disabled = true;
         try {
-            const fn = mode === 'login' ? 'signInWithPassword' : 'signUp';
-            const { data, error } = await sb.auth[fn]({ email, password: pwd });
+            const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
             if (error) throw error;
-            if (mode === 'signup' && !data.session) {
-                $('authError').textContent = 'Conta criada. Confirme o e-mail antes de entrar (verifique sua caixa de entrada).';
-            } else {
-                showDash();
-            }
+            showDash();
         } catch (e) {
             $('authError').textContent = friendlyError(e);
         } finally {
@@ -721,6 +737,7 @@
         currentClassName = c.name;
         currentClassCode = c.code;
         lastRosterUserIds = new Set();
+        clearLiveTeacherSession();
         $('rosterTitle').textContent = c.name;
         $('rosterMeta').textContent = (c.grade ? c.grade + 'º ano' : 'Sem série definida') + ' · criada em ' + new Date(c.created_at).toLocaleDateString('pt-BR');
         $('rosterCode').textContent = c.code;
@@ -728,6 +745,11 @@
         $('rosterSection').style.display = '';
         $('rosterSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
         await loadRoster(c.code, { initial: true });
+        try {
+            await recoverActiveLiveSession(c.code, { silent: true });
+        } catch (error) {
+            toast('Nao consegui recuperar sessao ao vivo: ' + (error.message || error), 'error');
+        }
         stopRosterPolling();
         rosterInterval = setInterval(() => {
             if (currentClass && currentClass.code === c.code && document.visibilityState === 'visible') {
@@ -753,7 +775,15 @@
         if (opts.initial) tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim)">Carregando…</td></tr>';
         const { data: members, error: e1 } = await sb.from('class_members').select('user_id, joined_at').eq('class_code', code).limit(200);
         if (e1) { tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger)">${esc(e1.message)}</td></tr>`; return; }
-        if (!members.length) { tbody.innerHTML = ''; $('rosterEmpty').style.display = ''; $('lastSync').textContent = 'Atualizado agora'; return; }
+        if (!members.length) {
+            tbody.innerHTML = '';
+            $('rosterEmpty').style.display = '';
+            roster = [];
+            lastRosterUserIds = new Set();
+            updateRosterStats(); renderStuckStudents(); renderBarChart(); renderRegionAnalysis(); renderLiveLobbyIfVisible();
+            $('lastSync').textContent = 'Atualizado agora';
+            return;
+        }
         $('rosterEmpty').style.display = 'none';
         const userIds = members.map(m => m.user_id);
         const { data: progress, error: e2 } = await sb.from('mathquest_progress').select('user_id, nickname, xp, stars, achievements, updated_at').eq('class_code', code).limit(200);
@@ -777,7 +807,7 @@
         });
         if (justArrived.length && lastRosterUserIds.size > 0) toast(`${justArrived.length} aluno${justArrived.length === 1 ? ' entrou' : 's entraram'} agora!`, 'success');
         roster = rows.map(r => { const phases = Object.keys(r.stars).length; const totalStars = Object.values(r.stars).reduce((a, b) => a + b, 0); return { ...r, phases, totalStars, last: r.updated_at, rawStars: r.stars || {} }; });
-        updateRosterStats(); renderStuckStudents(); renderBarChart(); renderRegionAnalysis();
+        updateRosterStats(); renderStuckStudents(); renderBarChart(); renderRegionAnalysis(); renderLiveLobbyIfVisible();
         lastRosterUserIds = newIds;
         $('lastSync').textContent = 'Atualizado agora';
         clearTimeout($('lastSync')._t);
@@ -875,8 +905,515 @@
         $('studentModal').classList.add('open');
     }
 
+    let currentLiveSession = null;
+    let currentLiveAnswerKey = null;
+    let currentLiveRows = [];
+    let liveStatsInterval = null;
+    let liveStatsUnsubscribe = null;
+    let liveCountdownInterval = null;
+
+    function liveSessionId() {
+        return `${currentClassCode}_${Date.now().toString(36)}`;
+    }
+
+    function liveDurationSeconds() {
+        const seconds = parseInt($('liveDurationSelect')?.value || '60', 10);
+        return [30, 45, 60, 90, 120].includes(seconds) ? seconds : 60;
+    }
+
+    function liveQuestionDeadlineAt(startedAt, durationSeconds) {
+        return new Date(liveQuestionDeadlineMs(startedAt, durationSeconds)).toISOString();
+    }
+
+    function liveQuestionDeadlineMs(startedAt, durationSeconds) {
+        const startMs = Date.parse(startedAt);
+        const safeStartMs = Number.isFinite(startMs) ? startMs : Date.now();
+        return safeStartMs + durationSeconds * 1000;
+    }
+
+    function liveSessionDeadlineMs(session) {
+        const numericDeadline = Number(session?.question_deadline_ms);
+        if (Number.isFinite(numericDeadline) && numericDeadline > 0) return numericDeadline;
+        const parsedDeadline = Date.parse(session?.question_deadline_at || '');
+        return Number.isFinite(parsedDeadline) ? parsedDeadline : null;
+    }
+
+    function liveRemainingSeconds(session) {
+        const deadlineMs = liveSessionDeadlineMs(session);
+        if (!Number.isFinite(deadlineMs)) return null;
+        return Math.max(0, Math.ceil((deadlineMs - Date.now()) / 1000));
+    }
+
+    function liveCountdownText(session) {
+        if (session?.status === 'lobby') return 'Aguardando';
+        if (session?.status === 'review') return 'Resultado';
+        const remaining = liveRemainingSeconds(session);
+        if (remaining === null) return 'Sem limite';
+        return remaining > 0 ? `${remaining}s` : 'Tempo esgotado';
+    }
+
+    function liveResponseReadLimit() {
+        return window.MQ_LIMITS?.liveResponses || 2500;
+    }
+
+    function liveQuestionPayload(q) {
+        return {
+            stem: String(q?.stem || ''),
+            options: (q?.options || []).slice(0, 4).map(opt => String(opt)),
+        };
+    }
+
+    function liveAnswerKeyPayload(questions) {
+        return {
+            answers: questions.map(q => Number(q?.correctIndex || 0)),
+            explanations: questions.map(q => String(q?.explain || '')),
+        };
+    }
+
+    function populateLivePhaseSelect() {
+        const select = $('livePhaseSelect');
+        select.innerHTML = PHASES.map(phase => {
+            const reg = REGIONS.find(r => r.id === phase.region);
+            return `<option value="${phase.id}">${phase.id}. ${esc(reg?.name || 'Região')} — ${esc(phase.name)}</option>`;
+        }).join('');
+    }
+
+    function openLiveSessionModal() {
+        if (!currentClass) {
+            toast('Abra uma turma antes de iniciar o modo ao vivo.', 'error');
+            return;
+        }
+        populateLivePhaseSelect();
+        $('liveError').textContent = '';
+        $('liveSetup').style.display = '';
+        $('liveControl').style.display = currentLiveSession ? '' : 'none';
+        $('liveSessionModal').classList.add('open');
+        if (currentLiveSession) renderLiveTeacherControl();
+    }
+
+    function stopLiveStats() {
+        if (liveStatsUnsubscribe) {
+            liveStatsUnsubscribe();
+            liveStatsUnsubscribe = null;
+        }
+        if (liveStatsInterval) {
+            clearInterval(liveStatsInterval);
+            liveStatsInterval = null;
+        }
+    }
+
+    function stopLiveCountdown() {
+        if (liveCountdownInterval) {
+            clearInterval(liveCountdownInterval);
+            liveCountdownInterval = null;
+        }
+    }
+
+    function updateLiveCountdown() {
+        const el = $('liveCountdown');
+        if (!el || !currentLiveSession) return;
+        const remaining = liveRemainingSeconds(currentLiveSession);
+        el.textContent = liveCountdownText(currentLiveSession);
+        el.classList.toggle('expired', currentLiveSession.status !== 'review' && remaining !== null && remaining <= 0);
+    }
+
+    function startLiveCountdown() {
+        stopLiveCountdown();
+        updateLiveCountdown();
+        if (currentLiveSession?.status === 'review') return;
+        liveCountdownInterval = setInterval(updateLiveCountdown, 1000);
+    }
+
+    function stopLiveTeacherUiUpdates() {
+        stopLiveStats();
+        stopLiveCountdown();
+    }
+
+    function liveLobbyCountText() {
+        const count = roster.length;
+        return count === 1 ? '1 aluno no lobby' : `${count} alunos no lobby`;
+    }
+
+    function liveAnswerProgressText(answerCount) {
+        if (!roster.length) return answerCount === 1 ? '1 resposta' : `${answerCount} respostas`;
+        const capped = Math.min(answerCount, roster.length);
+        const base = `${capped}/${roster.length} respostas`;
+        return capped >= roster.length ? `${base} - todos responderam` : base;
+    }
+
+    function liveLobbyStudents(limit = 16) {
+        return [...roster]
+            .sort((a, b) => (b.joined_at || b.last || '').localeCompare(a.joined_at || a.last || ''))
+            .slice(0, limit);
+    }
+
+    function liveLobbyListHtml(listClass, itemClass, limit = 16, emptyClass = 't-live-empty') {
+        const students = liveLobbyStudents(limit);
+        if (!students.length) return `<p class="${emptyClass}">Nenhum aluno entrou ainda. Deixe o QR Code visivel no projetor.</p>`;
+        const extra = Math.max(roster.length - students.length, 0);
+        const names = students.map(student => `<span class="${itemClass}">${esc(student.nickname || 'entrou agora')}</span>`).join('');
+        const suffix = extra ? `<span class="${itemClass} muted">+${extra}</span>` : '';
+        return `<div class="${listClass}">${names}${suffix}</div>`;
+    }
+
+    function renderLiveLobbyIfVisible() {
+        if (!currentLiveSession || currentLiveSession.status !== 'lobby') return;
+        if ($('liveSessionModal')?.classList.contains('open')) renderLiveTeacherControl();
+        renderProjector();
+    }
+
+    function renderLiveTeacherControl() {
+        if (!currentLiveSession) return;
+        $('liveSetup').style.display = 'none';
+        $('liveControl').style.display = '';
+        const q = currentLiveSession.questions[currentLiveSession.question_index] || currentLiveSession.questions[0];
+        const correctIndex = currentLiveAnswerKey?.answers?.[currentLiveSession.question_index];
+        const total = currentLiveSession.questions.length;
+        $('liveStatus').textContent = `${currentClassName} · pergunta ${currentLiveSession.question_index + 1}/${total} · ${currentLiveSession.status}`;
+        $('btnRevealLiveAnswer').disabled = currentLiveSession.status === 'review' || !currentLiveAnswerKey;
+        $('btnRevealLiveAnswer').textContent = !currentLiveAnswerKey
+            ? 'Gabarito indisponivel'
+            : (currentLiveSession.status === 'review' ? 'Resultado exibido' : 'Mostrar resultado');
+        const waitingForReveal = currentLiveSession.status === 'question';
+        $('btnNextLiveQuestion').disabled = waitingForReveal;
+        $('btnNextLiveQuestion').textContent = currentLiveSession.status === 'lobby'
+            ? 'Comecar perguntas'
+            : (waitingForReveal ? 'Mostre resultado' : (currentLiveSession.question_index >= total - 1 ? 'Encerrar' : 'Proxima'));
+        if (currentLiveSession.status === 'lobby') {
+            $('btnRevealLiveAnswer').disabled = true;
+            $('liveQuestionPreview').innerHTML = `<h4>${esc(currentLiveSession.title || 'Desafio ao vivo')}</h4><p class="t-live-empty">Lobby aberto. Mostre o projetor para os alunos entrarem com o QR Code ou codigo da turma.</p>${liveLobbyListHtml('t-live-lobby-list', 't-live-lobby-name', 18)}`;
+            $('liveAnswerStats').innerHTML = `${esc(liveLobbyCountText())} - aguardando inicio`;
+            $('liveScoreboard').innerHTML = '<p class="t-live-empty">O placar aparece depois da primeira pergunta.</p>';
+            stopLiveTeacherUiUpdates();
+            renderProjector();
+            return;
+        }
+        $('liveQuestionPreview').innerHTML = `<h4>${q.stem}</h4>` + q.options.map((opt, index) => {
+            const correct = index === correctIndex ? ' correct' : '';
+            return `<div class="t-live-option${correct}"><span>${esc(String.fromCharCode(65 + index))}. ${formatOpt(opt)}</span><b id="liveCount${index}">0</b></div>`;
+        }).join('');
+        stopLiveStats();
+        stopLiveCountdown();
+        watchLiveStats();
+        startLiveCountdown();
+    }
+
+    function watchLiveStats() {
+        if (window.mqLive?.watchSessionResponses) {
+            liveStatsUnsubscribe = window.mqLive.watchSessionResponses(
+                currentLiveSession.session_id,
+                renderLiveStats,
+                error => {
+                    $('liveAnswerStats').textContent = 'Tempo real indisponível, tentando por atualização periódica.';
+                    console.warn('[mathquest] live response listener falhou:', error?.message || error);
+                    stopLiveStats();
+                    refreshLiveStats();
+                    liveStatsInterval = setInterval(refreshLiveStats, 3000);
+                },
+            );
+            return;
+        }
+        refreshLiveStats();
+        liveStatsInterval = setInterval(refreshLiveStats, 3000);
+    }
+
+    async function refreshLiveStats() {
+        if (!currentLiveSession) return;
+        if (currentLiveSession.status === 'lobby') {
+            currentLiveRows = [];
+            renderProjector();
+            return;
+        }
+        const { data, error } = await sb.from('live_responses')
+            .select('*')
+            .eq('session_id', currentLiveSession.session_id)
+            .limit(liveResponseReadLimit());
+        if (error) {
+            $('liveAnswerStats').textContent = 'Erro lendo respostas: ' + error.message;
+            return;
+        }
+        renderLiveStats(data || []);
+    }
+
+    function renderLiveStats(rows) {
+        if (!currentLiveSession) return;
+        currentLiveRows = rows || [];
+        const q = currentLiveSession.questions[currentLiveSession.question_index];
+        const correctIndex = currentLiveAnswerKey?.answers?.[currentLiveSession.question_index];
+        const counts = q.options.map(() => 0);
+        currentLiveRows.filter(row => row.question_index === currentLiveSession.question_index).forEach(row => {
+            if (Number.isInteger(row.answer_index) && counts[row.answer_index] !== undefined) counts[row.answer_index]++;
+        });
+        counts.forEach((count, index) => {
+            const el = $(`liveCount${index}`);
+            if (el) el.textContent = count;
+        });
+        const total = counts.reduce((sum, count) => sum + count, 0);
+        const correct = Number.isInteger(correctIndex) ? (counts[correctIndex] || 0) : 0;
+        $('liveAnswerStats').innerHTML = `<b>${esc(liveAnswerProgressText(total))}</b> - <b>${correct}</b> corretas`;
+        renderLiveScoreboard(currentLiveRows);
+        renderProjector();
+    }
+
+    function renderLiveScoreboard(rows) {
+        const scores = new Map();
+        rows.forEach(row => {
+            const key = row.user_id || row.nickname || 'anon';
+            const current = scores.get(key) || { nickname: row.nickname || 'Aluno', score: 0, correct: 0, answers: 0 };
+            const correctIndex = currentLiveAnswerKey?.answers?.[row.question_index];
+            const correct = Number.isInteger(correctIndex) && row.answer_index === correctIndex;
+            current.score += correct ? 1000 : 0;
+            current.correct += correct ? 1 : 0;
+            current.answers += 1;
+            scores.set(key, current);
+        });
+        const ranking = [...scores.values()].sort((a, b) => b.score - a.score || b.correct - a.correct).slice(0, 8);
+        if (!ranking.length) {
+            $('liveScoreboard').innerHTML = '<p class="t-live-empty">Aguardando respostas dos alunos...</p>';
+            return;
+        }
+        $('liveScoreboard').innerHTML = '<h4>Placar ao vivo</h4>' + ranking.map((row, index) => `
+            <div class="t-live-rank-row">
+                <span><b>${index + 1}</b> ${esc(row.nickname)}</span>
+                <span>${row.score} pts · ${row.correct}/${row.answers}</span>
+            </div>
+        `).join('');
+    }
+
+    function clearLiveTeacherSession() {
+        stopLiveTeacherUiUpdates();
+        currentLiveSession = null;
+        currentLiveAnswerKey = null;
+        currentLiveRows = [];
+        if ($('liveControl')) $('liveControl').style.display = 'none';
+        if ($('liveSetup')) $('liveSetup').style.display = '';
+        renderProjector();
+    }
+
+    async function recoverActiveLiveSession(classCode, opts = {}) {
+        const { data, error } = await sb.from('live_sessions')
+            .select('*')
+            .eq('class_code', classCode)
+            .order('updated_at', { ascending: false })
+            .limit(10);
+        if (error) throw error;
+        const session = (data || []).find(row => ['lobby', 'question', 'review'].includes(row.status));
+        if (!session) return;
+        const { data: answerKey, error: keyError } = await sb.from('live_answer_keys')
+            .select('*')
+            .eq('id', session.session_id)
+            .maybeSingle();
+        if (keyError) throw keyError;
+        currentLiveSession = session;
+        currentLiveAnswerKey = answerKey ? {
+            answers: answerKey.answers || [],
+            explanations: answerKey.explanations || [],
+        } : null;
+        currentLiveRows = [];
+        await refreshLiveStats();
+        if ($('liveSessionModal')?.classList.contains('open')) renderLiveTeacherControl();
+        if (!opts.silent) toast('Sessao ao vivo recuperada.', 'success');
+    }
+
+    async function closeExistingLiveSessions(classCode) {
+        const { data, error } = await sb.from('live_sessions')
+            .select('*')
+            .eq('class_code', classCode)
+            .order('updated_at', { ascending: false })
+            .limit(10);
+        if (error) throw error;
+        const now = new Date().toISOString();
+        const openSessions = (data || []).filter(session => session.status !== 'ended');
+        const results = await Promise.all(openSessions.map(session => {
+            const { id, ...payload } = session;
+            return sb.from('live_sessions').upsert({
+                ...payload,
+                status: 'ended',
+                ended_at: session.ended_at || now,
+                updated_at: now,
+            });
+        }));
+        const failed = results.find(result => result?.error);
+        if (failed) throw failed.error;
+    }
+
+    async function startLiveSession() {
+        const phaseId = parseInt($('livePhaseSelect').value, 10);
+        const phase = PHASES.find(p => p.id === phaseId);
+        if (!phase || !currentClass || !currentUser) return;
+        const generatedQuestions = phase.gen();
+        const questions = generatedQuestions.map(liveQuestionPayload);
+        const answerKey = liveAnswerKeyPayload(generatedQuestions);
+        const questionDurationSec = liveDurationSeconds();
+        const now = new Date().toISOString();
+        const questionDeadlineMs = liveQuestionDeadlineMs(now, questionDurationSec);
+        const session = {
+            session_id: liveSessionId(),
+            class_code: currentClassCode,
+            teacher_id: currentUser.id,
+            title: phase.name,
+            status: 'lobby',
+            phase_id: phase.id,
+            question_index: 0,
+            questions,
+            revealed_answer_index: -1,
+            question_duration_sec: questionDurationSec,
+            question_started_at: now,
+            question_deadline_at: new Date(questionDeadlineMs).toISOString(),
+            question_deadline_ms: questionDeadlineMs,
+            started_at: now,
+            created_at: now,
+            updated_at: now,
+        };
+        $('btnStartLiveSession').disabled = true;
+        try {
+            await closeExistingLiveSessions(currentClassCode);
+            const { error } = await sb.from('live_sessions').insert(session);
+            if (error) throw error;
+            const { error: keyError } = await sb.from('live_answer_keys').insert({
+                session_id: session.session_id,
+                class_code: currentClassCode,
+                teacher_id: currentUser.id,
+                ...answerKey,
+                created_at: now,
+                updated_at: now,
+            });
+            if (keyError) {
+                await sb.from('live_sessions').upsert({
+                    ...session,
+                    status: 'ended',
+                    ended_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                });
+                throw keyError;
+            }
+            currentLiveSession = session;
+            currentLiveAnswerKey = answerKey;
+            currentLiveRows = [];
+            toast('Lobby ao vivo criado!', 'success');
+            renderLiveTeacherControl();
+        } catch (error) {
+            $('liveError').textContent = error.message || String(error);
+        } finally {
+            $('btnStartLiveSession').disabled = false;
+        }
+    }
+
+    async function saveLiveSession(next) {
+        const payload = { ...currentLiveSession, ...next, updated_at: new Date().toISOString() };
+        const { error } = await sb.from('live_sessions').upsert(payload);
+        if (error) throw error;
+        currentLiveSession = payload;
+    }
+
+    async function revealLiveAnswer() {
+        if (!currentLiveSession || !currentLiveAnswerKey) return;
+        const correctIndex = currentLiveAnswerKey.answers?.[currentLiveSession.question_index];
+        if (!Number.isInteger(correctIndex)) return;
+        try {
+            await saveLiveSession({
+                status: 'review',
+                revealed_answer_index: correctIndex,
+            });
+            stopLiveCountdown();
+            renderLiveTeacherControl();
+        } catch (error) {
+            toast('Erro exibindo resultado: ' + (error.message || error), 'error');
+        }
+    }
+
+    async function nextLiveQuestion() {
+        if (!currentLiveSession) return;
+        if (currentLiveSession.status === 'lobby') {
+            try {
+                const questionStartedAt = new Date().toISOString();
+                const duration = currentLiveSession.question_duration_sec || 60;
+                const questionDeadlineMs = liveQuestionDeadlineMs(questionStartedAt, duration);
+                await saveLiveSession({
+                    status: 'question',
+                    question_index: 0,
+                    revealed_answer_index: -1,
+                    question_started_at: questionStartedAt,
+                    question_deadline_at: new Date(questionDeadlineMs).toISOString(),
+                    question_deadline_ms: questionDeadlineMs,
+                });
+                renderLiveTeacherControl();
+            } catch (error) {
+                toast('Erro iniciando perguntas: ' + (error.message || error), 'error');
+            }
+            return;
+        }
+        if (currentLiveSession.status !== 'review') {
+            toast('Mostre o resultado antes de avancar.', 'error');
+            renderLiveTeacherControl();
+            return;
+        }
+        const nextIndex = currentLiveSession.question_index + 1;
+        if (nextIndex >= currentLiveSession.questions.length) {
+            await endLiveSession();
+            return;
+        }
+        try {
+            const questionStartedAt = new Date().toISOString();
+            const duration = currentLiveSession.question_duration_sec || 60;
+            const questionDeadlineMs = liveQuestionDeadlineMs(questionStartedAt, duration);
+            await saveLiveSession({
+                status: 'question',
+                question_index: nextIndex,
+                revealed_answer_index: -1,
+                question_started_at: questionStartedAt,
+                question_deadline_at: new Date(questionDeadlineMs).toISOString(),
+                question_deadline_ms: questionDeadlineMs,
+            });
+            renderLiveTeacherControl();
+        } catch (error) {
+            toast('Erro avançando: ' + (error.message || error), 'error');
+        }
+    }
+
+    async function endLiveSession() {
+        if (!currentLiveSession) return;
+        try {
+            await saveLiveSession({ status: 'ended', ended_at: new Date().toISOString() });
+            stopLiveTeacherUiUpdates();
+            toast('Desafio encerrado.', 'success');
+            $('liveStatus').textContent = 'Sessão encerrada';
+            currentLiveSession = null;
+            currentLiveAnswerKey = null;
+            currentLiveRows = [];
+            $('liveControl').style.display = 'none';
+            $('liveSetup').style.display = '';
+        } catch (error) {
+            toast('Erro encerrando: ' + (error.message || error), 'error');
+        }
+    }
+
+    function studentJoinUrl() {
+        const url = new URL(location.href.split('?')[0].replace('teacher.html', 'index.html'));
+        if (currentClassCode) url.searchParams.set('class', currentClassCode);
+        return url.toString();
+    }
+
+    function renderProjectorJoin() {
+        const el = document.getElementById('projJoin');
+        if (!el || !currentClassCode) return;
+        const url = studentJoinUrl();
+        const qr = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(url)}`;
+        el.innerHTML = `
+            <div class="proj-join-code"><span>Codigo da turma</span><b>${esc(currentClassCode)}</b></div>
+            <div class="proj-join-url">${esc(url)}</div>
+            <div class="proj-join-qr" id="projJoinQr"></div>
+        `;
+        const img = document.createElement('img');
+        img.src = qr;
+        img.alt = `QR Code para entrar na turma ${currentClassCode}`;
+        document.getElementById('projJoinQr')?.appendChild(img);
+    }
+
     document.querySelectorAll('[data-close]').forEach(b => { b.addEventListener('click', () => $(b.dataset.close).classList.remove('open')); });
     document.querySelectorAll('.t-modal').forEach(m => { m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }); });
+    document.querySelector('[data-close="liveSessionModal"]').addEventListener('click', stopLiveTeacherUiUpdates);
+    $('liveSessionModal').addEventListener('click', e => { if (e.target === $('liveSessionModal')) stopLiveTeacherUiUpdates(); });
 
     (async function init() {
         if (!window.MQ_BACKEND_CONFIGURED) {
@@ -896,17 +1433,58 @@
     window.addEventListener('beforeunload', stopRosterPolling);
 
     function showProjector() {
+        document.getElementById('projectorOverlay')?.remove();
         const overlay = document.createElement('div');
         overlay.className = 'projector-overlay';
         overlay.id = 'projectorOverlay';
-        overlay.innerHTML = `<button class="proj-close" onclick="document.getElementById('projectorOverlay').remove()">✕</button><div class="projector-title">🏫 ${esc(currentClassName || 'Turma')}</div><div class="projector-ranking" id="projRanking"></div><div class="projector-stats" id="projStats"></div>`;
+        overlay.innerHTML = `<button class="proj-close" id="projClose" title="Fechar">x</button><div class="projector-title" id="projTitle">${esc(currentClassName || 'Turma')}</div><div class="projector-join" id="projJoin"></div><div class="projector-live" id="projLive"></div><div class="projector-ranking" id="projRanking"></div><div class="projector-stats" id="projStats"></div>`;
         document.body.appendChild(overlay);
+        document.getElementById('projClose')?.addEventListener('click', () => overlay.remove());
         overlay.requestFullscreen?.().catch(() => {});
         renderProjector();
-        const interval = setInterval(() => { if (!document.getElementById('projectorOverlay')) { clearInterval(interval); return; } renderProjector(); }, 5000);
+        const interval = setInterval(() => { if (!document.getElementById('projectorOverlay')) { clearInterval(interval); return; } renderProjector(); }, 1000);
+        const responseInterval = setInterval(() => {
+            if (!document.getElementById('projectorOverlay')) {
+                clearInterval(responseInterval);
+                return;
+            }
+            if (currentLiveSession && currentLiveSession.status !== 'lobby') refreshLiveStats();
+        }, 2500);
     }
 
     function renderProjector() {
+        renderProjectorJoin();
+        const projectorLiveEl = document.getElementById('projLive');
+        const projectorTitleEl = document.getElementById('projTitle');
+        const projectorRankEl = document.getElementById('projRanking');
+        const projectorStatsEl = document.getElementById('projStats');
+        if (currentLiveSession?.status === 'lobby') {
+            if (projectorTitleEl) projectorTitleEl.textContent = currentClassName || 'Turma';
+            if (projectorRankEl) projectorRankEl.style.display = 'none';
+            if (projectorStatsEl) projectorStatsEl.style.display = 'none';
+            if (projectorLiveEl) {
+                projectorLiveEl.style.display = 'grid';
+                renderProjectorLobby(projectorLiveEl);
+            }
+            return;
+        }
+        if (['question', 'review'].includes(currentLiveSession?.status)) {
+            if (projectorTitleEl) projectorTitleEl.textContent = currentClassName || 'Turma';
+            if (projectorRankEl) projectorRankEl.style.display = 'none';
+            if (projectorStatsEl) projectorStatsEl.style.display = 'none';
+            if (projectorLiveEl) {
+                projectorLiveEl.style.display = 'grid';
+                renderProjectorLive(projectorLiveEl);
+            }
+            return;
+        }
+        if (projectorLiveEl) {
+            projectorLiveEl.style.display = 'none';
+            projectorLiveEl.innerHTML = '';
+        }
+        if (projectorRankEl) projectorRankEl.style.display = '';
+        if (projectorStatsEl) projectorStatsEl.style.display = '';
+        if (projectorTitleEl) projectorTitleEl.textContent = currentClassName || 'Turma';
         const top5 = [...roster].sort((a, b) => b.xp - a.xp).slice(0, 5);
         const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
         const rankEl = document.getElementById('projRanking');
@@ -916,6 +1494,57 @@
         const avgStars = roster.length ? Math.round(roster.reduce((a, s) => a + s.totalStars, 0) / roster.length) : 0;
         const statsEl = document.getElementById('projStats');
         if (statsEl) statsEl.innerHTML = `<div><b>${roster.length}</b>alunos</div><div><b>${avgPhases}</b>média de fases</div><div><b>${avgStars}★</b>média de estrelas</div><div><b>${total}</b>fases no total</div>`;
+    }
+
+    function renderProjectorLive(container) {
+        const qIndex = Number(currentLiveSession.question_index || 0);
+        const q = currentLiveSession.questions[qIndex] || currentLiveSession.questions[0];
+        if (!q) {
+            container.innerHTML = '<div class="proj-live-empty">Aguardando pergunta ao vivo...</div>';
+            return;
+        }
+        const counts = (q.options || []).map(() => 0);
+        currentLiveRows.filter(row => row.question_index === qIndex).forEach(row => {
+            if (Number.isInteger(row.answer_index) && counts[row.answer_index] !== undefined) counts[row.answer_index]++;
+        });
+        const totalAnswers = counts.reduce((sum, count) => sum + count, 0);
+        const remaining = liveRemainingSeconds(currentLiveSession);
+        const timerText = currentLiveSession.status === 'review' ? 'Resultado' : liveCountdownText(currentLiveSession);
+        const timerClass = currentLiveSession.status !== 'review' && remaining !== null && remaining <= 0 ? ' expired' : '';
+        const revealedIndex = Number.isInteger(currentLiveSession.revealed_answer_index) && currentLiveSession.revealed_answer_index >= 0
+            ? currentLiveSession.revealed_answer_index
+            : null;
+        const showDistribution = currentLiveSession.status === 'review';
+        const optionsHtml = (q.options || []).map((opt, index) => {
+            const pct = showDistribution && totalAnswers ? Math.round((counts[index] || 0) / totalAnswers * 100) : 0;
+            const revealClass = revealedIndex === null ? '' : (index === revealedIndex ? ' correct' : ' muted');
+            const countText = showDistribution ? counts[index] || 0 : '';
+            return `<div class="proj-live-option${revealClass}"><i style="width:${pct}%"></i><span><em>${esc(String.fromCharCode(65 + index))}</em>${formatOpt(opt)}</span><b>${countText}</b></div>`;
+        }).join('');
+        container.innerHTML = `
+            <div class="proj-live-meta">
+                <span>${esc(currentLiveSession.title || 'Desafio ao vivo')}</span>
+                <strong class="${timerClass}">${esc(timerText)}</strong>
+                <span>${esc(liveAnswerProgressText(totalAnswers))}</span>
+            </div>
+            <div class="proj-live-progress">${revealedIndex === null ? 'Pergunta' : 'Resultado'} ${qIndex + 1}/${currentLiveSession.questions.length}</div>
+            <div class="proj-live-question">${q.stem}</div>
+            <div class="proj-live-options">${optionsHtml}</div>
+        `;
+    }
+
+    function renderProjectorLobby(container) {
+        container.innerHTML = `
+            <div class="proj-live-meta">
+                <span>${esc(currentLiveSession.title || 'Desafio ao vivo')}</span>
+                <strong>Aguardando</strong>
+                <span>${esc(liveLobbyCountText())}</span>
+            </div>
+            <div class="proj-live-progress">Lobby da turma</div>
+            <div class="proj-live-question">Entre pelo QR Code e aguarde o professor iniciar</div>
+            ${liveLobbyListHtml('proj-lobby-list', 'proj-lobby-name', 24, 'proj-live-empty')}
+            <div class="proj-live-empty">Quando todos estiverem prontos, a primeira pergunta aparece aqui.</div>
+        `;
     }
 
     async function sendClassMessage() {
@@ -932,7 +1561,11 @@
 
     function renderRegionAnalysis() {
         const analysisEl = document.getElementById('regionAnalysis');
-        if (!analysisEl || !roster.length) return;
+        if (!analysisEl) return;
+        if (!roster.length) {
+            analysisEl.innerHTML = '';
+            return;
+        }
         const regionData = REGIONS.map(reg => {
             const regId = reg.id;
             const [regionStart, regionEnd] = reg.range;
@@ -943,6 +1576,11 @@
     }
 
     $('btnProjector').addEventListener('click', showProjector);
+    $('btnLiveSession').addEventListener('click', openLiveSessionModal);
+    $('btnStartLiveSession').addEventListener('click', startLiveSession);
+    $('btnRevealLiveAnswer').addEventListener('click', revealLiveAnswer);
+    $('btnNextLiveQuestion').addEventListener('click', nextLiveQuestion);
+    $('btnEndLiveSession').addEventListener('click', endLiveSession);
     $('btnSendClassMessage').addEventListener('click', sendClassMessage);
 
 })();

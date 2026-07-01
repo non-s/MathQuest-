@@ -16,6 +16,7 @@ const requiredFiles = [
   "404.html",
   "CONTRIBUTING.md",
   "LICENSE",
+  "PRODUCTION.md",
   "README.md",
   "SECURITY.md",
   "firebase.json",
