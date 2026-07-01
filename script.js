@@ -1105,13 +1105,18 @@ function renderQuestion() {
     }
     $('qStem').innerHTML        = q.stem;
     $('qExplain').style.display = 'none';
-    // TTS button
+    // TTS button — placed above the stem, not inside it
+    const oldTts = document.getElementById('ttsBtnRow');
+    if (oldTts) oldTts.remove();
     if (window.speechSynthesis) {
+        const row = document.createElement('div');
+        row.id = 'ttsBtnRow';
+        row.style.cssText = 'text-align:right;margin-bottom:.4rem';
         const ttsBtn = document.createElement('button');
         ttsBtn.className = 'tts-btn'; ttsBtn.title = 'Ouvir pergunta'; ttsBtn.textContent = '🔊';
         ttsBtn.addEventListener('click', speakQuestion);
-        $('qStem').style.position = 'relative';
-        $('qStem').appendChild(ttsBtn);
+        row.appendChild(ttsBtn);
+        $('qStem').insertAdjacentElement('beforebegin', row);
     }
     const opts = $('qOpts'); opts.innerHTML = '';
     q.options.forEach((opt, i) => {
