@@ -54,6 +54,10 @@ mustNotMatch("index.html", /id="tabSignup"|Criar conta/, "teacher panel must not
 mustMatch("index.html", /id="liveScoreboard"/, "live classroom mode must render a teacher scoreboard");
 mustMatch("index.html", /function renderLiveScoreboard\(/, "live classroom mode must aggregate session scores");
 mustMatch("index.html", /mqLive\.watchSessionResponses/, "teacher live scoreboard must subscribe to session responses");
+mustMatch("index.html", /function recoverActiveLiveSession\(classCode/, "teacher panel must recover active live sessions after reload");
+mustMatch("index.html", /await recoverActiveLiveSession\(c\.code, \{ silent: true \}\);/, "opening a class must restore active live session state");
+mustMatch("index.html", /live_answer_keys'\)[\s\S]*\.eq\('id', session\.session_id\)[\s\S]*\.maybeSingle\(\)/, "teacher recovery must reload the private live answer key by session id");
+mustMatch("index.html", /function clearLiveTeacherSession\(/, "teacher panel must clear stale live state when switching classes");
 mustMatch("index.html", /function closeExistingLiveSessions\(classCode\)/, "teacher live mode must close stale sessions before starting another");
 mustMatch("index.html", /await closeExistingLiveSessions\(currentClassCode\);/, "starting a live session must enforce one active session per class");
 mustMatch("index.html", /live_answer_keys'\)\.insert\(/, "teacher live mode must store answer keys outside public sessions");

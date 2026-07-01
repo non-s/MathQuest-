@@ -737,6 +737,7 @@
         currentClassName = c.name;
         currentClassCode = c.code;
         lastRosterUserIds = new Set();
+        clearLiveTeacherSession();
         $('rosterTitle').textContent = c.name;
         $('rosterMeta').textContent = (c.grade ? c.grade + 'º ano' : 'Sem série definida') + ' · criada em ' + new Date(c.created_at).toLocaleDateString('pt-BR');
         $('rosterCode').textContent = c.code;
@@ -744,6 +745,11 @@
         $('rosterSection').style.display = '';
         $('rosterSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
         await loadRoster(c.code, { initial: true });
+        try {
+            await recoverActiveLiveSession(c.code, { silent: true });
+        } catch (error) {
+            toast('Nao consegui recuperar sessao ao vivo: ' + (error.message || error), 'error');
+        }
         stopRosterPolling();
         rosterInterval = setInterval(() => {
             if (currentClass && currentClass.code === c.code && document.visibilityState === 'visible') {
@@ -1007,8 +1013,10 @@
         const correctIndex = currentLiveAnswerKey?.answers?.[currentLiveSession.question_index];
         const total = currentLiveSession.questions.length;
         $('liveStatus').textContent = `${currentClassName} · pergunta ${currentLiveSession.question_index + 1}/${total} · ${currentLiveSession.status}`;
-        $('btnRevealLiveAnswer').disabled = currentLiveSession.status === 'review';
-        $('btnRevealLiveAnswer').textContent = currentLiveSession.status === 'review' ? 'Resultado exibido' : 'Mostrar resultado';
+        $('btnRevealLiveAnswer').disabled = currentLiveSession.status === 'review' || !currentLiveAnswerKey;
+        $('btnRevealLiveAnswer').textContent = !currentLiveAnswerKey
+            ? 'Gabarito indisponivel'
+            : (currentLiveSession.status === 'review' ? 'Resultado exibido' : 'Mostrar resultado');
         $('liveQuestionPreview').innerHTML = `<h4>${q.stem}</h4>` + q.options.map((opt, index) => {
             const correct = index === correctIndex ? ' correct' : '';
             return `<div class="t-live-option${correct}"><span>${esc(String.fromCharCode(65 + index))}. ${formatOpt(opt)}</span><b id="liveCount${index}">0</b></div>`;
@@ -1094,6 +1102,41 @@
                 <span>${row.score} pts · ${row.correct}/${row.answers}</span>
             </div>
         `).join('');
+    }
+
+    function clearLiveTeacherSession() {
+        stopLiveTeacherUiUpdates();
+        currentLiveSession = null;
+        currentLiveAnswerKey = null;
+        currentLiveRows = [];
+        if ($('liveControl')) $('liveControl').style.display = 'none';
+        if ($('liveSetup')) $('liveSetup').style.display = '';
+        renderProjector();
+    }
+
+    async function recoverActiveLiveSession(classCode, opts = {}) {
+        const { data, error } = await sb.from('live_sessions')
+            .select('*')
+            .eq('class_code', classCode)
+            .order('updated_at', { ascending: false })
+            .limit(10);
+        if (error) throw error;
+        const session = (data || []).find(row => ['question', 'review'].includes(row.status));
+        if (!session) return;
+        const { data: answerKey, error: keyError } = await sb.from('live_answer_keys')
+            .select('*')
+            .eq('id', session.session_id)
+            .maybeSingle();
+        if (keyError) throw keyError;
+        currentLiveSession = session;
+        currentLiveAnswerKey = answerKey ? {
+            answers: answerKey.answers || [],
+            explanations: answerKey.explanations || [],
+        } : null;
+        currentLiveRows = [];
+        await refreshLiveStats();
+        if ($('liveSessionModal')?.classList.contains('open')) renderLiveTeacherControl();
+        if (!opts.silent) toast('Sessao ao vivo recuperada.', 'success');
     }
 
     async function closeExistingLiveSessions(classCode) {

@@ -57,6 +57,7 @@ Then verify GitHub Actions on the PR:
 - Teachers choose a per-question timer, and teacher/student live views show the same countdown for the current question.
 - Projector mode switches to the live question automatically while a challenge is active, showing options, countdown, and response counts without revealing the answer key.
 - Teachers explicitly reveal each result, moving the live session from `question` to `review`; only then does the public session expose `revealed_answer_index`.
+- Teacher dashboards recover the active live session and private answer key when reopening a class, so a page reload does not strand an in-progress challenge.
 - The teacher sees answer counts and an accumulated live scoreboard.
 - Live sessions and scoreboards use Firestore realtime listeners, with polling fallback if a browser cannot attach a listener.
 - Live session documents contain only public question text/options. Answer keys live in `live_answer_keys/{sessionId}` and are readable only by the teacher who owns the session.
