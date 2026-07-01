@@ -691,10 +691,8 @@ service cloud.firestore {
     }
 
     match /profiles/{userId} {
-      allow read: if signedIn() && (userId == request.auth.uid || mqTeacher());
-      allow create: if signedIn()
-        && userId == request.auth.uid
-        && validMqProfile(request.resource.data, userId);
+      allow read: if signedIn() && userId == request.auth.uid;
+      allow create: if false;
       allow update: if signedIn()
         && userId == request.auth.uid
         && validMqProfile(request.resource.data, userId)

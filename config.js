@@ -305,20 +305,11 @@ window.sb = {
                 return { data: null, error };
             }
         },
-        async signUp({ email, password }) {
-            try {
-                const credential = await mqAuth.createUserWithEmailAndPassword(email, password);
-                await mqDb.collection('profiles').doc(credential.user.uid).set({
-                    user_id: credential.user.uid,
-                    email,
-                    role: 'teacher',
-                    created_at: mqNow(),
-                    updated_at: mqNow(),
-                }, { merge: true });
-                return { data: { user: { id: credential.user.uid, email }, session: mqAuthSession(credential.user) }, error: null };
-            } catch (error) {
-                return { data: null, error };
-            }
+        async signUp() {
+            return {
+                data: null,
+                error: new Error('Cadastro publico de professores desativado. Solicite acesso a administracao da plataforma.'),
+            };
         },
         async signOut() {
             await mqAuth.signOut();

@@ -289,19 +289,16 @@
     <p>Carregando o painel…</p>
 </div>
 
-<!-- Login / Signup -->
+<!-- Login -->
 <div id="loginView" class="t-login" style="display:none">
     <div class="t-login-card">
         <div class="t-logo">∑ MathQuest</div>
         <h1>Painel do professor</h1>
-        <div class="t-tabs">
-            <button id="tabLogin" class="active">Entrar</button>
-            <button id="tabSignup">Criar conta</button>
-        </div>
         <input id="email" class="field" type="email" placeholder="Seu e-mail" autocomplete="email">
         <input id="pwd" class="field" type="password" placeholder="Senha (mínimo 8 caracteres)" autocomplete="current-password">
         <button id="btnAuth" class="btn-primary">Entrar</button>
         <p id="authError" class="t-error"></p>
+        <p class="t-info">Acesso de professor liberado pela administracao da plataforma.</p>
         <p class="t-info">Suas turmas e o progresso dos alunos só você vê. Os dados pessoais dos alunos não ficam aqui — só o apelido e o progresso.<br><a href="privacy.html" style="color:var(--accent)">Política de privacidade</a></p>
     </div>
 </div>
@@ -518,23 +515,6 @@
     }
 
     /* ─── Auth ─────────────────────────────────────────────────────────── */
-    let mode = 'login';
-
-    $('tabLogin').addEventListener('click', () => {
-        mode = 'login';
-        $('tabLogin').classList.add('active');
-        $('tabSignup').classList.remove('active');
-        $('btnAuth').textContent = 'Entrar';
-        $('authError').textContent = '';
-    });
-    $('tabSignup').addEventListener('click', () => {
-        mode = 'signup';
-        $('tabSignup').classList.add('active');
-        $('tabLogin').classList.remove('active');
-        $('btnAuth').textContent = 'Criar conta';
-        $('authError').textContent = '';
-    });
-
     $('btnAuth').addEventListener('click', async () => {
         if (!window.MQ_BACKEND_CONFIGURED) {
             $('authError').textContent = 'Backend Firebase ainda não configurado. Preencha config.js antes de usar o painel.';
@@ -552,14 +532,9 @@
         }
         $('btnAuth').disabled = true;
         try {
-            const fn = mode === 'login' ? 'signInWithPassword' : 'signUp';
-            const { data, error } = await sb.auth[fn]({ email, password: pwd });
+            const { data, error } = await sb.auth.signInWithPassword({ email, password: pwd });
             if (error) throw error;
-            if (mode === 'signup' && !data.session) {
-                $('authError').textContent = 'Conta criada. Confirme o e-mail antes de entrar (verifique sua caixa de entrada).';
-            } else {
-                showDash();
-            }
+            showDash();
         } catch (e) {
             $('authError').textContent = friendlyError(e);
         } finally {
