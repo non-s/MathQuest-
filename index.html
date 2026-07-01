@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
-    <title>MathQuest — Aprenda matemática jogando</title>
-    <meta name="description" content="Jogo educacional de matemática em mundo aberto. 201 fases do 1º ano ao vestibular.">
+    <title>MathQuest — Raciocínio Lógico</title>
+    <meta name="description" content="Jogo educacional de raciocínio lógico. 10 regiões, 201 fases do iniciante ao Mestre Pensador.">
     <meta name="theme-color" content="#0d1117">
-    <meta property="og:title" content="MathQuest — Aprenda matemática jogando">
-    <meta property="og:description" content="Do zero ao vestibular em matemática: 201 fases em mundo aberto.">
+    <meta property="og:title" content="MathQuest — Raciocínio Lógico">
+    <meta property="og:description" content="10 regiões de raciocínio lógico: 201 fases do iniciante ao Mestre Pensador.">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary">
     <link rel="manifest" href="manifest.json">
@@ -86,9 +86,9 @@
 <!-- Boas-vindas: pede um apelido (e código de turma opcional) -->
 <div id="welcome" class="welcome" style="display:none">
     <div class="welcome-card">
-        <div class="welcome-logo">∑ MathQuest</div>
+        <div class="welcome-logo">🧠 MathQuest</div>
         <h1>Bem-vindo, aventureiro!</h1>
-        <p class="welcome-sub">Você vai sair do zero até o vestibular em matemática. 10 regiões e 201 fases.</p>
+        <p class="welcome-sub">Explore 10 regiões de raciocínio lógico e desenvolva seu pensamento. 201 fases do iniciante ao Mestre Pensador.</p>
         <input id="nickInput" class="field" placeholder="Como devemos te chamar?" maxlength="30" autocomplete="off">
         <input id="classCodeInput" class="field" placeholder="Código da turma (opcional)" maxlength="10" autocomplete="off">
         <button id="btnStart" class="btn-primary">Começar a jornada</button>
@@ -107,7 +107,7 @@
                 <div class="ob-emoji">🗺️</div>
                 <div class="ob-item-text">
                     <h3>10 regiões, 201 fases</h3>
-                    <p>Cada região do mapa é um nível escolar — do 1º ano ao vestibular. Você avança desbloqueando uma fase por vez.</p>
+                    <p>Cada região é um tipo de desafio: sequências, analogias, dedução, padrões, lógica e estratégia. Você avança desbloqueando uma fase por vez.</p>
                 </div>
             </div>
             <div class="ob-item">
@@ -446,15 +446,16 @@
         <div class="t-unlock-row">
             <label for="unlockRegionSelect">Desbloquear região:</label>
             <select id="unlockRegionSelect">
-                <option value="1">1 — Vila dos Números</option>
-                <option value="2">2 — Bosque das Operações</option>
-                <option value="3">3 — Vale das Tabuadas</option>
-                <option value="4">4 — Caverna das Frações</option>
-                <option value="5">5 — Lago dos Decimais</option>
-                <option value="6">6 — Montanha dos Inteiros</option>
-                <option value="7">7 — Deserto das Equações</option>
-                <option value="8">8 — Templo das Potências</option>
-                <option value="9">9 — Cidadela do Mestre</option>
+                <option value="1">1 — Floresta das Sequências</option>
+                <option value="2">2 — Lago das Analogias</option>
+                <option value="3">3 — Vila da Classificação</option>
+                <option value="4">4 — Caverna da Dedução</option>
+                <option value="5">5 — Montanha dos Padrões</option>
+                <option value="6">6 — Deserto das Causas</option>
+                <option value="7">7 — Templo das Palavras</option>
+                <option value="8">8 — Torre da Lógica</option>
+                <option value="9">9 — Cidadela da Estratégia</option>
+                <option value="10">10 — Arena do Mestre Pensador</option>
             </select>
             <button id="btnUnlockRegion" class="t-unlock-btn">Desbloquear</button>
         </div>
