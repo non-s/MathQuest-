@@ -1015,6 +1015,25 @@
         `).join('');
     }
 
+    async function closeExistingLiveSessions(classCode) {
+        const { data, error } = await sb.from('live_sessions')
+            .select('*')
+            .eq('class_code', classCode)
+            .order('updated_at', { ascending: false })
+            .limit(10);
+        if (error) throw error;
+        const now = new Date().toISOString();
+        const openSessions = (data || []).filter(session => session.status !== 'ended');
+        const results = await Promise.all(openSessions.map(session => sb.from('live_sessions').upsert({
+            ...session,
+            status: 'ended',
+            ended_at: session.ended_at || now,
+            updated_at: now,
+        })));
+        const failed = results.find(result => result?.error);
+        if (failed) throw failed.error;
+    }
+
     async function startLiveSession() {
         const phaseId = parseInt($('livePhaseSelect').value, 10);
         const phase = PHASES.find(p => p.id === phaseId);
@@ -1036,6 +1055,7 @@
         };
         $('btnStartLiveSession').disabled = true;
         try {
+            await closeExistingLiveSessions(currentClassCode);
             const { error } = await sb.from('live_sessions').insert(session);
             if (error) throw error;
             currentLiveSession = session;

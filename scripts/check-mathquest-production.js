@@ -48,6 +48,8 @@ mustNotMatch("index.html", /id="tabSignup"|Criar conta/, "teacher panel must not
 mustMatch("index.html", /id="liveScoreboard"/, "live classroom mode must render a teacher scoreboard");
 mustMatch("index.html", /function renderLiveScoreboard\(/, "live classroom mode must aggregate session scores");
 mustMatch("index.html", /mqLive\.watchSessionResponses/, "teacher live scoreboard must subscribe to session responses");
+mustMatch("index.html", /function closeExistingLiveSessions\(classCode\)/, "teacher live mode must close stale sessions before starting another");
+mustMatch("index.html", /await closeExistingLiveSessions\(currentClassCode\);/, "starting a live session must enforce one active session per class");
 
 mustMatch("firestore.rules", /function validMqProgress\(/, "rules must validate MathQuest progress schema");
 mustMatch("firestore.rules", /match \/profiles\/\{userId\}[\s\S]*allow create: if false;/, "teacher profiles must not be publicly creatable");
