@@ -52,6 +52,8 @@ mustMatch("script.js", /mqLive\.watchClassSessions/, "student live mode must sub
 mustMatch("script.js", /function liveQuestionRemainingSeconds\(/, "student live mode must render question countdowns");
 mustMatch("script.js", /question_deadline_ms/, "student live countdown must prefer server-enforced numeric deadlines");
 mustMatch("script.js", /function liveSessionVisible\(/, "student live mode must keep review sessions visible");
+mustMatch("script.js", /return \['lobby', 'question', 'review'\]\.includes\(session\?\.status\);/, "student live mode must show lobby sessions");
+mustMatch("script.js", /session\.status === 'lobby'[\s\S]*Voce esta no lobby/, "student live modal must render a waiting lobby before questions");
 mustMatch("script.js", /function liveRevealedAnswerIndex\(/, "student live mode must render revealed answers only after review");
 mustMatch("script.js", /mqLiveStudentCountdown/, "student live modal must show the question countdown");
 mustMatch("script.js", /function submitLiveAnswer\([\s\S]*liveQuestionExpired\(session\)/, "student live answers must be blocked after the visible deadline");
@@ -75,6 +77,10 @@ mustMatch("index.html", /function clearLiveTeacherSession\(/, "teacher panel mus
 mustMatch("index.html", /function closeExistingLiveSessions\(classCode\)/, "teacher live mode must close stale sessions before starting another");
 mustMatch("index.html", /await closeExistingLiveSessions\(currentClassCode\);/, "starting a live session must enforce one active session per class");
 mustMatch("index.html", /live_answer_keys'\)\.insert\(/, "teacher live mode must store answer keys outside public sessions");
+mustMatch("index.html", /status:\s*'lobby'/, "teacher live mode must create a lobby before the first question");
+mustMatch("index.html", /currentLiveSession\.status === 'lobby' \? 'Comecar perguntas'/, "teacher live mode must expose a start-from-lobby control");
+mustMatch("index.html", /function renderProjectorLobby\(/, "projector mode must render the live lobby");
+mustMatch("index.html", /currentLiveSession\.status !== 'lobby'\) refreshLiveStats\(\)/, "projector polling must not read responses while the session is in lobby");
 mustMatch("index.html", /id="liveDurationSelect"/, "teacher live mode must allow a per-question timer");
 mustMatch("index.html", /question_duration_sec:\s*questionDurationSec/, "live sessions must persist the per-question duration");
 mustMatch("index.html", /question_deadline_at:\s*new Date\(questionDeadlineMs\)\.toISOString\(\)/, "live sessions must persist ISO question deadlines from the numeric deadline");
@@ -106,6 +112,7 @@ mustMatch("firestore.rules", /function mqOptionalLiveDuration\(/, "rules must va
 mustMatch("firestore.rules", /function mqLiveDeadlineValid\(/, "rules must require numeric live response deadlines");
 mustMatch("firestore.rules", /function mqOptionalRevealedAnswer\(/, "rules must validate revealed answer bounds");
 mustMatch("firestore.rules", /'review'/, "rules must allow explicit live review state");
+mustMatch("firestore.rules", /'lobby'/, "rules must allow explicit live lobby state");
 mustMatch("firestore.rules", /question_deadline_at/, "rules must allow validated live question deadlines");
 mustMatch("firestore.rules", /request\.time\.toMillis\(\)\s*<=\s*get\([\s\S]*live_sessions[\s\S]*question_deadline_ms/, "rules must reject live responses after the server-side deadline");
 mustMatch("firestore.rules", /match \/live_sessions\/\{sessionId\}/, "rules must protect live sessions");

@@ -39,6 +39,8 @@ O modo ao vivo armazena apenas perguntas/opcoes publicas em `live_sessions`, man
 
 Links de entrada aceitam `?class=CODIGO`, `?turma=CODIGO` ou `?code=CODIGO`; o modo Projetor exibe esse link com QR Code para entrada rapida em sala.
 
+Desafios ao vivo comecam em `lobby`, permitindo que os alunos entrem antes de o professor iniciar a primeira pergunta cronometrada.
+
 ## Desenvolvimento local
 
 Sirva por HTTP:

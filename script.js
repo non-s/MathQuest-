@@ -2128,6 +2128,7 @@ function liveResponseId(session, questionIndex) {
 }
 
 function liveQuestionRemainingSeconds(session) {
+    if (session?.status === 'lobby') return null;
     const numericDeadline = Number(session?.question_deadline_ms);
     const deadlineMs = Number.isFinite(numericDeadline) && numericDeadline > 0
         ? numericDeadline
@@ -2142,6 +2143,7 @@ function liveQuestionExpired(session) {
 }
 
 function liveQuestionCountdownText(session) {
+    if (session?.status === 'lobby') return 'Aguardando inicio';
     if (session?.status === 'review') return 'Resultado';
     const remaining = liveQuestionRemainingSeconds(session);
     if (remaining === null) return 'Sem limite de tempo';
@@ -2149,7 +2151,7 @@ function liveQuestionCountdownText(session) {
 }
 
 function liveSessionVisible(session) {
-    return ['question', 'review'].includes(session?.status);
+    return ['lobby', 'question', 'review'].includes(session?.status);
 }
 
 function liveRevealedAnswerIndex(session) {
@@ -2231,7 +2233,10 @@ function showLiveBanner(session) {
         banner.className = 'mq-live-banner';
         document.body.appendChild(banner);
     }
-    banner.innerHTML = `<div><strong>Desafio ao vivo da turma</strong><span>${esc(session.title || 'Raciocinio logico')} · pergunta ${Number(session.question_index || 0) + 1} · <b id="mqLiveBannerCountdown">${esc(liveQuestionCountdownText(session))}</b></span></div><button id="btnOpenLiveStudent">Entrar</button>`;
+    const detail = session.status === 'lobby'
+        ? `Lobby aberto · <b id="mqLiveBannerCountdown">${esc(liveQuestionCountdownText(session))}</b>`
+        : `${esc(session.title || 'Raciocinio logico')} · pergunta ${Number(session.question_index || 0) + 1} · <b id="mqLiveBannerCountdown">${esc(liveQuestionCountdownText(session))}</b>`;
+    banner.innerHTML = `<div><strong>Desafio ao vivo da turma</strong><span>${detail}</span></div><button id="btnOpenLiveStudent">Entrar</button>`;
     banner.querySelector('#btnOpenLiveStudent').addEventListener('click', () => openLiveStudentModal(session));
 }
 
@@ -2296,6 +2301,27 @@ function startLiveSessionWatch() {
 
 function openLiveStudentModal(session) {
     const qIndex = Number(session.question_index || 0);
+    if (session.status === 'lobby') {
+        removeLiveStudentModal();
+        const modal = document.createElement('div');
+        modal.id = 'mqLiveStudentModal';
+        modal.className = 'mq-live-student-modal';
+        modal.dataset.liveKey = liveSessionQuestionKey(session);
+        modal.innerHTML = `
+            <div class="mq-live-student-card">
+                <button class="t-modal-close" data-live-close style="float:right">x</button>
+                <h3>${esc(session.title || 'Desafio ao vivo')}</h3>
+                <div id="mqLiveStudentCountdown" class="mq-live-student-countdown">Aguardando inicio</div>
+                <div class="q-stem">Voce esta no lobby. Aguarde o professor iniciar a primeira pergunta.</div>
+                <div id="mqLiveOptions"></div>
+                <div id="mqLiveResult" class="mq-live-student-result">Fique nesta tela para entrar no desafio.</div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        modal.querySelector('[data-live-close]').addEventListener('click', removeLiveStudentModal);
+        updateLiveStudentCountdown();
+        return;
+    }
     const q = session.questions?.[qIndex];
     if (!q) return;
     removeLiveStudentModal();

@@ -482,7 +482,7 @@
                     <option value="120">120 segundos</option>
                 </select>
             </label>
-            <button id="btnStartLiveSession" class="btn-primary">Iniciar ao vivo</button>
+            <button id="btnStartLiveSession" class="btn-primary">Criar lobby ao vivo</button>
             <p id="liveError" class="t-error"></p>
         </div>
         <div id="liveControl" style="display:none">
@@ -937,6 +937,7 @@
     }
 
     function liveCountdownText(session) {
+        if (session?.status === 'lobby') return 'Aguardando';
         if (session?.status === 'review') return 'Resultado';
         const remaining = liveRemainingSeconds(session);
         if (remaining === null) return 'Sem limite';
@@ -1032,6 +1033,16 @@
         $('btnRevealLiveAnswer').textContent = !currentLiveAnswerKey
             ? 'Gabarito indisponivel'
             : (currentLiveSession.status === 'review' ? 'Resultado exibido' : 'Mostrar resultado');
+        $('btnNextLiveQuestion').textContent = currentLiveSession.status === 'lobby' ? 'Comecar perguntas' : 'Proxima';
+        if (currentLiveSession.status === 'lobby') {
+            $('btnRevealLiveAnswer').disabled = true;
+            $('liveQuestionPreview').innerHTML = `<h4>${esc(currentLiveSession.title || 'Desafio ao vivo')}</h4><p class="t-live-empty">Lobby aberto. Mostre o projetor para os alunos entrarem com o QR Code ou codigo da turma.</p>`;
+            $('liveAnswerStats').innerHTML = `<b>${roster.length}</b> alunos na turma · aguardando inicio`;
+            $('liveScoreboard').innerHTML = '<p class="t-live-empty">O placar aparece depois da primeira pergunta.</p>';
+            stopLiveTeacherUiUpdates();
+            renderProjector();
+            return;
+        }
         $('liveQuestionPreview').innerHTML = `<h4>${q.stem}</h4>` + q.options.map((opt, index) => {
             const correct = index === correctIndex ? ' correct' : '';
             return `<div class="t-live-option${correct}"><span>${esc(String.fromCharCode(65 + index))}. ${formatOpt(opt)}</span><b id="liveCount${index}">0</b></div>`;
@@ -1063,6 +1074,11 @@
 
     async function refreshLiveStats() {
         if (!currentLiveSession) return;
+        if (currentLiveSession.status === 'lobby') {
+            currentLiveRows = [];
+            renderProjector();
+            return;
+        }
         const { data, error } = await sb.from('live_responses')
             .select('*')
             .eq('session_id', currentLiveSession.session_id)
@@ -1136,7 +1152,7 @@
             .order('updated_at', { ascending: false })
             .limit(10);
         if (error) throw error;
-        const session = (data || []).find(row => ['question', 'review'].includes(row.status));
+        const session = (data || []).find(row => ['lobby', 'question', 'review'].includes(row.status));
         if (!session) return;
         const { data: answerKey, error: keyError } = await sb.from('live_answer_keys')
             .select('*')
@@ -1191,7 +1207,7 @@
             class_code: currentClassCode,
             teacher_id: currentUser.id,
             title: phase.name,
-            status: 'question',
+            status: 'lobby',
             phase_id: phase.id,
             question_index: 0,
             questions,
@@ -1229,7 +1245,7 @@
             currentLiveSession = session;
             currentLiveAnswerKey = answerKey;
             currentLiveRows = [];
-            toast('Desafio ao vivo iniciado!', 'success');
+            toast('Lobby ao vivo criado!', 'success');
             renderLiveTeacherControl();
         } catch (error) {
             $('liveError').textContent = error.message || String(error);
@@ -1263,6 +1279,25 @@
 
     async function nextLiveQuestion() {
         if (!currentLiveSession) return;
+        if (currentLiveSession.status === 'lobby') {
+            try {
+                const questionStartedAt = new Date().toISOString();
+                const duration = currentLiveSession.question_duration_sec || 60;
+                const questionDeadlineMs = liveQuestionDeadlineMs(questionStartedAt, duration);
+                await saveLiveSession({
+                    status: 'question',
+                    question_index: 0,
+                    revealed_answer_index: -1,
+                    question_started_at: questionStartedAt,
+                    question_deadline_at: new Date(questionDeadlineMs).toISOString(),
+                    question_deadline_ms: questionDeadlineMs,
+                });
+                renderLiveTeacherControl();
+            } catch (error) {
+                toast('Erro iniciando perguntas: ' + (error.message || error), 'error');
+            }
+            return;
+        }
         const nextIndex = currentLiveSession.question_index + 1;
         if (nextIndex >= currentLiveSession.questions.length) {
             await endLiveSession();
@@ -1363,7 +1398,7 @@
                 clearInterval(responseInterval);
                 return;
             }
-            if (currentLiveSession) refreshLiveStats();
+            if (currentLiveSession && currentLiveSession.status !== 'lobby') refreshLiveStats();
         }, 2500);
     }
 
@@ -1373,6 +1408,16 @@
         const projectorTitleEl = document.getElementById('projTitle');
         const projectorRankEl = document.getElementById('projRanking');
         const projectorStatsEl = document.getElementById('projStats');
+        if (currentLiveSession?.status === 'lobby') {
+            if (projectorTitleEl) projectorTitleEl.textContent = currentClassName || 'Turma';
+            if (projectorRankEl) projectorRankEl.style.display = 'none';
+            if (projectorStatsEl) projectorStatsEl.style.display = 'none';
+            if (projectorLiveEl) {
+                projectorLiveEl.style.display = 'grid';
+                renderProjectorLobby(projectorLiveEl);
+            }
+            return;
+        }
         if (['question', 'review'].includes(currentLiveSession?.status)) {
             if (projectorTitleEl) projectorTitleEl.textContent = currentClassName || 'Turma';
             if (projectorRankEl) projectorRankEl.style.display = 'none';
@@ -1433,6 +1478,19 @@
             <div class="proj-live-progress">${revealedIndex === null ? 'Pergunta' : 'Resultado'} ${qIndex + 1}/${currentLiveSession.questions.length}</div>
             <div class="proj-live-question">${q.stem}</div>
             <div class="proj-live-options">${optionsHtml}</div>
+        `;
+    }
+
+    function renderProjectorLobby(container) {
+        container.innerHTML = `
+            <div class="proj-live-meta">
+                <span>${esc(currentLiveSession.title || 'Desafio ao vivo')}</span>
+                <strong>Aguardando</strong>
+                <span>${roster.length} alunos na turma</span>
+            </div>
+            <div class="proj-live-progress">Lobby da turma</div>
+            <div class="proj-live-question">Entre pelo QR Code e aguarde o professor iniciar</div>
+            <div class="proj-live-empty">Quando todos estiverem prontos, a primeira pergunta aparece aqui.</div>
         `;
     }
 

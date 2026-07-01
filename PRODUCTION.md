@@ -54,6 +54,7 @@ Then verify GitHub Actions on the PR:
 
 - Teachers can start a live phase challenge from a class roster.
 - Projector mode shows the class code, a `?class={code}` join URL, and a QR code so students can enter the room quickly.
+- Live challenges start in a `lobby` state so students can join before the first timed question begins.
 - Students in the class see a live challenge banner and answer in-browser.
 - Teachers choose a per-question timer, and teacher/student live views show the same countdown for the current question.
 - Projector mode switches to the live question automatically while a challenge is active, showing options, countdown, and response counts without revealing the answer key.
