@@ -43,6 +43,8 @@ Desafios ao vivo comecam em `lobby`, permitindo que os alunos entrem antes de o 
 
 Durante o desafio, o professor revela o resultado antes de avancar; o controle de proxima pergunta fica travado enquanto a pergunta ainda esta ativa.
 
+Durante cada pergunta, o painel e o Projetor exibem o progresso de respostas contra o roster carregado da turma, incluindo o aviso quando todos responderam.
+
 ## Desenvolvimento local
 
 Sirva por HTTP:

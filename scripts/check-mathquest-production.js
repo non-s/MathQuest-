@@ -67,6 +67,7 @@ mustMatch("index.html", /function studentJoinUrl\(/, "teacher projector must gen
 mustMatch("index.html", /id="projJoin"/, "teacher projector must show class join code and QR");
 mustContain("index.html", "https://api.qrserver.com/v1/create-qr-code/", "teacher projector must render a scannable join QR code");
 mustMatch("index.html", /function renderLiveScoreboard\(/, "live classroom mode must aggregate session scores");
+mustMatch("index.html", /function liveAnswerProgressText\(/, "live classroom mode must show response progress against the loaded class roster");
 mustMatch("index.html", /mqLive\.watchSessionResponses/, "teacher live scoreboard must subscribe to session responses");
 mustMatch("index.html", /function liveResponseReadLimit\(/, "teacher live fallback reads must use the central live response limit");
 mustMatch("index.html", /\.limit\(liveResponseReadLimit\(\)\)/, "teacher live fallback reads must not hard-code a smaller response limit");

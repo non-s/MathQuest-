@@ -62,6 +62,7 @@ Then verify GitHub Actions on the PR:
 - Teachers cannot advance from an active question to the next one until the result has been revealed, preserving the expected classroom rhythm.
 - Teacher dashboards recover the active live session and private answer key when reopening a class, so a page reload does not strand an in-progress challenge.
 - The teacher sees answer counts and an accumulated live scoreboard.
+- During each live question, teacher/projector views show response progress against the loaded class roster and mark when everyone has answered.
 - Live sessions and scoreboards use Firestore realtime listeners, with polling fallback if a browser cannot attach a listener.
 - Live session documents contain only public question text/options. Answer keys live in `live_answer_keys/{sessionId}` and are readable only by the teacher who owns the session.
 - Live responses are immutable after creation: the first submitted answer for each student/question is the one counted.

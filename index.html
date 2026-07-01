@@ -1034,6 +1034,13 @@
         return count === 1 ? '1 aluno no lobby' : `${count} alunos no lobby`;
     }
 
+    function liveAnswerProgressText(answerCount) {
+        if (!roster.length) return answerCount === 1 ? '1 resposta' : `${answerCount} respostas`;
+        const capped = Math.min(answerCount, roster.length);
+        const base = `${capped}/${roster.length} respostas`;
+        return capped >= roster.length ? `${base} - todos responderam` : base;
+    }
+
     function liveLobbyStudents(limit = 16) {
         return [...roster]
             .sort((a, b) => (b.joined_at || b.last || '').localeCompare(a.joined_at || a.last || ''))
@@ -1143,7 +1150,7 @@
         });
         const total = counts.reduce((sum, count) => sum + count, 0);
         const correct = Number.isInteger(correctIndex) ? (counts[correctIndex] || 0) : 0;
-        $('liveAnswerStats').innerHTML = `<b>${total}</b> respostas · <b>${correct}</b> corretas`;
+        $('liveAnswerStats').innerHTML = `<b>${esc(liveAnswerProgressText(total))}</b> - <b>${correct}</b> corretas`;
         renderLiveScoreboard(currentLiveRows);
         renderProjector();
     }
@@ -1516,7 +1523,7 @@
             <div class="proj-live-meta">
                 <span>${esc(currentLiveSession.title || 'Desafio ao vivo')}</span>
                 <strong class="${timerClass}">${esc(timerText)}</strong>
-                <span>${totalAnswers} respostas</span>
+                <span>${esc(liveAnswerProgressText(totalAnswers))}</span>
             </div>
             <div class="proj-live-progress">${revealedIndex === null ? 'Pergunta' : 'Resultado'} ${qIndex + 1}/${currentLiveSession.questions.length}</div>
             <div class="proj-live-question">${q.stem}</div>
