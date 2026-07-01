@@ -30,6 +30,8 @@ Colecoes usadas no Firestore:
 - `class_members/{classCode_uid}`
 - `teacher_unlocks/{classCode_uid_region}`
 - `class_messages/{messageId}`
+- `live_sessions/{sessionId}`
+- `live_responses/{sessionId_uid_questionIndex}`
 
 ## Desenvolvimento local
 

@@ -24,6 +24,8 @@ const TABLE_COLLECTIONS = {
     class_members: 'class_members',
     teacher_unlocks: 'teacher_unlocks',
     class_messages: 'class_messages',
+    live_sessions: 'live_sessions',
+    live_responses: 'live_responses',
 };
 
 const MQ_FIRESTORE_IN_LIMIT = 30;
@@ -34,6 +36,8 @@ const MQ_LIMITS = Object.freeze({
     leaderboard: 100,
     teacherUnlocks: 500,
     classMessages: 50,
+    liveSessions: 10,
+    liveResponses: 1000,
     progressRows: 200,
 });
 
@@ -76,6 +80,8 @@ function mqDefaultLimit(collectionName) {
     if (collectionName === 'class_members') return MQ_LIMITS.classMemberCounts;
     if (collectionName === 'teacher_unlocks') return MQ_LIMITS.teacherUnlocks;
     if (collectionName === 'class_messages') return MQ_LIMITS.classMessages;
+    if (collectionName === 'live_sessions') return MQ_LIMITS.liveSessions;
+    if (collectionName === 'live_responses') return MQ_LIMITS.liveResponses;
     if (collectionName === 'mathquest_progress') return MQ_LIMITS.progressRows;
     return null;
 }
@@ -86,6 +92,8 @@ function mqDocId(collectionName, payload) {
     if (collectionName === 'classes') return payload.code;
     if (collectionName === 'class_members') return `${payload.class_code}_${payload.user_id}`;
     if (collectionName === 'teacher_unlocks') return `${payload.class_code}_${payload.user_id}_${payload.region}`;
+    if (collectionName === 'live_sessions') return payload.session_id;
+    if (collectionName === 'live_responses') return payload.response_id || `${payload.session_id}_${payload.user_id}_${payload.question_index}`;
     return null;
 }
 

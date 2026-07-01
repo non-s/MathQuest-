@@ -533,6 +533,79 @@ service cloud.firestore {
         && mqOptionalIsoString(data, 'updated_at');
     }
 
+    function mqLiveSessionOwnedByTeacher(sessionId) {
+      return mqTeacher()
+        && exists(/databases/$(database)/documents/live_sessions/$(sessionId))
+        && get(/databases/$(database)/documents/live_sessions/$(sessionId)).data.teacher_id == request.auth.uid;
+    }
+
+    function mqLiveSessionReadable(data) {
+      return data.keys().hasAny(['class_code'])
+        && data.class_code is string
+        && (mqClassOwnedByTeacher(data.class_code) || mqMemberOfClass(data.class_code));
+    }
+
+    function mqLiveStatus(value) {
+      return value in ['lobby', 'question', 'ended'];
+    }
+
+    function validMqLiveSession(data, sessionId) {
+      return data.keys().hasOnly(['session_id', 'class_code', 'teacher_id', 'title', 'status', 'phase_id', 'question_index', 'questions', 'created_at', 'updated_at', 'started_at', 'ended_at'])
+        && data.session_id == sessionId
+        && mqValidClassCode(data.class_code)
+        && data.teacher_id == request.auth.uid
+        && mqClassOwnedByTeacher(data.class_code)
+        && mqOptionalString(data, 'title', 80)
+        && mqLiveStatus(data.status)
+        && data.phase_id is int
+        && data.phase_id >= 1
+        && data.phase_id <= 201
+        && data.question_index is int
+        && data.question_index >= 0
+        && data.question_index <= 20
+        && data.questions is list
+        && data.questions.size() >= 1
+        && data.questions.size() <= 10
+        && mqOptionalIsoString(data, 'created_at')
+        && mqOptionalIsoString(data, 'updated_at')
+        && mqOptionalIsoString(data, 'started_at')
+        && mqOptionalIsoString(data, 'ended_at');
+    }
+
+    function mqLiveAnswerOpen(data) {
+      return exists(/databases/$(database)/documents/live_sessions/$(data.session_id))
+        && get(/databases/$(database)/documents/live_sessions/$(data.session_id)).data.status == 'question'
+        && get(/databases/$(database)/documents/live_sessions/$(data.session_id)).data.question_index == data.question_index;
+    }
+
+    function validMqLiveResponse(data, responseId) {
+      return data.keys().hasOnly(['response_id', 'session_id', 'class_code', 'user_id', 'nickname', 'question_key', 'question_index', 'answer_index', 'correct', 'score_delta', 'created_at', 'updated_at'])
+        && mqString(data.response_id, 1, 180)
+        && data.response_id == responseId
+        && mqString(data.session_id, 1, 160)
+        && mqValidClassCode(data.class_code)
+        && data.user_id == request.auth.uid
+        && mqString(data.question_key, 1, 2)
+        && data.question_key.matches('^[0-9]+$')
+        && responseId == data.session_id + '_' + request.auth.uid + '_' + data.question_key
+        && mqString(data.nickname, 1, 30)
+        && data.question_index is int
+        && data.question_index >= 0
+        && data.question_index <= 20
+        && data.answer_index is int
+        && data.answer_index >= 0
+        && data.answer_index <= 9
+        && data.correct is bool
+        && data.score_delta is int
+        && data.score_delta >= 0
+        && data.score_delta <= 1000
+        && mqMemberOfClass(data.class_code)
+        && mqLiveAnswerOpen(data)
+        && get(/databases/$(database)/documents/live_sessions/$(data.session_id)).data.class_code == data.class_code
+        && mqOptionalIsoString(data, 'created_at')
+        && mqOptionalIsoString(data, 'updated_at');
+    }
+
     match /portfolio_mensagens/{messageId} {
       allow create: if signedIn() && validPortfolioMessage(request.resource.data);
       allow read: if ownerEmail();
@@ -753,6 +826,33 @@ service cloud.firestore {
         && (mqMemberOfClass(resource.data.class_code) || mqClassOwnedByTeacher(resource.data.class_code));
       allow create: if validMqClassMessage(request.resource.data);
       allow update, delete: if false;
+    }
+
+    match /live_sessions/{sessionId} {
+      allow read: if signedIn() && mqLiveSessionReadable(resource.data);
+      allow create: if mqTeacher()
+        && validMqLiveSession(request.resource.data, sessionId);
+      allow update: if mqTeacher()
+        && resource.data.teacher_id == request.auth.uid
+        && validMqLiveSession(request.resource.data, sessionId)
+        && request.resource.data.session_id == resource.data.session_id
+        && request.resource.data.class_code == resource.data.class_code
+        && request.resource.data.teacher_id == resource.data.teacher_id;
+      allow delete: if mqLiveSessionOwnedByTeacher(sessionId);
+    }
+
+    match /live_responses/{responseId} {
+      allow read: if signedIn()
+        && (resource.data.user_id == request.auth.uid || mqClassOwnedByTeacher(resource.data.class_code));
+      allow create: if signedIn()
+        && validMqLiveResponse(request.resource.data, responseId);
+      allow update: if signedIn()
+        && validMqLiveResponse(request.resource.data, responseId)
+        && request.resource.data.session_id == resource.data.session_id
+        && request.resource.data.class_code == resource.data.class_code
+        && request.resource.data.user_id == resource.data.user_id
+        && request.resource.data.question_index == resource.data.question_index;
+      allow delete: if false;
     }
 
     match /{document=**} {

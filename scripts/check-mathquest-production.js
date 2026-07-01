@@ -15,6 +15,10 @@ function mustMatch(relPath, pattern, message) {
 
 mustMatch("config.js", /const MQ_LIMITS = Object\.freeze\(/, "must define central production read limits");
 mustMatch("config.js", /function mqDefaultLimit\(/, "must enforce default Firestore query limits");
+mustMatch("config.js", /live_sessions:\s*'live_sessions'/, "adapter must expose live session storage");
+mustMatch("config.js", /live_responses:\s*'live_responses'/, "adapter must expose live response storage");
+mustMatch("config.js", /liveSessions:\s*10/, "live session reads must be bounded");
+mustMatch("config.js", /liveResponses:\s*1000/, "live response reads must be bounded");
 mustMatch("config.js", /where\('class_code',\s*'==',\s*code\)/, "leaderboard must query progress by class_code");
 mustMatch("config.js", /\.limit\(MQ_LIMITS\.leaderboard\)/, "leaderboard must be bounded");
 mustMatch("config.js", /teacher_id:\s*cls\.teacher_id/, "class membership must persist teacher_id for scalable rules");
@@ -35,6 +39,12 @@ mustMatch("firestore.rules", /function validMqClassMember\(/, "rules must valida
 mustMatch("firestore.rules", /data\.teacher_id == get\(/, "class membership teacher_id must match the class owner");
 mustMatch("firestore.rules", /function validMqClassMessage\(/, "rules must validate class message schema");
 mustMatch("firestore.rules", /mqString\(data\.message, 1, 500\)/, "class messages must stay within the UI limit");
+mustMatch("firestore.rules", /function validMqLiveSession\(/, "rules must validate live session schema");
+mustMatch("firestore.rules", /function validMqLiveResponse\(/, "rules must validate live response schema");
+mustMatch("firestore.rules", /match \/live_sessions\/\{sessionId\}/, "rules must protect live sessions");
+mustMatch("firestore.rules", /match \/live_responses\/\{responseId\}/, "rules must protect live responses");
+mustMatch("firestore.indexes.json", /"collectionGroup": "live_sessions"/, "indexes must support live session lookups");
+mustMatch("firestore.indexes.json", /"collectionGroup": "live_responses"/, "indexes must support live response aggregation");
 
 mustMatch(".github/workflows/quality.yml", /check-mathquest-production\.js/, "quality workflow must run MathQuest production checks");
 mustMatch("scripts/check-repo-contracts.js", /check-mathquest-production\.js/, "repo contracts must require MathQuest production checks");
