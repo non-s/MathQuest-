@@ -13,6 +13,11 @@ function mustMatch(relPath, pattern, message) {
   if (!pattern.test(text)) failures.push(`${relPath}: ${message}`);
 }
 
+function mustContain(relPath, needle, message) {
+  const text = read(relPath);
+  if (!text.includes(needle)) failures.push(`${relPath}: ${message}`);
+}
+
 function mustNotMatch(relPath, pattern, message) {
   const text = read(relPath);
   if (pattern.test(text)) failures.push(`${relPath}: ${message}`);
@@ -58,7 +63,7 @@ mustNotMatch("index.html", /id="tabSignup"|Criar conta/, "teacher panel must not
 mustMatch("index.html", /id="liveScoreboard"/, "live classroom mode must render a teacher scoreboard");
 mustMatch("index.html", /function studentJoinUrl\(/, "teacher projector must generate student join URLs");
 mustMatch("index.html", /id="projJoin"/, "teacher projector must show class join code and QR");
-mustMatch("index.html", /api\.qrserver\.com\/v1\/create-qr-code/, "teacher projector must render a scannable join QR code");
+mustContain("index.html", "https://api.qrserver.com/v1/create-qr-code/", "teacher projector must render a scannable join QR code");
 mustMatch("index.html", /function renderLiveScoreboard\(/, "live classroom mode must aggregate session scores");
 mustMatch("index.html", /mqLive\.watchSessionResponses/, "teacher live scoreboard must subscribe to session responses");
 mustMatch("index.html", /function liveResponseReadLimit\(/, "teacher live fallback reads must use the central live response limit");
