@@ -1183,6 +1183,10 @@ body { font-size: calc(1rem * var(--font-scale, 1)); }
             margin-top: .55rem;
             text-align: left;
         }
+        .mq-live-student-card .opt.selected {
+            border-color: var(--accent);
+            background: color-mix(in srgb, var(--accent) 12%, var(--bg-soft));
+        }
         .mq-live-student-result {
             margin-top: 1rem;
             color: var(--text-dim);

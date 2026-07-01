@@ -25,6 +25,7 @@ const TABLE_COLLECTIONS = {
     teacher_unlocks: 'teacher_unlocks',
     class_messages: 'class_messages',
     live_sessions: 'live_sessions',
+    live_answer_keys: 'live_answer_keys',
     live_responses: 'live_responses',
 };
 
@@ -93,6 +94,7 @@ function mqDocId(collectionName, payload) {
     if (collectionName === 'class_members') return `${payload.class_code}_${payload.user_id}`;
     if (collectionName === 'teacher_unlocks') return `${payload.class_code}_${payload.user_id}_${payload.region}`;
     if (collectionName === 'live_sessions') return payload.session_id;
+    if (collectionName === 'live_answer_keys') return payload.session_id;
     if (collectionName === 'live_responses') return payload.response_id || `${payload.session_id}_${payload.user_id}_${payload.question_index}`;
     return null;
 }

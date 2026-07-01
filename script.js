@@ -2226,15 +2226,13 @@ function openLiveStudentModal(session) {
 async function submitLiveAnswer(session, questionIndex, answerIndex, question) {
     const responseId = liveResponseId(session, questionIndex);
     if (state.liveResponses[responseId]) return;
-    const correct = answerIndex === Number(question.correctIndex);
     state.liveResponses[responseId] = true;
     document.querySelectorAll('#mqLiveOptions .opt').forEach((btn, idx) => {
         btn.disabled = true;
-        if (idx === Number(question.correctIndex)) btn.classList.add('correct');
-        if (idx === answerIndex && !correct) btn.classList.add('wrong');
+        if (idx === answerIndex) btn.classList.add('selected');
     });
     const result = document.getElementById('mqLiveResult');
-    if (result) result.textContent = correct ? 'Resposta enviada: correta!' : 'Resposta enviada.';
+    if (result) result.textContent = 'Resposta enviada. Aguarde a próxima pergunta.';
     try {
         const questionKey = String(questionIndex);
         const { error } = await sb.from('live_responses').insert({
@@ -2246,8 +2244,6 @@ async function submitLiveAnswer(session, questionIndex, answerIndex, question) {
             question_key: questionKey,
             question_index: questionIndex,
             answer_index: answerIndex,
-            correct,
-            score_delta: correct ? 1000 : 0,
             updated_at: new Date().toISOString(),
         });
         if (error) throw error;
@@ -2260,7 +2256,7 @@ async function submitLiveAnswer(session, questionIndex, answerIndex, question) {
         state.liveResponses[responseId] = false;
         document.querySelectorAll('#mqLiveOptions .opt').forEach(btn => {
             btn.disabled = false;
-            btn.classList.remove('correct', 'wrong');
+            btn.classList.remove('selected');
         });
         if (result) result.textContent = 'Não consegui enviar. Tente novamente.';
         toast('Erro no desafio ao vivo: ' + (error.message || error), 'error');

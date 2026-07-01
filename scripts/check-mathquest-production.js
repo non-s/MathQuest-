@@ -23,6 +23,7 @@ mustMatch("config.js", /function mqDefaultLimit\(/, "must enforce default Firest
 mustMatch("config.js", /Cadastro publico de professores desativado/, "teacher signup must stay disabled in the client adapter");
 mustNotMatch("config.js", /createUserWithEmailAndPassword/, "client adapter must not create teacher accounts directly");
 mustMatch("config.js", /live_sessions:\s*'live_sessions'/, "adapter must expose live session storage");
+mustMatch("config.js", /live_answer_keys:\s*'live_answer_keys'/, "adapter must expose private live answer keys");
 mustMatch("config.js", /live_responses:\s*'live_responses'/, "adapter must expose live response storage");
 mustMatch("config.js", /liveSessions:\s*10/, "live session reads must be bounded");
 mustMatch("config.js", /liveResponses:\s*1000/, "live response reads must be bounded");
@@ -50,6 +51,9 @@ mustMatch("index.html", /function renderLiveScoreboard\(/, "live classroom mode 
 mustMatch("index.html", /mqLive\.watchSessionResponses/, "teacher live scoreboard must subscribe to session responses");
 mustMatch("index.html", /function closeExistingLiveSessions\(classCode\)/, "teacher live mode must close stale sessions before starting another");
 mustMatch("index.html", /await closeExistingLiveSessions\(currentClassCode\);/, "starting a live session must enforce one active session per class");
+mustMatch("index.html", /live_answer_keys'\)\.insert\(/, "teacher live mode must store answer keys outside public sessions");
+mustNotMatch("index.html", /correctIndex:\s*Number/, "public live session payload must not include correct answers");
+mustNotMatch("index.html", /score_delta/, "teacher scoreboard must compute scores from private answer keys, not persisted student scores");
 
 mustMatch("firestore.rules", /function validMqProgress\(/, "rules must validate MathQuest progress schema");
 mustMatch("firestore.rules", /match \/profiles\/\{userId\}[\s\S]*allow create: if false;/, "teacher profiles must not be publicly creatable");
@@ -61,10 +65,13 @@ mustMatch("firestore.rules", /data\.teacher_id == get\(/, "class membership teac
 mustMatch("firestore.rules", /function validMqClassMessage\(/, "rules must validate class message schema");
 mustMatch("firestore.rules", /mqString\(data\.message, 1, 500\)/, "class messages must stay within the UI limit");
 mustMatch("firestore.rules", /function validMqLiveSession\(/, "rules must validate live session schema");
+mustMatch("firestore.rules", /function validMqLiveAnswerKey\(/, "rules must validate private live answer keys");
 mustMatch("firestore.rules", /function validMqLiveResponse\(/, "rules must validate live response schema");
 mustMatch("firestore.rules", /match \/live_sessions\/\{sessionId\}/, "rules must protect live sessions");
+mustMatch("firestore.rules", /match \/live_answer_keys\/\{sessionId\}[\s\S]*allow read: if mqLiveSessionOwnedByTeacher\(sessionId\);/, "live answer keys must be teacher-only");
 mustMatch("firestore.rules", /match \/live_responses\/\{responseId\}/, "rules must protect live responses");
 mustMatch("firestore.rules", /match \/live_responses\/\{responseId\}[\s\S]*allow update, delete: if false;/, "live responses must be immutable after creation");
+mustNotMatch("firestore.rules", /'correct'|'score_delta'/, "live responses must not trust student-submitted scoring fields");
 mustMatch("firestore.indexes.json", /"collectionGroup": "live_sessions"/, "indexes must support live session lookups");
 mustMatch("firestore.indexes.json", /"collectionGroup": "live_responses"/, "indexes must support live response aggregation");
 

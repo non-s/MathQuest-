@@ -880,6 +880,7 @@
     }
 
     let currentLiveSession = null;
+    let currentLiveAnswerKey = null;
     let liveStatsInterval = null;
     let liveStatsUnsubscribe = null;
 
@@ -891,8 +892,13 @@
         return {
             stem: String(q?.stem || ''),
             options: (q?.options || []).slice(0, 4).map(opt => String(opt)),
-            correctIndex: Number(q?.correctIndex || 0),
-            explain: String(q?.explain || ''),
+        };
+    }
+
+    function liveAnswerKeyPayload(questions) {
+        return {
+            answers: questions.map(q => Number(q?.correctIndex || 0)),
+            explanations: questions.map(q => String(q?.explain || '')),
         };
     }
 
@@ -933,10 +939,11 @@
         $('liveSetup').style.display = 'none';
         $('liveControl').style.display = '';
         const q = currentLiveSession.questions[currentLiveSession.question_index] || currentLiveSession.questions[0];
+        const correctIndex = currentLiveAnswerKey?.answers?.[currentLiveSession.question_index];
         const total = currentLiveSession.questions.length;
         $('liveStatus').textContent = `${currentClassName} · pergunta ${currentLiveSession.question_index + 1}/${total} · ${currentLiveSession.status}`;
         $('liveQuestionPreview').innerHTML = `<h4>${q.stem}</h4>` + q.options.map((opt, index) => {
-            const correct = index === q.correctIndex ? ' correct' : '';
+            const correct = index === correctIndex ? ' correct' : '';
             return `<div class="t-live-option${correct}"><span>${esc(String.fromCharCode(65 + index))}. ${formatOpt(opt)}</span><b id="liveCount${index}">0</b></div>`;
         }).join('');
         stopLiveStats();
@@ -978,6 +985,7 @@
     function renderLiveStats(rows) {
         if (!currentLiveSession) return;
         const q = currentLiveSession.questions[currentLiveSession.question_index];
+        const correctIndex = currentLiveAnswerKey?.answers?.[currentLiveSession.question_index];
         const counts = q.options.map(() => 0);
         rows.filter(row => row.question_index === currentLiveSession.question_index).forEach(row => {
             if (Number.isInteger(row.answer_index) && counts[row.answer_index] !== undefined) counts[row.answer_index]++;
@@ -987,7 +995,7 @@
             if (el) el.textContent = count;
         });
         const total = counts.reduce((sum, count) => sum + count, 0);
-        const correct = counts[q.correctIndex] || 0;
+        const correct = Number.isInteger(correctIndex) ? (counts[correctIndex] || 0) : 0;
         $('liveAnswerStats').innerHTML = `<b>${total}</b> respostas · <b>${correct}</b> corretas`;
         renderLiveScoreboard(rows);
     }
@@ -997,8 +1005,10 @@
         rows.forEach(row => {
             const key = row.user_id || row.nickname || 'anon';
             const current = scores.get(key) || { nickname: row.nickname || 'Aluno', score: 0, correct: 0, answers: 0 };
-            current.score += Number(row.score_delta || 0);
-            current.correct += row.correct ? 1 : 0;
+            const correctIndex = currentLiveAnswerKey?.answers?.[row.question_index];
+            const correct = Number.isInteger(correctIndex) && row.answer_index === correctIndex;
+            current.score += correct ? 1000 : 0;
+            current.correct += correct ? 1 : 0;
             current.answers += 1;
             scores.set(key, current);
         });
@@ -1038,7 +1048,9 @@
         const phaseId = parseInt($('livePhaseSelect').value, 10);
         const phase = PHASES.find(p => p.id === phaseId);
         if (!phase || !currentClass || !currentUser) return;
-        const questions = phase.gen().map(liveQuestionPayload);
+        const generatedQuestions = phase.gen();
+        const questions = generatedQuestions.map(liveQuestionPayload);
+        const answerKey = liveAnswerKeyPayload(generatedQuestions);
         const now = new Date().toISOString();
         const session = {
             session_id: liveSessionId(),
@@ -1058,7 +1070,25 @@
             await closeExistingLiveSessions(currentClassCode);
             const { error } = await sb.from('live_sessions').insert(session);
             if (error) throw error;
+            const { error: keyError } = await sb.from('live_answer_keys').insert({
+                session_id: session.session_id,
+                class_code: currentClassCode,
+                teacher_id: currentUser.id,
+                ...answerKey,
+                created_at: now,
+                updated_at: now,
+            });
+            if (keyError) {
+                await sb.from('live_sessions').upsert({
+                    ...session,
+                    status: 'ended',
+                    ended_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                });
+                throw keyError;
+            }
             currentLiveSession = session;
+            currentLiveAnswerKey = answerKey;
             toast('Desafio ao vivo iniciado!', 'success');
             renderLiveTeacherControl();
         } catch (error) {
@@ -1098,6 +1128,7 @@
             toast('Desafio encerrado.', 'success');
             $('liveStatus').textContent = 'Sessão encerrada';
             currentLiveSession = null;
+            currentLiveAnswerKey = null;
             $('liveControl').style.display = 'none';
             $('liveSetup').style.display = '';
         } catch (error) {

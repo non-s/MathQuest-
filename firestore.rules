@@ -572,6 +572,22 @@ service cloud.firestore {
         && mqOptionalIsoString(data, 'ended_at');
     }
 
+    function validMqLiveAnswerKey(data, sessionId) {
+      return data.keys().hasOnly(['session_id', 'class_code', 'teacher_id', 'answers', 'explanations', 'created_at', 'updated_at'])
+        && data.session_id == sessionId
+        && mqValidClassCode(data.class_code)
+        && data.teacher_id == request.auth.uid
+        && mqLiveSessionOwnedByTeacher(sessionId)
+        && get(/databases/$(database)/documents/live_sessions/$(sessionId)).data.class_code == data.class_code
+        && data.answers is list
+        && data.answers.size() >= 1
+        && data.answers.size() <= 10
+        && data.explanations is list
+        && data.explanations.size() == data.answers.size()
+        && mqOptionalIsoString(data, 'created_at')
+        && mqOptionalIsoString(data, 'updated_at');
+    }
+
     function mqLiveAnswerOpen(data) {
       return exists(/databases/$(database)/documents/live_sessions/$(data.session_id))
         && get(/databases/$(database)/documents/live_sessions/$(data.session_id)).data.status == 'question'
@@ -579,7 +595,7 @@ service cloud.firestore {
     }
 
     function validMqLiveResponse(data, responseId) {
-      return data.keys().hasOnly(['response_id', 'session_id', 'class_code', 'user_id', 'nickname', 'question_key', 'question_index', 'answer_index', 'correct', 'score_delta', 'created_at', 'updated_at'])
+      return data.keys().hasOnly(['response_id', 'session_id', 'class_code', 'user_id', 'nickname', 'question_key', 'question_index', 'answer_index', 'created_at', 'updated_at'])
         && mqString(data.response_id, 1, 180)
         && data.response_id == responseId
         && mqString(data.session_id, 1, 160)
@@ -595,10 +611,6 @@ service cloud.firestore {
         && data.answer_index is int
         && data.answer_index >= 0
         && data.answer_index <= 9
-        && data.correct is bool
-        && data.score_delta is int
-        && data.score_delta >= 0
-        && data.score_delta <= 1000
         && mqMemberOfClass(data.class_code)
         && mqLiveAnswerOpen(data)
         && get(/databases/$(database)/documents/live_sessions/$(data.session_id)).data.class_code == data.class_code
@@ -835,6 +847,18 @@ service cloud.firestore {
       allow update: if mqTeacher()
         && resource.data.teacher_id == request.auth.uid
         && validMqLiveSession(request.resource.data, sessionId)
+        && request.resource.data.session_id == resource.data.session_id
+        && request.resource.data.class_code == resource.data.class_code
+        && request.resource.data.teacher_id == resource.data.teacher_id;
+      allow delete: if mqLiveSessionOwnedByTeacher(sessionId);
+    }
+
+    match /live_answer_keys/{sessionId} {
+      allow read: if mqLiveSessionOwnedByTeacher(sessionId);
+      allow create: if mqTeacher()
+        && validMqLiveAnswerKey(request.resource.data, sessionId);
+      allow update: if mqLiveSessionOwnedByTeacher(sessionId)
+        && validMqLiveAnswerKey(request.resource.data, sessionId)
         && request.resource.data.session_id == resource.data.session_id
         && request.resource.data.class_code == resource.data.class_code
         && request.resource.data.teacher_id == resource.data.teacher_id;
