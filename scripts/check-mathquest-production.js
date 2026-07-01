@@ -114,6 +114,7 @@ mustMatch("firestore.rules", /mqString\(data\.message, 1, 500\)/, "class message
 mustMatch("firestore.rules", /function validMqLiveSession\(/, "rules must validate live session schema");
 mustMatch("firestore.rules", /function validMqLiveAnswerKey\(/, "rules must validate private live answer keys");
 mustMatch("firestore.rules", /function validMqLiveResponse\(/, "rules must validate live response schema");
+mustMatch("firestore.rules", /function mqLiveQuestionKeyMatchesIndex\(/, "rules must bind live response ids to the numeric question index");
 mustMatch("firestore.rules", /function mqOptionalLiveDuration\(/, "rules must validate live question timer bounds");
 mustMatch("firestore.rules", /function mqLiveDeadlineValid\(/, "rules must require numeric live response deadlines");
 mustMatch("firestore.rules", /function mqOptionalRevealedAnswer\(/, "rules must validate revealed answer bounds");
