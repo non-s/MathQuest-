@@ -62,5 +62,6 @@ Then verify GitHub Actions on the PR:
 - Live sessions and scoreboards use Firestore realtime listeners, with polling fallback if a browser cannot attach a listener.
 - Live session documents contain only public question text/options. Answer keys live in `live_answer_keys/{sessionId}` and are readable only by the teacher who owns the session.
 - Live responses are immutable after creation: the first submitted answer for each student/question is the one counted.
+- Live response listeners/read fallbacks are bounded at 2,500 rows, enough for a 200-student class across 10 live questions with operational margin.
 - Starting a new live challenge closes older open live sessions for the same class.
 - Current scoring and timer enforcement are computed in the browser from public session metadata. For high-stakes anti-cheat, move scoring and deadline enforcement to a trusted backend such as Cloud Functions.

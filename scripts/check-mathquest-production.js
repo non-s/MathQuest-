@@ -26,7 +26,7 @@ mustMatch("config.js", /live_sessions:\s*'live_sessions'/, "adapter must expose 
 mustMatch("config.js", /live_answer_keys:\s*'live_answer_keys'/, "adapter must expose private live answer keys");
 mustMatch("config.js", /live_responses:\s*'live_responses'/, "adapter must expose live response storage");
 mustMatch("config.js", /liveSessions:\s*10/, "live session reads must be bounded");
-mustMatch("config.js", /liveResponses:\s*1000/, "live response reads must be bounded");
+mustMatch("config.js", /liveResponses:\s*2500/, "live response reads must cover a full 200-student, 10-question session with margin");
 mustMatch("config.js", /watchClassSessions\(classCode, onRows, onError\)/, "live sessions must use realtime class listeners");
 mustMatch("config.js", /watchSessionResponses\(sessionId, onRows, onError\)/, "live responses must use realtime response listeners");
 mustMatch("config.js", /\.onSnapshot\(/, "live classroom mode must use Firestore realtime listeners");
@@ -54,6 +54,8 @@ mustNotMatch("index.html", /id="tabSignup"|Criar conta/, "teacher panel must not
 mustMatch("index.html", /id="liveScoreboard"/, "live classroom mode must render a teacher scoreboard");
 mustMatch("index.html", /function renderLiveScoreboard\(/, "live classroom mode must aggregate session scores");
 mustMatch("index.html", /mqLive\.watchSessionResponses/, "teacher live scoreboard must subscribe to session responses");
+mustMatch("index.html", /function liveResponseReadLimit\(/, "teacher live fallback reads must use the central live response limit");
+mustMatch("index.html", /\.limit\(liveResponseReadLimit\(\)\)/, "teacher live fallback reads must not hard-code a smaller response limit");
 mustMatch("index.html", /function recoverActiveLiveSession\(classCode/, "teacher panel must recover active live sessions after reload");
 mustMatch("index.html", /await recoverActiveLiveSession\(c\.code, \{ silent: true \}\);/, "opening a class must restore active live session state");
 mustMatch("index.html", /live_answer_keys'\)[\s\S]*\.eq\('id', session\.session_id\)[\s\S]*\.maybeSingle\(\)/, "teacher recovery must reload the private live answer key by session id");

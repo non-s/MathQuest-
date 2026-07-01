@@ -38,7 +38,7 @@ const MQ_LIMITS = Object.freeze({
     teacherUnlocks: 500,
     classMessages: 50,
     liveSessions: 10,
-    liveResponses: 1000,
+    liveResponses: 2500,
     progressRows: 200,
 });
 

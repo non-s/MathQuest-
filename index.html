@@ -932,6 +932,10 @@
         return remaining > 0 ? `${remaining}s` : 'Tempo esgotado';
     }
 
+    function liveResponseReadLimit() {
+        return window.MQ_LIMITS?.liveResponses || 2500;
+    }
+
     function liveQuestionPayload(q) {
         return {
             stem: String(q?.stem || ''),
@@ -1051,7 +1055,7 @@
         const { data, error } = await sb.from('live_responses')
             .select('*')
             .eq('session_id', currentLiveSession.session_id)
-            .limit(1000);
+            .limit(liveResponseReadLimit());
         if (error) {
             $('liveAnswerStats').textContent = 'Erro lendo respostas: ' + error.message;
             return;
