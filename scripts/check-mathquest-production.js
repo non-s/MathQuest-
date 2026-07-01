@@ -99,6 +99,7 @@ mustMatch("index.html", /revealed_answer_index:\s*-1/, "new live questions must 
 mustMatch("index.html", /function renderProjectorLive\(/, "projector mode must render live classroom questions");
 mustMatch("index.html", /id="projLive"/, "projector overlay must include a live challenge region");
 mustMatch("index.html", /currentLiveRows\.filter\(row => row\.question_index === qIndex\)/, "projector live view must aggregate current question responses");
+mustMatch("index.html", /const showDistribution = currentLiveSession\.status === 'review';/, "projector must hide per-option response distribution until the result reveal");
 mustNotMatch("index.html", /correctIndex:\s*Number/, "public live session payload must not include correct answers");
 mustNotMatch("index.html", /score_delta/, "teacher scoreboard must compute scores from private answer keys, not persisted student scores");
 

@@ -45,6 +45,8 @@ Durante o desafio, o professor revela o resultado antes de avancar; o controle d
 
 Durante cada pergunta, o painel e o Projetor exibem o progresso de respostas contra o roster carregado da turma, incluindo o aviso quando todos responderam.
 
+O Projetor mostra a distribuicao por alternativa apenas depois que o professor revela o resultado, evitando que alunos atrasados sigam a maioria durante a resposta.
+
 As regras do Firestore amarram o identificador da resposta ao indice numerico da pergunta, evitando respostas duplicadas por aluno na mesma pergunta ativa.
 
 ## Desenvolvimento local

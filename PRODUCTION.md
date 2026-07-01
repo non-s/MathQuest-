@@ -57,7 +57,8 @@ Then verify GitHub Actions on the PR:
 - Live challenges start in a `lobby` state so students can join before the first timed question begins; the teacher view and projector show joined-student counts/names during that waiting phase.
 - Students in the class see a live challenge banner and answer in-browser.
 - Teachers choose a per-question timer, and teacher/student live views show the same countdown for the current question.
-- Projector mode switches to the live question automatically while a challenge is active, showing options, countdown, and response counts without revealing the answer key.
+- Projector mode switches to the live question automatically while a challenge is active, showing options, countdown, and total response progress without revealing the answer key.
+- The projector hides per-option response distribution during active answering and only shows it in `review`, reducing majority-following in the room.
 - Teachers explicitly reveal each result, moving the live session from `question` to `review`; only then does the public session expose `revealed_answer_index`.
 - Teachers cannot advance from an active question to the next one until the result has been revealed, preserving the expected classroom rhythm.
 - Teacher dashboards recover the active live session and private answer key when reopening a class, so a page reload does not strand an in-progress challenge.

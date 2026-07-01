@@ -1514,10 +1514,12 @@
         const revealedIndex = Number.isInteger(currentLiveSession.revealed_answer_index) && currentLiveSession.revealed_answer_index >= 0
             ? currentLiveSession.revealed_answer_index
             : null;
+        const showDistribution = currentLiveSession.status === 'review';
         const optionsHtml = (q.options || []).map((opt, index) => {
-            const pct = totalAnswers ? Math.round((counts[index] || 0) / totalAnswers * 100) : 0;
+            const pct = showDistribution && totalAnswers ? Math.round((counts[index] || 0) / totalAnswers * 100) : 0;
             const revealClass = revealedIndex === null ? '' : (index === revealedIndex ? ' correct' : ' muted');
-            return `<div class="proj-live-option${revealClass}"><i style="width:${pct}%"></i><span><em>${esc(String.fromCharCode(65 + index))}</em>${formatOpt(opt)}</span><b>${counts[index] || 0}</b></div>`;
+            const countText = showDistribution ? counts[index] || 0 : '';
+            return `<div class="proj-live-option${revealClass}"><i style="width:${pct}%"></i><span><em>${esc(String.fromCharCode(65 + index))}</em>${formatOpt(opt)}</span><b>${countText}</b></div>`;
         }).join('');
         container.innerHTML = `
             <div class="proj-live-meta">
