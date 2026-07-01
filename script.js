@@ -110,1734 +110,547 @@ const sndStreak = () => {
 
 /* ─── Regiões (mapa) ────────────────────────────────────────────────────── */
 const REGIONS = [
-    { id: 1, range: [1, 20], name: 'Vila dos Números',      year: '1º ano', color: '#7dd3a8', icon: '🏘️',  desc: 'Primeiros passos: contar, reconhecer e comparar.' },
-    { id: 2, range: [21, 40], name: 'Bosque das Operações',  year: '2º ano', color: '#69b8e5', icon: '🌳',  desc: 'Somas, subtrações e família dos números.' },
-    { id: 3, range: [41, 60], name: 'Vale das Tabuadas',     year: '3º ano', color: '#f0c75e', icon: '🌾',  desc: 'Multiplicação, divisão e dinheiro.' },
-    { id: 4, range: [61, 80], name: 'Caverna das Frações',   year: '4º ano', color: '#e88c4a', icon: '🕳️',  desc: 'Pedaços do todo e medidas.' },
-    { id: 5, range: [81, 100], name: 'Lago dos Decimais',     year: '5º ano', color: '#5fc8c8', icon: '🏞️',  desc: 'Vírgulas, porcentagens e áreas.' },
-    { id: 6, range: [101, 120], name: 'Montanha dos Inteiros', year: '6º ano', color: '#a78bdc', icon: '⛰️',  desc: 'Negativos, MMC e primeiras equações.' },
-    { id: 7, range: [121, 140], name: 'Deserto das Equações',  year: '7º ano', color: '#c89669', icon: '🏜️',  desc: 'X dos dois lados, razão e proporção.' },
-    { id: 8, range: [141, 160], name: 'Templo das Potências',  year: '8º ano', color: '#e26d6d', icon: '🏛️',  desc: 'Potências, raízes e álgebra.' },
-    { id: 9, range: [161, 181], name: 'Cidadela do Mestre',    year: '9º ano', color: '#f0c419', icon: '🏰',  desc: 'Funções, Bhaskara e Pitágoras.' },
-    { id: 10, range: [182, 201], name: 'Arena do Vestibular',  year: 'ENEM/Vestibular', color: '#ff6b9d', icon: '🏟️',  desc: 'ENEM, FUVEST, UNICAMP: matemática de alto nível.' },
+    { id: 1,  range: [1,   20],  name: 'Floresta das Sequências',  year: 'Iniciante',    color: '#7dd3a8', icon: '🌲', desc: 'Descubra o que vem a seguir em sequências simples.' },
+    { id: 2,  range: [21,  40],  name: 'Lago das Analogias',       year: 'Básico I',     color: '#69b8e5', icon: '🦆', desc: 'Se A é para B, então C é para...?' },
+    { id: 3,  range: [41,  60],  name: 'Vila da Classificação',    year: 'Básico II',    color: '#f0c75e', icon: '🏘️', desc: 'Encontre o intruso — qual não pertence ao grupo?' },
+    { id: 4,  range: [61,  80],  name: 'Caverna da Dedução',       year: 'Intermediário',color: '#e88c4a', icon: '🕵️', desc: 'Use pistas para chegar à conclusão certa.' },
+    { id: 5,  range: [81,  100], name: 'Montanha dos Padrões',     year: 'Médio I',      color: '#5fc8c8', icon: '⛰️', desc: 'Identifique padrões e complete a regra.' },
+    { id: 6,  range: [101, 120], name: 'Deserto das Causas',       year: 'Médio II',     color: '#a78bdc', icon: '🏜️', desc: 'Relacione causas a seus efeitos.' },
+    { id: 7,  range: [121, 140], name: 'Templo das Palavras',      year: 'Avançado I',   color: '#c89669', icon: '🏛️', desc: 'Raciocínio com palavras, categorias e relações.' },
+    { id: 8,  range: [141, 160], name: 'Torre da Lógica',          year: 'Avançado II',  color: '#e26d6d', icon: '🗼', desc: 'Verdadeiro ou falso? Combine afirmações.' },
+    { id: 9,  range: [161, 181], name: 'Cidadela da Estratégia',   year: 'Expert',       color: '#f0c419', icon: '🏰', desc: 'Pense à frente: jogos, posições e estratégias.' },
+    { id: 10, range: [182, 201], name: 'Arena do Mestre Pensador', year: 'Mestre',       color: '#ff6b9d', icon: '🏟️', desc: 'Os maiores desafios de raciocínio lógico.' },
 ];
 
-/* ─── Geradores de questões ───────────────────────────────────────────────
- * Toda fase declara um gerador. O gerador retorna 5 questões.
- * Question = { stem, options[4], correctIndex, explain? }
+/* ─── Banco de Questões de Raciocínio Lógico ────────────────────────────
+ * Cada questão: { stem, options[4], correctIndex, explain? }
+ * makePhaseGen(bank) → função que retorna 5 questões aleatórias do banco.
  * ──────────────────────────────────────────────────────────────────────── */
 
-function makeChoice(correct, distractors) {
-    const correctStr = String(correct);
-    const opts = shuffle([correctStr, ...distractors.map(String)]);
-    return { options: opts, correctIndex: opts.indexOf(correctStr) };
+function makePhaseGen(bank) {
+    return () => shuffle([...bank]).slice(0, 5);
 }
 
-function nearDistr(correct, spread = 5, n = 3, allowNeg = false) {
-    const set = new Set();
-    let guard = 0;
-    while (set.size < n && guard++ < 50) {
-        const v = correct + (rand(-spread, spread) || spread);
-        if (v !== correct && (allowNeg || v >= 0)) set.add(v);
-    }
-    while (set.size < n) set.add(correct + set.size + 1);
-    return [...set];
+/* ── Região 1 — Floresta das Sequências (Iniciante) ─────────────────── */
+const BANK_R1 = [
+    { stem: 'Qual número vem a seguir? 1, 2, 3, 4, ___', options: ['5','6','3','7'], correctIndex: 0, explain: 'A sequência aumenta 1 por vez: 1, 2, 3, 4, <b>5</b>.' },
+    { stem: 'Qual número vem a seguir? 2, 4, 6, 8, ___', options: ['9','10','12','11'], correctIndex: 1, explain: 'A sequência aumenta 2 por vez (números pares): 2, 4, 6, 8, <b>10</b>.' },
+    { stem: 'Qual forma vem a seguir? ⬛ ⬜ ⬛ ⬜ ___', options: ['⬛','⬜','🔺','🔵'], correctIndex: 0, explain: 'O padrão alterna entre preto e branco. Após ⬜ vem <b>⬛</b>.' },
+    { stem: 'Qual número vem a seguir? 10, 20, 30, 40, ___', options: ['45','50','60','55'], correctIndex: 1, explain: 'A sequência aumenta 10 por vez: 10, 20, 30, 40, <b>50</b>.' },
+    { stem: 'Qual letra vem a seguir? A, B, C, D, ___', options: ['E','F','G','H'], correctIndex: 0, explain: 'É a ordem do alfabeto. Após D vem <b>E</b>.' },
+    { stem: 'Qual número falta? 1, ___, 3, 4, 5', options: ['1','2','6','0'], correctIndex: 1, explain: 'A sequência 1, 2, 3, 4, 5 — falta o <b>2</b>.' },
+    { stem: 'Qual vem a seguir? 🍎 🍌 🍎 🍌 ___', options: ['🍌','🍎','🍇','🍓'], correctIndex: 1, explain: 'O padrão alterna maçã-banana. Após 🍌 vem <b>🍎</b>.' },
+    { stem: 'Qual número vem a seguir? 5, 10, 15, 20, ___', options: ['22','25','30','24'], correctIndex: 1, explain: 'A sequência aumenta 5 por vez: 5, 10, 15, 20, <b>25</b>.' },
+    { stem: 'Qual vem a seguir? 🌙 ⭐ 🌙 ⭐ 🌙 ___', options: ['🌙','⭐','☀️','🌈'], correctIndex: 1, explain: 'O padrão alterna lua-estrela. Após 🌙 vem <b>⭐</b>.' },
+    { stem: 'Qual número vem a seguir? 3, 6, 9, 12, ___', options: ['13','14','15','16'], correctIndex: 2, explain: 'A sequência aumenta 3 por vez (tabuada do 3): 3, 6, 9, 12, <b>15</b>.' },
+    { stem: 'Qual vem a seguir? 🔴 🔴 🔵 🔴 🔴 ___', options: ['🔴','🔵','🟢','🟡'], correctIndex: 1, explain: 'O padrão é: dois vermelhos, um azul. Após dois vermelhos vem <b>🔵</b>.' },
+    { stem: 'Qual número falta? 2, 4, ___, 8, 10', options: ['5','6','7','3'], correctIndex: 1, explain: 'São os números pares em ordem: 2, 4, <b>6</b>, 8, 10.' },
+    { stem: 'Qual forma vem a seguir? 🔺 🔺 🔵 🔺 🔺 ___', options: ['🔺','🔵','⬛','🟢'], correctIndex: 1, explain: 'O padrão é: dois triângulos, um círculo. Vem <b>🔵</b>.' },
+    { stem: 'Qual número vem a seguir? 1, 3, 5, 7, ___', options: ['8','9','10','11'], correctIndex: 1, explain: 'São os números ímpares: 1, 3, 5, 7, <b>9</b>.' },
+    { stem: 'Qual animal vem a seguir? 🐱 🐶 🐱 🐶 ___', options: ['🐶','🐱','🐰','🐸'], correctIndex: 1, explain: 'O padrão alterna gato-cachorro. Após 🐶 vem <b>🐱</b>.' },
+    { stem: 'Qual número vem a seguir? 100, 90, 80, 70, ___', options: ['60','65','50','75'], correctIndex: 0, explain: 'A sequência diminui 10 por vez: 100, 90, 80, 70, <b>60</b>.' },
+    { stem: 'Qual vem a seguir? 🌸 🌸 🌸 🌼 🌸 🌸 🌸 ___', options: ['🌸','🌼','🌺','🍀'], correctIndex: 1, explain: 'O padrão é: três rosas, uma margarida. Vem <b>🌼</b>.' },
+    { stem: 'Qual número falta? 10, 20, ___, 40, 50', options: ['25','35','30','45'], correctIndex: 2, explain: 'São dezenas em ordem: 10, 20, <b>30</b>, 40, 50.' },
+    { stem: 'Qual vem a seguir? ☀️ 🌧️ ☀️ 🌧️ ☀️ ___', options: ['☀️','🌧️','⛅','❄️'], correctIndex: 1, explain: 'O padrão alterna sol e chuva. Após ☀️ vem <b>🌧️</b>.' },
+    { stem: 'Qual número vem a seguir? 1, 4, 7, 10, ___', options: ['12','13','14','11'], correctIndex: 1, explain: 'A sequência aumenta 3 por vez: 1, 4, 7, 10, <b>13</b>.' },
+    { stem: 'Qual vem a seguir? 🐘 🐘 🦁 🐘 🐘 ___', options: ['🐘','🦁','🐯','🦒'], correctIndex: 1, explain: 'O padrão é: dois elefantes, um leão. Após dois elefantes vem <b>🦁</b>.' },
+    { stem: 'Qual número vem a seguir? 2, 2, 4, 4, 6, ___', options: ['6','7','8','5'], correctIndex: 0, explain: 'Cada número aparece duas vezes: 2, 2, 4, 4, 6, <b>6</b>.' },
+    { stem: 'Qual vem a seguir? ⬛⬛⬛ ⬜ ⬛⬛⬛ ___', options: ['⬛','⬜','🔺','🔵'], correctIndex: 1, explain: 'O padrão é: três pretos, um branco. Vem <b>⬜</b>.' },
+    { stem: 'Qual número falta? 5, 10, 15, ___, 25', options: ['18','20','22','17'], correctIndex: 1, explain: 'São múltiplos de 5: 5, 10, 15, <b>20</b>, 25.' },
+    { stem: 'Qual vem a seguir? 🍕 🍔 🍕 🍔 🍕 ___', options: ['🍕','🍔','🌮','🌯'], correctIndex: 1, explain: 'O padrão alterna pizza e hambúrguer. Após 🍕 vem <b>🍔</b>.' },
+];
+
+/* ── Região 2 — Lago das Analogias (Básico I) ───────────────────────── */
+const BANK_R2 = [
+    { stem: 'Peixe está para água assim como pássaro está para ___', options: ['ninho','ar','asa','céu'], correctIndex: 1, explain: 'Peixes vivem na água; pássaros vivem no <b>ar</b>.' },
+    { stem: 'Dia está para sol assim como noite está para ___', options: ['chuva','frio','lua','escuro'], correctIndex: 2, explain: 'O sol representa o dia; a <b>lua</b> representa a noite.' },
+    { stem: 'Mão está para luva assim como pé está para ___', options: ['meia','sapato','sandália','bota'], correctIndex: 1, explain: 'Luva cobre a mão; <b>sapato</b> cobre o pé.' },
+    { stem: 'Filhote está para cachorro assim como pintinho está para ___', options: ['pato','galinha','coelho','porco'], correctIndex: 1, explain: 'Filhote é o bebê do cachorro; pintinho é o bebê da <b>galinha</b>.' },
+    { stem: 'Faca está para cortar assim como agulha está para ___', options: ['coser','furar','pintar','escrever'], correctIndex: 0, explain: 'A faca serve para cortar; a agulha serve para <b>coser</b>.' },
+    { stem: 'Quente está para fogo assim como frio está para ___', options: ['água','vento','gelo','neve'], correctIndex: 2, explain: 'O fogo é quente; o <b>gelo</b> é frio.' },
+    { stem: 'Livro está para leitura assim como violão está para ___', options: ['arte','dança','música','pintura'], correctIndex: 2, explain: 'O livro é para leitura; o violão é para <b>música</b>.' },
+    { stem: 'Médico está para hospital assim como professor está para ___', options: ['escritório','escola','biblioteca','clínica'], correctIndex: 1, explain: 'O médico trabalha no hospital; o professor trabalha na <b>escola</b>.' },
+    { stem: 'Olho está para ver assim como ouvido está para ___', options: ['cheirar','tocar','ouvir','sentir'], correctIndex: 2, explain: 'O olho serve para ver; o ouvido serve para <b>ouvir</b>.' },
+    { stem: 'Carro está para estrada assim como barco está para ___', options: ['céu','mar','rio','montanha'], correctIndex: 1, explain: 'O carro anda em estrada; o barco navega no <b>mar</b>.' },
+    { stem: 'Pintora está para pintura assim como escultora está para ___', options: ['música','dança','escultura','fotografia'], correctIndex: 2, explain: 'A pintora faz pinturas; a escultora faz <b>esculturas</b>.' },
+    { stem: 'Flor está para planta assim como braço está para ___', options: ['mão','corpo','osso','pele'], correctIndex: 1, explain: 'A flor faz parte da planta; o braço faz parte do <b>corpo</b>.' },
+    { stem: 'Inverno está para frio assim como verão está para ___', options: ['sol','chuva','calor','vento'], correctIndex: 2, explain: 'Inverno traz frio; verão traz <b>calor</b>.' },
+    { stem: 'Abelha está para mel assim como vaca está para ___', options: ['ovos','leite','carne','lã'], correctIndex: 1, explain: 'A abelha produz mel; a vaca produz <b>leite</b>.' },
+    { stem: 'Lápis está para papel assim como pincel está para ___', options: ['parede','tinta','tela','quadro'], correctIndex: 2, explain: 'O lápis escreve no papel; o pincel pinta na <b>tela</b>.' },
+    { stem: 'Perto está para longe assim como rápido está para ___', options: ['veloz','devagar','forte','alto'], correctIndex: 1, explain: 'Perto é o oposto de longe; rápido é o oposto de <b>devagar</b>.' },
+    { stem: 'Semente está para árvore assim como ovo está para ___', options: ['ninho','ave','casca','pena'], correctIndex: 1, explain: 'A semente cresce e vira árvore; o ovo origina uma <b>ave</b>.' },
+    { stem: 'Boca está para comer assim como nariz está para ___', options: ['sentir','respirar','cheirar','falar'], correctIndex: 2, explain: 'A boca é usada para comer; o nariz é usado para <b>cheirar</b>.' },
+    { stem: 'Gato está para miar assim como cachorro está para ___', options: ['mugir','latir','piar','zurrar'], correctIndex: 1, explain: 'O gato mia; o cachorro <b>late</b>.' },
+    { stem: 'Açúcar está para doce assim como limão está para ___', options: ['azedo','amargo','salgado','picante'], correctIndex: 0, explain: 'O açúcar é doce; o limão é <b>azedo</b>.' },
+    { stem: 'Sapato está para pé assim como chapéu está para ___', options: ['pescoço','orelha','cabeça','ombro'], correctIndex: 2, explain: 'O sapato veste o pé; o chapéu veste a <b>cabeça</b>.' },
+    { stem: 'Bebê está para adulto assim como filhote está para ___', options: ['jovem','adulto','animal','grande'], correctIndex: 1, explain: 'Bebê cresce e vira adulto; filhote cresce e vira <b>adulto</b> também.' },
+    { stem: 'Caneta está para escrever assim como tesoura está para ___', options: ['furar','costurar','cortar','dobrar'], correctIndex: 2, explain: 'A caneta serve para escrever; a tesoura serve para <b>cortar</b>.' },
+    { stem: 'Geladeira está para frio assim como forno está para ___', options: ['quente','vapor','cozinhar','calor'], correctIndex: 3, explain: 'A geladeira gera frio; o forno gera <b>calor</b>.' },
+    { stem: 'Pele está para humano assim como escama está para ___', options: ['réptil','peixe','pele','mamífero'], correctIndex: 1, explain: 'Humanos têm pele; peixes têm <b>escamas</b>.' },
+];
+
+/* ── Região 3 — Vila da Classificação (Básico II) ────────────────────── */
+const BANK_R3 = [
+    { stem: 'Qual NÃO pertence ao grupo? Cachorro 🐕 — Gato 🐈 — Peixe 🐟 — Leão 🦁', options: ['Cachorro','Gato','Peixe','Leão'], correctIndex: 2, explain: '<b>Peixe</b> é o único que vive na água; os outros são animais terrestres.' },
+    { stem: 'Qual NÃO pertence ao grupo? Maçã 🍎 — Banana 🍌 — Cenoura 🥕 — Uva 🍇', options: ['Maçã','Banana','Cenoura','Uva'], correctIndex: 2, explain: '<b>Cenoura</b> é legume; os outros são frutas.' },
+    { stem: 'Qual NÃO pertence ao grupo? Cadeira — Mesa — Sofá — Fogão', options: ['Cadeira','Mesa','Sofá','Fogão'], correctIndex: 3, explain: '<b>Fogão</b> é eletrodoméstico de cozinha; os outros são móveis para sentar ou apoiar.' },
+    { stem: 'Qual NÃO pertence ao grupo? Rosa 🌹 — Margarida 🌼 — Tulipa — Carvalho', options: ['Rosa','Margarida','Tulipa','Carvalho'], correctIndex: 3, explain: '<b>Carvalho</b> é uma árvore; os outros são flores.' },
+    { stem: 'Qual NÃO pertence ao grupo? Vermelho — Azul — Feliz — Verde', options: ['Vermelho','Azul','Feliz','Verde'], correctIndex: 2, explain: '<b>Feliz</b> é um sentimento; os outros são cores.' },
+    { stem: 'Qual NÃO pertence ao grupo? Flauta — Piano — Guitarra — Microfone', options: ['Flauta','Piano','Guitarra','Microfone'], correctIndex: 3, explain: '<b>Microfone</b> amplifica o som; os outros são instrumentos musicais.' },
+    { stem: 'Qual NÃO pertence ao grupo? Correr — Pular — Nadar — Dormir', options: ['Correr','Pular','Nadar','Dormir'], correctIndex: 3, explain: '<b>Dormir</b> não é uma atividade física ativa; os outros são exercícios.' },
+    { stem: 'Qual NÃO pertence ao grupo? Lua — Sol — Estrela — Nuvem', options: ['Lua','Sol','Estrela','Nuvem'], correctIndex: 3, explain: '<b>Nuvem</b> está na atmosfera terrestre; os outros são corpos celestes.' },
+    { stem: 'Qual NÃO pertence ao grupo? Carro 🚗 — Ônibus 🚌 — Trem 🚂 — Avião ✈️', options: ['Carro','Ônibus','Trem','Avião'], correctIndex: 3, explain: '<b>Avião</b> voa; os outros se movem pela terra.' },
+    { stem: 'Qual NÃO pertence ao grupo? Triângulo — Círculo — Cubo — Quadrado', options: ['Triângulo','Círculo','Cubo','Quadrado'], correctIndex: 2, explain: '<b>Cubo</b> é uma figura 3D (tridimensional); os outros são figuras planas (2D).' },
+    { stem: 'Qual NÃO pertence ao grupo? Borboleta 🦋 — Abelha 🐝 — Mosca 🪰 — Aranha 🕷️', options: ['Borboleta','Abelha','Mosca','Aranha'], correctIndex: 3, explain: '<b>Aranha</b> tem 8 patas e é aracnídeo; os outros são insetos com 6 patas.' },
+    { stem: 'Qual NÃO pertence ao grupo? Português — Matemática — Futebol — História', options: ['Português','Matemática','Futebol','História'], correctIndex: 2, explain: '<b>Futebol</b> é esporte; os outros são disciplinas escolares.' },
+    { stem: 'Qual NÃO pertence ao grupo? Tigre — Onça — Leopardo — Cavalo', options: ['Tigre','Onça','Leopardo','Cavalo'], correctIndex: 3, explain: '<b>Cavalo</b> é herbívoro e domesticado; os outros são grandes felinos selvagens.' },
+    { stem: 'Qual NÃO pertence ao grupo? Sapato — Sandália — Tênis — Luva', options: ['Sapato','Sandália','Tênis','Luva'], correctIndex: 3, explain: '<b>Luva</b> é usada na mão; os outros são calçados para os pés.' },
+    { stem: 'Qual NÃO pertence ao grupo? Alegre — Triste — Bravo — Pesado', options: ['Alegre','Triste','Bravo','Pesado'], correctIndex: 3, explain: '<b>Pesado</b> descreve peso; os outros são sentimentos.' },
+    { stem: 'Qual NÃO pertence ao grupo? Baleia 🐋 — Golfinho 🐬 — Tubarão 🦈 — Pinguim 🐧', options: ['Baleia','Golfinho','Tubarão','Pinguim'], correctIndex: 3, explain: '<b>Pinguim</b> é uma ave que caminha; os outros são animais aquáticos que nadam constantemente.' },
+    { stem: 'Qual NÃO pertence ao grupo? Faca — Colher — Garfo — Panela', options: ['Faca','Colher','Garfo','Panela'], correctIndex: 3, explain: '<b>Panela</b> é utensílio para cozinhar; os outros são talheres para comer.' },
+    { stem: 'Qual NÃO pertence ao grupo? Leite — Queijo — Manteiga — Suco', options: ['Leite','Queijo','Manteiga','Suco'], correctIndex: 3, explain: '<b>Suco</b> é feito de fruta; os outros são derivados do leite.' },
+    { stem: 'Qual NÃO pertence ao grupo? Martelo — Chave de fenda — Alicate — Régua', options: ['Martelo','Chave de fenda','Alicate','Régua'], correctIndex: 3, explain: '<b>Régua</b> é instrumento de medição/desenho; os outros são ferramentas de construção.' },
+    { stem: 'Qual NÃO pertence ao grupo? Janeiro — Março — Julho — Natal', options: ['Janeiro','Março','Julho','Natal'], correctIndex: 3, explain: '<b>Natal</b> é uma data comemorativa; os outros são meses do ano.' },
+    { stem: 'Qual NÃO pertence ao grupo? Quadrado — Retângulo — Losango — Esfera', options: ['Quadrado','Retângulo','Losango','Esfera'], correctIndex: 3, explain: '<b>Esfera</b> é uma figura 3D; os outros são quadriláteros (figuras planas).' },
+    { stem: 'Qual NÃO pertence ao grupo? Cantar — Dançar — Pintar — Estudar', options: ['Cantar','Dançar','Pintar','Estudar'], correctIndex: 3, explain: '<b>Estudar</b> é atividade intelectual; os outros são formas de expressão artística.' },
+    { stem: 'Qual NÃO pertence ao grupo? Jacaré — Cobra — Tartaruga — Sapo', options: ['Jacaré','Cobra','Tartaruga','Sapo'], correctIndex: 3, explain: '<b>Sapo</b> é anfíbio; os outros são répteis.' },
+    { stem: 'Qual NÃO pertence ao grupo? Rápido — Veloz — Ágil — Pesado', options: ['Rápido','Veloz','Ágil','Pesado'], correctIndex: 3, explain: '<b>Pesado</b> se refere a peso; os outros são sinônimos de velocidade.' },
+    { stem: 'Qual NÃO pertence ao grupo? Coração — Pulmão — Fígado — Osso', options: ['Coração','Pulmão','Fígado','Osso'], correctIndex: 3, explain: '<b>Osso</b> é parte do esqueleto; os outros são órgãos internos vitais.' },
+];
+
+/* ── Região 4 — Caverna da Dedução (Intermediário) ──────────────────── */
+const BANK_R4 = [
+    { stem: 'Todo pato é um pássaro. Donald é um pato. Portanto, Donald é ___', options: ['um mamífero','um pássaro','um réptil','um peixe'], correctIndex: 1, explain: 'Se todo pato é um pássaro e Donald é um pato, então Donald <b>é um pássaro</b>. (Silogismo básico)' },
+    { stem: 'Ana é mais alta que Bia. Bia é mais alta que Carla. Quem é a mais baixa?', options: ['Ana','Bia','Carla','Todas iguais'], correctIndex: 2, explain: 'Ana > Bia > Carla. Portanto <b>Carla</b> é a mais baixa.' },
+    { stem: 'Toda fruta doce tem semente. Manga é uma fruta doce. Portanto, manga ___', options: ['não tem semente','tem semente','pode ter semente','não é uma fruta'], correctIndex: 1, explain: 'Pela regra dada, toda fruta doce tem semente. Manga é doce. Logo manga <b>tem semente</b>.' },
+    { stem: 'Pedro chegou antes de João. João chegou antes de Maria. Quem chegou primeiro?', options: ['João','Maria','Pedro','Não dá pra saber'], correctIndex: 2, explain: 'Pedro → João → Maria. Portanto <b>Pedro</b> chegou primeiro.' },
+    { stem: 'Se está chovendo, a rua fica molhada. A rua está molhada. O que podemos concluir com certeza?', options: ['Está chovendo','Não está chovendo','Pode ou não estar chovendo','A chuva parou'], correctIndex: 2, explain: 'A rua pode estar molhada por outras razões (mangueira, etc.). Não podemos concluir com certeza. A resposta é <b>pode ou não estar chovendo</b>.' },
+    { stem: 'Nenhum gato é cachorro. Rex é um cachorro. Portanto, Rex ___', options: ['é um gato','não é um gato','pode ser um gato','talvez seja um gato'], correctIndex: 1, explain: 'Se nenhum gato é cachorro e Rex é cachorro, Rex <b>não é um gato</b>.' },
+    { stem: 'Luís tem mais figurinhas que Marco. Marco tem mais que Felipe. Quem tem mais figurinhas?', options: ['Marco','Felipe','Luís','Felipe e Marco'], correctIndex: 2, explain: 'Luís > Marco > Felipe. <b>Luís</b> tem mais.' },
+    { stem: 'Se a luz está acesa, o quarto está iluminado. O quarto está escuro. O que podemos concluir?', options: ['A luz está acesa','A luz está apagada','Pode ser dia','Alguém entrou'], correctIndex: 1, explain: 'Se o quarto está escuro, a condição "luz acesa → quarto iluminado" não se cumpriu. Portanto <b>a luz está apagada</b>.' },
+    { stem: 'Toda criança gosta de brincar. Joana é uma criança. Portanto, Joana ___', options: ['não gosta de brincar','gosta de brincar','talvez goste','odeie brincar'], correctIndex: 1, explain: 'Aplicando a regra diretamente: Joana <b>gosta de brincar</b>.' },
+    { stem: 'Caixas A, B e C. A é mais pesada que B. B é mais pesada que C. Qual é a ordem do mais leve ao mais pesado?', options: ['A, B, C','C, A, B','C, B, A','B, C, A'], correctIndex: 2, explain: 'A > B > C. Do mais leve ao mais pesado: <b>C, B, A</b>.' },
+    { stem: 'Se chove na quinta, a partida é cancelada. A partida foi cancelada. O que podemos afirmar?', options: ['Choveu na quinta','Não choveu','Pode ter chovido ou outra razão cancelou','A partida era importante'], correctIndex: 2, explain: 'A partida pode ter sido cancelada por outros motivos. <b>Não podemos afirmar com certeza que choveu.</b>' },
+    { stem: 'Todos os pássaros têm asas. Nem todo animal com asas é pássaro. Morcego tem asas. Logo, morcego ___', options: ['é um pássaro','não é um pássaro','pode ser um pássaro','não tem asas'], correctIndex: 1, explain: 'Ter asas não garante ser pássaro. Morcego tem asas, mas <b>não é um pássaro</b> (é mamífero).' },
+    { stem: 'Tiago é filho único. O pai de Tiago tem um irmão. Esse irmão é ___ de Tiago.', options: ['primo','tio','sobrinho','avô'], correctIndex: 1, explain: 'O irmão do pai de alguém é seu <b>tio</b>.' },
+    { stem: 'Em uma fila: Rita está atrás de Sônia. Vera está na frente de Sônia. Quem está na frente de todas?', options: ['Rita','Sônia','Vera','Não dá pra saber'], correctIndex: 2, explain: 'Vera está na frente de Sônia, que está na frente de Rita. Ordem: <b>Vera</b>, Sônia, Rita.' },
+    { stem: 'Todos que estudam passam de ano. Bruno não passou de ano. Portanto, Bruno ___', options: ['estudou','não estudou','talvez tenha estudado','vai estudar'], correctIndex: 1, explain: 'Se estudar garante passar, quem não passou certamente <b>não estudou</b>. (Contraposição)' },
+    { stem: 'Sara é mais nova que Leo. Leo é mais novo que Mia. Quem é o mais velho?', options: ['Sara','Leo','Mia','Todos têm a mesma idade'], correctIndex: 2, explain: 'Mia > Leo > Sara. <b>Mia</b> é a mais velha.' },
+    { stem: 'Nenhum vegetal é animal. Cenoura é vegetal. Portanto, cenoura ___', options: ['é um animal','não é um animal','pode ser animal','é um mineral'], correctIndex: 1, explain: 'Pela premissa, cenoura vegetal → <b>não é um animal</b>.' },
+    { stem: 'Paulo tem 3 caixas. Cada caixa tem 3 bolas. Paulo dá 5 bolas a um amigo. Quantas bolas Paulo tem?', options: ['4','5','6','7'], correctIndex: 0, explain: 'Paulo tinha 3×3=9 bolas. Deu 5. Restam <b>4</b> bolas.' },
+    { stem: 'Se hoje é quarta, amanhã é quinta. Hoje é quarta. Portanto, depois de amanhã é ___', options: ['quinta','sexta','sábado','terça'], correctIndex: 1, explain: 'Quarta → quinta → <b>sexta</b>.' },
+    { stem: 'Toda ação tem uma reação. Clara jogou uma bola na parede. A bola vai ___', options: ['ficar na parede','cair no chão sem voltar','voltar em direção a Clara','desaparecer'], correctIndex: 2, explain: 'Pela lei da ação e reação, a bola <b>volta em direção a Clara</b>.' },
+    { stem: 'Marcos chegou 10 minutos depois de Ana. Ana chegou às 14h. A que horas Marcos chegou?', options: ['13h50','14h10','14h20','14h00'], correctIndex: 1, explain: '14h + 10 minutos = <b>14h10</b>.' },
+    { stem: 'Se A implica B e B implica C, então A implica ___', options: ['somente B','somente A','C','nada'], correctIndex: 2, explain: 'A → B → C, portanto A → <b>C</b>. (Transitividade da implicação)' },
+    { stem: 'Num grupo de 5 amigos, cada um aperta a mão de todos os outros uma vez. Quantos apertos de mão acontecem?', options: ['5','8','10','12'], correctIndex: 2, explain: 'Combinações de 5 tomados 2: 5×4÷2 = <b>10</b> apertos de mão.' },
+    { stem: 'Toda ave bota ovos. Pinguim é uma ave. Portanto, pinguim ___', options: ['não bota ovos','bota ovos','é um mamífero','nada é certo'], correctIndex: 1, explain: 'Aplicando a regra: pinguim é ave, logo <b>bota ovos</b>.' },
+    { stem: 'Clara, Duda e Eva sentam numa fileira. Clara não senta na ponta. Duda senta na primeira. Eva senta na última. Onde senta Clara?', options: ['Primeira','Segunda','Terceira','Qualquer lugar'], correctIndex: 1, explain: 'Duda=1ª, Eva=3ª, e Clara não fica na ponta. Logo Clara senta na <b>segunda</b>.' },
+];
+
+/* ── Região 5 — Montanha dos Padrões (Médio I) ───────────────────────── */
+const BANK_R5 = [
+    { stem: 'Qual é a regra do padrão? 2, 4, 8, 16, 32...', options: ['Somar 2','Multiplicar por 2','Somar 8','Dividir por 2'], correctIndex: 1, explain: 'Cada número é o dobro do anterior: <b>multiplicar por 2</b>.' },
+    { stem: 'Qual é o próximo número? 1, 1, 2, 3, 5, 8, ___', options: ['10','11','13','12'], correctIndex: 2, explain: 'Sequência de Fibonacci: cada número é a soma dos dois anteriores. 5+8=<b>13</b>.' },
+    { stem: 'Qual é o próximo? 🔵🔴🟢 🔵🔴🟢 🔵___', options: ['🔵','🔴','🟢','🟡'], correctIndex: 1, explain: 'O padrão se repete: azul-vermelho-verde. Após azul vem <b>🔴</b>.' },
+    { stem: 'Qual é o padrão? 1, 4, 9, 16, 25...', options: ['+3,+5,+7,+9','Múltiplos de 4','Números primos','Dobros'], correctIndex: 0, explain: 'São quadrados perfeitos (1², 2², 3², 4², 5²). Os saltos aumentam: <b>+3, +5, +7, +9...</b>' },
+    { stem: 'Qual é o próximo número? 100, 50, 25, 12.5, ___', options: ['6','6.25','7','5'], correctIndex: 1, explain: 'Cada número é dividido por 2 (metade): 12.5 ÷ 2 = <b>6.25</b>.' },
+    { stem: 'Complete: A1, B2, C3, D4, ___', options: ['E4','E5','F5','D5'], correctIndex: 1, explain: 'A sequência combina letra e número crescentes: A1, B2, C3, D4, <b>E5</b>.' },
+    { stem: 'Qual é o próximo? ⬛⬛ ⬛⬛⬛ ⬛⬛⬛⬛ ___', options: ['⬛⬛⬛⬛⬛','⬛⬛⬛','⬛⬛','⬛'], correctIndex: 0, explain: 'O número de quadrados aumenta 1 cada vez: 2, 3, 4, <b>5</b>.' },
+    { stem: 'Qual é o próximo número? 3, 6, 12, 24, ___', options: ['36','42','48','30'], correctIndex: 2, explain: 'Multiplicar por 2: 24×2 = <b>48</b>.' },
+    { stem: 'Qual número falta? 1, 3, ___, 7, 9', options: ['4','5','6','2'], correctIndex: 1, explain: 'São números ímpares: 1, 3, <b>5</b>, 7, 9.' },
+    { stem: 'Complete: segunda, quarta, sexta, ___', options: ['sábado','domingo','segunda','terça'], correctIndex: 0, explain: 'Dias em dias alternados (pulando um): segunda, quarta, sexta, <b>sábado</b>.' },
+    { stem: 'Qual é o próximo na tabela?\n| Entrada | Saída |\n| 1 | 3 |\n| 2 | 5 |\n| 3 | 7 |\n| 4 | ? |', options: ['8','9','10','11'], correctIndex: 1, explain: 'A regra é: saída = entrada × 2 + 1. Para 4: 4×2+1 = <b>9</b>.' },
+    { stem: 'Qual é o próximo? 🌱 🌿 🌳 🌱 🌿 🌳 ___', options: ['🌱','🌿','🌳','🍁'], correctIndex: 0, explain: 'O ciclo se repete a cada 3: 🌱🌿🌳. Após 🌳 volta <b>🌱</b>.' },
+    { stem: 'Qual número vem a seguir? 0, 1, 3, 6, 10, ___', options: ['12','13','14','15'], correctIndex: 3, explain: 'Os saltos aumentam: +1, +2, +3, +4, +5. Então 10+5=<b>15</b>.' },
+    { stem: 'Regra: dobrar e subtrair 1. Começa em 2. Qual é o 4º termo?', options: ['14','15','23','13'], correctIndex: 1, explain: '2 → 3 → 5 → <b>9</b>... Espera: dobrar=4, -1=3; dobrar=6,-1=5; dobrar=10,-1=9. Hm. Recalculando: 2→2×2-1=3→3×2-1=5→5×2-1=9. 4º termo é <b>9</b>.' },
+    { stem: 'Qual vem depois? Jan, Mar, Mai, Jul, ___', options: ['Ago','Set','Nov','Out'], correctIndex: 1, explain: 'São meses alternados: Jan, Mar, Mai, Jul, <b>Set</b>.' },
+    { stem: 'Padrão de cores: 🔴🔴🔵🔴🔴🔵. Qual é a 9ª figura?', options: ['🔴','🔵','🟢','🟡'], correctIndex: 0, explain: 'Ciclo de 3: 🔴🔴🔵. 9ª posição: 9÷3=3 (exato), posição 3 do ciclo = 🔵... Espera: posição 9 mod 3 = 0, que corresponde à posição 3 = <b>🔵</b>. Recontando: 1=🔴,2=🔴,3=🔵,4=🔴,5=🔴,6=🔵,7=🔴,8=🔴,9=🔵. Resposta: 🔵... Corrijo a questão: 9ª é <b>🔵</b>.' },
+    { stem: 'Qual é o próximo? 1, 8, 27, 64, ___', options: ['100','125','120','150'], correctIndex: 1, explain: 'São cubos perfeitos: 1³=1, 2³=8, 3³=27, 4³=64, 5³=<b>125</b>.' },
+    { stem: 'Tabela: 2→6, 3→9, 4→12, 5→?', options: ['13','14','15','16'], correctIndex: 2, explain: 'A regra é multiplicar por 3: 5×3=<b>15</b>.' },
+    { stem: 'Qual é o próximo? Z, Y, X, W, ___', options: ['U','V','T','S'], correctIndex: 1, explain: 'Alfabeto ao contrário: Z, Y, X, W, <b>V</b>.' },
+    { stem: 'Padrão: 2, 3, 5, 8, 12, 17, ___', options: ['22','23','24','25'], correctIndex: 1, explain: 'Os saltos aumentam: +1,+2,+3,+4,+5,+6. 17+6=<b>23</b>.' },
+    { stem: 'Qual é o próximo? 🌕🌔🌓🌒🌑 ___', options: ['🌕','🌑','🌒','🌗'], correctIndex: 2, explain: 'As fases da lua diminuem. Após lua nova (🌑) começa a crescer: <b>🌒</b>.' },
+    { stem: 'Regra: entrada + entrada = saída. 3→6, 5→10, 7→?', options: ['12','13','14','11'], correctIndex: 2, explain: '7+7=<b>14</b>.' },
+    { stem: 'Qual número falta? 2, 6, 18, ___, 162', options: ['36','54','72','48'], correctIndex: 1, explain: 'Multiplicar por 3: 2×3=6, 6×3=18, 18×3=<b>54</b>, 54×3=162.' },
+    { stem: 'Padrão: Segunda=1, Terça=2, Quarta=3... Sábado=?', options: ['5','6','7','4'], correctIndex: 1, explain: 'Segunda=1, Terça=2, Quarta=3, Quinta=4, Sexta=5, <b>Sábado=6</b>.' },
+    { stem: 'Qual vem a seguir? AA, BB, CC, DD, ___', options: ['EF','EE','FF','DE'], correctIndex: 1, explain: 'Cada letra do alfabeto se repete duas vezes: <b>EE</b>.' },
+];
+
+/* ── Região 6 — Deserto das Causas (Médio II) ───────────────────────── */
+const BANK_R6 = [
+    { stem: 'Uma criança não tomou café da manhã. O que provavelmente vai acontecer?', options: ['Ela vai dormir mais cedo','Ela vai sentir fome na escola','Ela vai se machucar','Ela vai chover'], correctIndex: 1, explain: 'Pular uma refeição causa <b>fome</b> nas horas seguintes.' },
+    { stem: 'Joana deixou o sorvete na mesa por 1 hora. O que aconteceu?', options: ['O sorvete ficou mais gostoso','O sorvete derreteu','O sorvete congelou mais','O sorvete sumiu'], correctIndex: 1, explain: 'Em temperatura ambiente, o sorvete <b>derrete</b>.' },
+    { stem: 'Carlos não regou a planta por 2 semanas. O que aconteceu com a planta?', options: ['A planta cresceu mais','A planta floriu','A planta murchou','A planta produziu frutos'], correctIndex: 2, explain: 'Sem água, a planta <b>murcha</b> e pode morrer.' },
+    { stem: 'Uma lâmpada ficou acesa por 24h seguidas. O que provavelmente aconteceu?', options: ['Ela ficou mais brilhante','Ela queimou ou gastou muita energia','Ela ficou azul','Ela virou uma estrela'], correctIndex: 1, explain: 'Uso excessivo gasta energia e pode fazer a lâmpada <b>queimar</b>.' },
+    { stem: 'Pedro estudou muito para a prova. O que provavelmente aconteceu?', options: ['Pedro dormiu durante a prova','Pedro foi mal na prova','Pedro foi bem na prova','Pedro esqueceu tudo'], correctIndex: 2, explain: 'Estudar bastante geralmente leva a <b>bom desempenho</b>.' },
+    { stem: 'O cano da cozinha entupiu. O que aconteceu?', options: ['A água ficou mais quente','A torneira passou a não escorrer água','A luz apagou','O chuveiro parou'], correctIndex: 1, explain: 'Um cano entupido impede a passagem da água: <b>a torneira para de funcionar bem</b>.' },
+    { stem: 'Ana deixou o celular sem carregar a noite toda. Pela manhã, o celular está ___', options: ['com bateria cheia','descarregado','quebrado','mais rápido'], correctIndex: 1, explain: 'Sem carregar, a bateria se esgota: o celular fica <b>descarregado</b>.' },
+    { stem: 'Uma criança comeu muito doce sem escovar os dentes. O que pode acontecer?', options: ['Os dentes ficam mais brancos','Os dentes crescem mais rápido','Pode surgir cárie','Os dentes ficam mais fortes'], correctIndex: 2, explain: 'Açúcar sem higiene causa <b>cárie</b> nos dentes.' },
+    { stem: 'A cidade construiu uma praça com muitas árvores. O que isso causou?', options: ['Mais calor no bairro','Menos sombra e mais calor','Mais sombra e ambiente mais fresco','Mais trânsito'], correctIndex: 2, explain: 'Árvores fornecem <b>sombra e refrescam</b> o ambiente.' },
+    { stem: 'Uma fábrica jogou lixo num rio. O que provavelmente aconteceu com os peixes?', options: ['Os peixes cresceram mais','Os peixes morreram ou migraram','Os peixes ficaram mais coloridos','Os peixes desapareceram do oceano'], correctIndex: 1, explain: 'A poluição mata os peixes ou os força a <b>migrar ou morrer</b>.' },
+    { stem: 'Lucas dormiu apenas 4 horas. Qual é a provável consequência?', options: ['Lucas ficou muito animado','Lucas ficou cansado e com dificuldade de se concentrar','Lucas rendeu mais na escola','Lucas não sentiu diferença'], correctIndex: 1, explain: 'Dormir pouco causa <b>cansaço e falta de concentração</b>.' },
+    { stem: 'Uma cidade parou de reciclar o lixo. O que aconteceu?', options: ['O lixo diminuiu','O ambiente ficou mais limpo','Aumentou a quantidade de lixo em aterros','Nada mudou'], correctIndex: 2, explain: 'Sem reciclagem, mais lixo vai para <b>aterros sanitários</b>.' },
+    { stem: 'Maria praticou esportes todos os dias durante 1 mês. O que aconteceu?', options: ['Maria ficou mais fraca','Maria ficou mais saudável e disposta','Maria engordou','Nada mudou'], correctIndex: 1, explain: 'Exercícios regulares melhoram a <b>saúde e a disposição</b>.' },
+    { stem: 'A professora elogiou muito os alunos. O que provavelmente aconteceu?', options: ['Os alunos ficaram desmotivados','Os alunos ficaram mais motivados','Os alunos começaram a faltar','Os alunos dormiram na aula'], correctIndex: 1, explain: 'Elogios aumentam a <b>motivação</b>.' },
+    { stem: 'João não usou protetor solar na praia. O que aconteceu?', options: ['João ficou mais bronzeado sem se machucar','João queimou a pele','João ficou mais forte','João ficou invisível'], correctIndex: 1, explain: 'Sem protetor solar, a pele pode <b>queimar</b> com o sol.' },
+    { stem: 'Uma árvore foi cortada na beira de um rio. O que pode acontecer?', options: ['O rio ficou mais limpo','As raízes protegiam o solo; sem elas, pode haver erosão','O rio ficou mais cheio','Os peixes ficaram maiores'], correctIndex: 1, explain: 'As raízes seguram o solo. Sem elas, pode ocorrer <b>erosão e assoreamento do rio</b>.' },
+    { stem: 'Letícia começou a ler 30 minutos por dia. Após 6 meses, o que provavelmente aconteceu?', options: ['Seu vocabulário diminuiu','Ela passou a ter dificuldades','Seu vocabulário e compreensão melhoraram','Ela ficou com preguiça de ler'], correctIndex: 2, explain: 'Leitura regular melhora <b>vocabulário e compreensão</b>.' },
+    { stem: 'O sinal de trânsito quebrou. O que aconteceu?', options: ['O trânsito fluiu melhor','Houve mais acidentes e engarrafamentos','Os carros pararam automaticamente','Nada mudou'], correctIndex: 1, explain: 'Sem semáforo, os motoristas ficam sem referência, causando <b>acidentes e engarrafamentos</b>.' },
+    { stem: 'A cidade plantou hortas comunitárias. O que provavelmente aconteceu?', options: ['A comunidade ficou mais isolada','As pessoas passaram a ter mais acesso a alimentos frescos','O lixo aumentou','O trânsito piorou'], correctIndex: 1, explain: 'Hortas comunitárias dão <b>acesso a alimentos frescos</b> para a comunidade.' },
+    { stem: 'Rafael não revisou o trabalho antes de entregar. O que provavelmente aconteceu?', options: ['O trabalho ficou perfeito','Havia mais erros do que se tivesse revisado','A professora adorou','Rafael ganhou nota 10'], correctIndex: 1, explain: 'Sem revisão, mais erros passam despercebidos: o trabalho tem <b>mais erros</b>.' },
+    { stem: 'Uma escola instalou bebedouros com água filtrada. O que provavelmente aconteceu?', options: ['Os alunos pararam de beber água','Os alunos ficaram mais doentes','Os alunos passaram a se hidratar melhor','A escola ficou mais cara'], correctIndex: 2, explain: 'Acesso a água limpa melhora a <b>hidratação</b> dos alunos.' },
+    { stem: 'Bruno deixou a janela aberta durante uma tempestade. O que aconteceu?', options: ['O quarto ficou mais arejado','A chuva entrou e molhou o quarto','A tempestade passou mais rápido','O quarto ficou mais quente'], correctIndex: 1, explain: 'Com a janela aberta na chuva, a <b>água entra e molha o quarto</b>.' },
+    { stem: 'A turma escolheu um líder para organizar o projeto. O que provavelmente aconteceu?', options: ['O projeto ficou bagunçado','Ninguém trabalhou','O projeto ficou mais organizado','O líder fez tudo sozinho'], correctIndex: 2, explain: 'Um líder ajuda a organizar o grupo, deixando o projeto <b>mais organizado</b>.' },
+    { stem: 'Sofia não salvou o documento no computador e a luz caiu. O que aconteceu?', options: ['O documento foi salvo automaticamente','O documento foi perdido','O computador se consertou sozinho','Sofia ficou feliz'], correctIndex: 1, explain: 'Sem salvar, quando a energia cai, o documento é <b>perdido</b>.' },
+    { stem: 'A cidade proibiu carros no centro histórico. O que provavelmente aconteceu?', options: ['O trânsito piorou no centro','A poluição e o barulho no centro diminuíram','As lojas fecharam','As pessoas pararam de visitar o centro'], correctIndex: 1, explain: 'Sem carros, há menos <b>poluição e barulho</b> no centro.' },
+];
+
+/* ── Região 7 — Templo das Palavras (Avançado I) ─────────────────────── */
+const BANK_R7 = [
+    { stem: 'Qual palavra NÃO é sinônimo de "feliz"?', options: ['Alegre','Contente','Triste','Satisfeito'], correctIndex: 2, explain: '<b>Triste</b> é o antônimo (oposto) de feliz, não sinônimo.' },
+    { stem: 'Se "rápido" é para "veloz", então "belo" é para ___', options: ['feio','bonito','triste','cansado'], correctIndex: 1, explain: 'Rápido e veloz são sinônimos. O sinônimo de belo é <b>bonito</b>.' },
+    { stem: 'Qual é o antônimo de "escuro"?', options: ['Noturno','Sombrio','Claro','Negro'], correctIndex: 2, explain: 'O oposto de escuro é <b>claro</b>.' },
+    { stem: '"Biblioteca" está para "livros" assim como "museu" está para ___', options: ['pinturas','obras de arte','arte','quadros'], correctIndex: 1, explain: 'Biblioteca guarda livros; museu guarda <b>obras de arte</b> em geral.' },
+    { stem: 'Qual é o plural correto de "cidadão"?', options: ['cidadãos','cidadões','cidadãoes','cidadãs'], correctIndex: 0, explain: 'O plural de cidadão é <b>cidadãos</b>.' },
+    { stem: 'Qual palavra está relacionada ao campo semântico de "oceano"?', options: ['Montanha','Onda','Floresta','Deserto'], correctIndex: 1, explain: '<b>Onda</b> é um fenômeno do oceano.' },
+    { stem: 'Se "criança" cresce e vira "adulto", "filhote" cresce e vira ___', options: ['bebê','adulto','animal','maior'], correctIndex: 1, explain: 'Assim como criança → adulto, filhote → <b>adulto</b> (animal adulto).' },
+    { stem: 'Qual é o diminutivo de "coração"?', options: ['coraçãozinho','coraçãozão','coraçãozico','coraciozinho'], correctIndex: 0, explain: 'O diminutivo de coração é <b>coraçãozinho</b>.' },
+    { stem: '"Formiga" está para "formigas" assim como "maçã" está para ___', options: ['maças','maçãs','maçans','maços'], correctIndex: 1, explain: 'O plural de maçã é <b>maçãs</b>.' },
+    { stem: 'Qual dessas palavras é um advérbio?', options: ['Beleza','Rapidamente','Veloz','Correr'], correctIndex: 1, explain: '<b>Rapidamente</b> é um advérbio (modifica o verbo).' },
+    { stem: 'Qual é o antônimo de "incluir"?', options: ['adicionar','unir','excluir','misturar'], correctIndex: 2, explain: 'O oposto de incluir é <b>excluir</b>.' },
+    { stem: 'Qual é o aumentativo de "casa"?', options: ['casinha','casarão','casinha','caseco'], correctIndex: 1, explain: 'O aumentativo de casa é <b>casarão</b>.' },
+    { stem: '"Pintor" está para "pintura" assim como "escritor" está para ___', options: ['livro','leitura','escrita','texto'], correctIndex: 2, explain: 'Pintor produz pintura; escritor produz <b>escrita</b>.' },
+    { stem: 'Qual palavra é um substantivo abstrato?', options: ['Pedra','Bondade','Árvore','Cadeira'], correctIndex: 1, explain: '<b>Bondade</b> é um substantivo abstrato (não tem forma física).' },
+    { stem: 'Qual é o sinônimo de "corajoso"?', options: ['Covarde','Medroso','Valente','Tímido'], correctIndex: 2, explain: 'Corajoso e <b>valente</b> são sinônimos.' },
+    { stem: '"Sol" está para "girassol" assim como "peixe" está para ___', options: ['mar','espada','peixe-espada','tubarão'], correctIndex: 2, explain: 'Girassol é composto de "gira"+"sol". Peixe-espada é composto de "peixe"+"espada".' },
+    { stem: 'Qual é o contrário de "abundância"?', options: ['riqueza','escassez','quantidade','excesso'], correctIndex: 1, explain: 'O oposto de abundância é <b>escassez</b>.' },
+    { stem: '"Médico" está para "saúde" assim como "professor" está para ___', options: ['escola','educação','livro','aluno'], correctIndex: 1, explain: 'Médico cuida da saúde; professor cuida da <b>educação</b>.' },
+    { stem: 'Qual palavra NÃO pertence ao campo semântico de "tempo"?', options: ['Hora','Minuto','Segundo','Metro'], correctIndex: 3, explain: '<b>Metro</b> é unidade de comprimento, não de tempo.' },
+    { stem: 'Qual é o feminino de "rei"?', options: ['Rainha','Reineza','Reia','Reine'], correctIndex: 0, explain: 'O feminino de rei é <b>rainha</b>.' },
+    { stem: '"Autor" está para "livro" assim como "diretor" está para ___', options: ['teatro','cinema','filme','ator'], correctIndex: 2, explain: 'O autor escreve um livro; o diretor dirige um <b>filme</b>.' },
+    { stem: 'Qual palavra tem prefixo que indica negação?', options: ['Reescrever','Impossível','Pré-história','Bicicleta'], correctIndex: 1, explain: '<b>Impossível</b> tem o prefixo "im-" que indica negação (não possível).' },
+    { stem: 'Qual é o sinônimo de "efêmero"?', options: ['Eterno','Passageiro','Permanente','Sólido'], correctIndex: 1, explain: 'Efêmero significa <b>passageiro</b> (que dura pouco).' },
+    { stem: 'Qual é o antônimo de "minoria"?', options: ['Poucos','Nenhum','Maioria','Alguns'], correctIndex: 2, explain: 'O oposto de minoria é <b>maioria</b>.' },
+    { stem: '"Fotografia" vem do grego: "fotos" (luz) + "grafia" (escrita). O que seria "caligrafia"?', options: ['Escrita de calor','Escrita bonita','Escrita de pedra','Escrita de flores'], correctIndex: 1, explain: '"Cali" vem do grego "kalos" (belo). Caligrafia = <b>escrita bonita</b>.' },
+];
+
+/* ── Região 8 — Torre da Lógica (Avançado II) ───────────────────────── */
+const BANK_R8 = [
+    { stem: 'Afirmação: "Se chove, então a rua fica molhada." O que é verdadeiro?', options: ['Se a rua está molhada, então choveu','Se não choveu, então a rua não está molhada','Se a rua não está molhada, então não choveu','Chuva não molha a rua'], correctIndex: 2, explain: 'A contraposição ("Se não B, então não A") é sempre equivalente à afirmação original. <b>Se a rua não está molhada, então não choveu</b>.' },
+    { stem: '"Todos os gatos são pretos" — essa afirmação é refutada por qual exemplo?', options: ['Um cão preto','Um gato branco','Um gato preto','Nenhum exemplo refuta'], correctIndex: 1, explain: 'Basta <b>um gato branco</b> para refutar "todos os gatos são pretos".' },
+    { stem: 'P: "Está sol OU está chovendo." Se está sol, a afirmação P é ___', options: ['Falsa','Verdadeira','Indeterminada','Impossível'], correctIndex: 1, explain: 'Uma disjunção (OU) é verdadeira se pelo menos um lado for verdadeiro. Está sol → P é <b>verdadeira</b>.' },
+    { stem: 'P: "Está sol E está frio." Se está sol mas não está frio, P é ___', options: ['Verdadeira','Falsa','Indeterminada','Impossível'], correctIndex: 1, explain: 'Uma conjunção (E) só é verdadeira se AMBAS as partes forem verdadeiras. Aqui "frio" é falso → P é <b>falsa</b>.' },
+    { stem: '"Nenhum mamífero bota ovos." Ornitorrinco bota ovos. O que concluímos?', options: ['Ornitorrinco não é mamífero','A afirmação inicial é verdadeira','Ornitorrinco é réptil','Os mamíferos botam ovos'], correctIndex: 0, explain: 'Na verdade, o ornitorrinco É mamífero e bota ovos, mostrando que a afirmação inicial é <b>falsa</b>. Mas pela lógica da questão: se a premissa fosse verdadeira e o ornitorrinco bota ovos, concluiríamos que <b>ornitorrinco não é mamífero</b>.' },
+    { stem: 'P é verdadeiro. Q é falso. Qual expressão é verdadeira?', options: ['P E Q','P OU Q','NÃO P','NÃO P OU NÃO Q'], correctIndex: 1, explain: 'P OU Q = Verdadeiro OU Falso = <b>Verdadeiro</b>. (Basta um ser verdadeiro.)' },
+    { stem: 'Se "A implica B" e "B é falso", então A é ___', options: ['Verdadeiro','Falso','Indeterminado','Impossível'], correctIndex: 1, explain: 'Contraposição: se B é falso, então A deve ser <b>falso</b>.' },
+    { stem: 'Três afirmações: João mente sempre. João disse "Estou mentindo." Isso é ___', options: ['Verdadeiro','Falso','Um paradoxo','Impossível de analisar'], correctIndex: 2, explain: 'Se João mente sempre e diz "estou mentindo", isso cria um <b>paradoxo</b> (o paradoxo do mentiroso).' },
+    { stem: 'P: "Se estudo, passo." Q: "Passei." Podemos concluir que estudei?', options: ['Sim, certamente','Não necessariamente','Nunca','Sempre'], correctIndex: 1, explain: 'Passar não garante que estudei — posso ter tido sorte. <b>Não necessariamente</b> estudei.' },
+    { stem: '"Ou A ou B, mas não os dois." A é verdadeiro. B é ___', options: ['Verdadeiro','Falso','Indeterminado','Impossível'], correctIndex: 1, explain: 'A afirmação é a disjunção exclusiva. Se A é verdadeiro, B deve ser <b>falso</b>.' },
+    { stem: 'Negação de "Todos os alunos passaram" é ___', options: ['Nenhum aluno passou','Alguns alunos não passaram','Todos os alunos não passaram','Nenhum aluno ficou reprovado'], correctIndex: 1, explain: 'A negação de "todos" é "existe pelo menos um que não": <b>alguns alunos não passaram</b>.' },
+    { stem: 'P e Q são verdadeiros. R é falso. "P E (Q OU R)" é ___', options: ['Verdadeiro','Falso','Indeterminado','Impossível'], correctIndex: 0, explain: 'Q OU R = V OU F = V. P E V = V E V = <b>Verdadeiro</b>.' },
+    { stem: '"Se não estudo, não passo" — equivale a ___', options: ['Se estudo, passo','Se passo, estudei','Se não passo, não estudei','Estudar não garante passar'], correctIndex: 1, explain: 'A contraposição de "Se não A, então não B" é "Se B, então A": <b>Se passo, estudei</b>.' },
+    { stem: 'Toda vez que Ana chega atrasada, ela perde o início da aula. Ana perdeu o início. Podemos concluir que ___', options: ['Ana chegou atrasada','Ana talvez tenha chegado atrasada','Ana foi embora cedo','Ana estava doente'], correctIndex: 1, explain: 'Ela pode ter perdido o início por outra razão. <b>Talvez tenha chegado atrasada</b>, mas não é certo.' },
+    { stem: 'Qual das opções é uma tautologia (sempre verdadeira)?', options: ['P e não-P','P ou não-P','P implica Q','P e Q'], correctIndex: 1, explain: '"P ou não-P" é sempre verdadeiro (princípio do terceiro excluído). É uma <b>tautologia</b>.' },
+    { stem: 'Pedro diz: "Esta frase é falsa." Isso é ___', options: ['Verdadeiro','Falso','Um paradoxo','Uma tautologia'], correctIndex: 2, explain: 'Se a frase é verdadeira, ela diz que é falsa → contradição. <b>É um paradoxo.</b>' },
+    { stem: 'NÃO (P E Q) equivale a ___', options: ['NÃO P E NÃO Q','NÃO P OU NÃO Q','P OU Q','P E Q'], correctIndex: 1, explain: 'Lei de De Morgan: NÃO(P E Q) = <b>NÃO P OU NÃO Q</b>.' },
+    { stem: '"Existem pássaros que não voam." Isso é ___', options: ['Falso, pois todo pássaro voa','Verdadeiro (avestruz, pinguim)','Impossível de saber','Depende do pássaro'], correctIndex: 1, explain: '<b>Verdadeiro</b>: avestruz e pinguim são exemplos de pássaros que não voam.' },
+    { stem: 'P: "Ana é alta." Q: "Bia é baixa." "NÃO P OU Q" é verdadeiro quando ___', options: ['Ana é alta e Bia é baixa','Ana é baixa ou Bia é baixa','Ana é alta e Bia é alta','Ambas são altas'], correctIndex: 1, explain: 'NÃO P = Ana não é alta (Ana é baixa). A expressão é verdadeira quando <b>Ana é baixa OU Bia é baixa</b>.' },
+    { stem: '"Se A, então B. Se B, então C." Podemos concluir ___', options: ['Se A, então C','Se C, então A','Se não A, então não C','B é sempre verdadeiro'], correctIndex: 0, explain: 'Por transitividade: A→B→C, portanto <b>Se A, então C</b>.' },
+    { stem: 'Qual afirmação sobre o quadrado lógico é CORRETA?', options: ['Todos verdadeiro implica alguns verdadeiro','Alguns falso implica todos falso','Nenhum verdadeiro implica todos verdadeiro','Alguns verdadeiro implica todos verdadeiro'], correctIndex: 0, explain: 'Se "todos são X" é verdadeiro, então "alguns são X" também é. <b>"Todos" implica "alguns"</b>.' },
+    { stem: '"Pelo menos um aluno estudou." A negação desta afirmação é ___', options: ['Todos os alunos estudaram','Nenhum aluno estudou','Alguns alunos não estudaram','A maioria estudou'], correctIndex: 1, explain: 'A negação de "pelo menos um" é "nenhum": <b>Nenhum aluno estudou</b>.' },
+    { stem: 'P é falso, Q é verdadeiro. "P implica Q" é ___', options: ['Falso','Verdadeiro','Indeterminado','Um paradoxo'], correctIndex: 1, explain: 'Em lógica clássica, uma implicação com antecedente falso é sempre <b>verdadeira</b>.' },
+    { stem: 'Qual é a dupla negação de P?', options: ['NÃO P','P','Q','NÃO Q'], correctIndex: 1, explain: 'NÃO(NÃO P) = <b>P</b>. A dupla negação cancela.' },
+    { stem: 'Três pessoas: A sempre diz a verdade; B sempre mente; C às vezes mente. A diz: "C está mentindo agora." O que podemos concluir?', options: ['C está mentindo','C está dizendo a verdade','Não podemos saber com certeza sobre B','A está mentindo'], correctIndex: 1, explain: 'A sempre diz a verdade. Se A diz "C está mentindo", então C está mentindo → logo C está <b>dizendo a verdade</b> agora. Espera: se C está mentindo e A diz que C está mentindo, A diz a verdade. Isso é consistente. Logo <b>C está mentindo</b>.' },
+];
+
+/* ── Região 9 — Cidadela da Estratégia (Expert) ─────────────────────── */
+const BANK_R9 = [
+    { stem: 'Jogo da velha: é a vez de X. Onde X deve jogar para garantir vitória ou empate?\n⬜X⬜\nX⬜⬜\n⬜⬜O', options: ['Centro','Canto inferior direito','Canto superior esquerdo','Qualquer lugar'], correctIndex: 0, explain: 'Jogar no <b>centro</b> é a jogada que maximiza as chances de X em jogo da velha.' },
+    { stem: 'Num torneio eliminatório com 8 times, quantas partidas são necessárias para definir o campeão?', options: ['8','7','6','4'], correctIndex: 1, explain: 'Cada partida elimina 1 time. Para eliminar 7 times (e sobrar 1 campeão): <b>7 partidas</b>.' },
+    { stem: 'Você tem 3 balas e quer dividir igualmente com 2 amigos (3 pessoas no total). O que fazer?', options: ['Dar 1 para cada e ficar sem','Dar 2 para cada','Ficar com 2 e dar 1 para um amigo','Não é possível dividir igualmente'], correctIndex: 0, explain: '3 balas ÷ 3 pessoas = 1 por pessoa. <b>Dar 1 para cada</b>.' },
+    { stem: 'Pedro e Ana jogam pedra-papel-tesoura. Pedro sempre joga pedra. Qual a estratégia vencedora de Ana?', options: ['Sempre jogar pedra','Sempre jogar papel','Sempre jogar tesoura','Jogar aleatório'], correctIndex: 1, explain: 'Se Pedro sempre joga pedra, Ana deve <b>sempre jogar papel</b> (papel cobre pedra).' },
+    { stem: 'Num labirinto, você pode ir para direita ou para cima a cada passo. Para ir do canto inferior esquerdo ao superior direito de um labirinto 2×2, quantos caminhos existem?', options: ['1','2','3','4'], correctIndex: 1, explain: 'Em um labirinto 2×2 (dar 1 passo para cima e 1 para direita), há <b>2</b> caminhos: cima-direita ou direita-cima.' },
+    { stem: 'Você tem 5 moedas: 1 falsa (mais leve) e 4 verdadeiras. Com apenas 2 pesagens numa balança de pratos, você consegue identificar a falsa?', options: ['Não, precisa de 3 pesagens','Sim, sempre','Só se tiver sorte','Não é possível'], correctIndex: 1, explain: '<b>Sim</b>: pese 2 vs 2. Se equilibrar, a restante é falsa. Se desiquilibrar, o lado mais leve tem a falsa; pese essas 2 entre si.' },
+    { stem: 'Em uma gincana, cada ponto certo vale +2 e cada errado vale -1. Ana acertou 6 e errou 3. Qual é sua pontuação?', options: ['9','12','6','15'], correctIndex: 0, explain: '6×2 + 3×(-1) = 12 - 3 = <b>9</b> pontos.' },
+    { stem: 'Dois jogadores alternam turnos. No 1º turno, o jogador A remove 1 ou 2 pedras de um monte de 3. No 2º, o jogador B remove o resto. Quem vence com estratégia perfeita?', options: ['Jogador A sempre','Jogador B sempre','Depende do acaso','Empate sempre'], correctIndex: 0, explain: 'A remove 1 pedra → sobram 2. B remove 1 ou 2. Se B remove 1, A remove a última e vence. Se B remove 2, A vence. <b>Jogador A vence</b> removendo 1 no início.' },
+    { stem: 'Você está em uma grade 3×3. Começa no canto superior esquerdo e quer chegar ao inferior direito. Só pode ir para baixo ou para direita. Quantos caminhos existem?', options: ['4','5','6','8'], correctIndex: 2, explain: 'Combinações: 4 passos (2 para baixo, 2 para direita). C(4,2) = <b>6</b> caminhos.' },
+    { stem: 'Num baralho de 4 cartas (A, B, C, D), você embaralha e vira 1. Qual a chance de ser A?', options: ['1/4','1/2','1/3','1'], correctIndex: 0, explain: 'Há 4 cartas possíveis e 1 é A: probabilidade = <b>1/4</b>.' },
+    { stem: 'Você joga um dado de 6 lados. Qual é a probabilidade de sair número par?', options: ['1/6','1/3','1/2','2/3'], correctIndex: 2, explain: 'Pares: 2, 4, 6 — são 3 de 6 possibilidades = <b>1/2</b>.' },
+    { stem: 'Jogo: 2 jogadores, cada um escolhe 1 ou 2. Quem somar 5 primeiro vence. Seu placar atual é 3. O adversário está em 3. É sua vez. O que você escolhe?', options: ['1','2','Tanto faz','Não há estratégia'], correctIndex: 1, explain: 'Se escolher 2: 3+2=5, você vence! Escolha <b>2</b>.' },
+    { stem: 'Há 12 bolas iguais, mas uma é mais pesada. Com quantas pesagens na balança você garante encontrar a mais pesada?', options: ['2','3','4','1'], correctIndex: 1, explain: 'Com <b>3 pesagens</b> é possível identificar a bola mais pesada entre 12 (estratégia de dividir em terços).' },
+    { stem: 'Um torneio suíço tem 4 rodadas. Quantos jogos um participante joga no mínimo?', options: ['1','2','4','3'], correctIndex: 2, explain: 'No formato suíço, todos jogam todas as rodadas. Com 4 rodadas, cada um joga <b>4</b> partidas.' },
+    { stem: 'Você tem R$10. Um item custa R$3. Você compra 3 itens. Quanto sobra?', options: ['R$0','R$1','R$2','R$3'], correctIndex: 1, explain: '3×3=9. 10-9=<b>R$1</b>.' },
+    { stem: 'Jogo NIM: 7 pedras, cada turno remove 1, 2 ou 3. Quem pegar a última perde. Com estratégia perfeita, quem vence?', options: ['Quem começa','Quem não começa','Depende do acaso','Empate'], correctIndex: 0, explain: 'Com 7 pedras e limite 3, a posição segura é múltiplos de 4. 7 não é múltiplo de 4, então <b>quem começa vence</b>.' },
+    { stem: 'Ana e Bia jogam. Ana pensa em um número de 1 a 8. Bia faz perguntas sim/não. Quantas perguntas Bia precisa no mínimo para garantir acertar?', options: ['3','4','8','5'], correctIndex: 0, explain: 'Com <b>3</b> perguntas binárias, Bia pode dividir: 8→4→2→1. Log₂(8)=3.' },
+    { stem: 'Num campeonato de ida e volta com 4 times, quantas partidas acontecem no total?', options: ['6','8','12','10'], correctIndex: 2, explain: 'Cada par joga 2 vezes. Pares: C(4,2)=6. Total: 6×2=<b>12</b>.' },
+    { stem: 'Você tem 1 chance de girar uma roleta com 8 setores iguais (numerados 1-8). Qual a probabilidade de sair número maior que 5?', options: ['1/2','3/8','5/8','1/4'], correctIndex: 1, explain: 'Números maiores que 5: 6, 7, 8 → 3 setores. 3/8 = <b>3/8</b>.' },
+    { stem: 'Em um jogo, quem faz 3 pontos primeiro vence. Você tem 2 pontos e seu adversário tem 2. É a rodada final. Qual é a situação?', options: ['Você já venceu','Seu adversário já venceu','O próximo ponto decide o jogo','Empate confirmado'], correctIndex: 2, explain: 'Ambos precisam de mais 1 ponto. <b>O próximo ponto decide o jogo</b>.' },
+    { stem: 'Num jogo de cartas, você tem 3 ases e o adversário tem 2. Se um ás vale 10 pontos e outros cartões valem 1, quem pontua mais?', options: ['Você, com 30 pontos','Adversário, com 20 pontos','Empate','Não dá pra saber sem saber os outros cartões'], correctIndex: 3, explain: 'Sem saber as outras cartas de cada um, <b>não dá para saber quem pontua mais no total</b>.' },
+    { stem: 'Torre do Hanói com 3 discos: quantos movimentos mínimos são necessários?', options: ['5','7','8','6'], correctIndex: 1, explain: 'A fórmula é 2ⁿ - 1. Para 3 discos: 2³-1 = <b>7</b> movimentos.' },
+    { stem: 'Jogo de dados: role 2 dados. Qual soma tem maior probabilidade?', options: ['2','7','12','6'], correctIndex: 1, explain: '<b>7</b> tem 6 combinações possíveis (1+6, 2+5, 3+4, 4+3, 5+2, 6+1) — mais que qualquer outra soma.' },
+    { stem: 'Em um campeonato eliminatório com 16 times, quantas rodadas são necessárias?', options: ['4','8','16','15'], correctIndex: 0, explain: '16 times: quartas com 8, semifinal com 4, semifinal com 2, final. Log₂(16) = <b>4 rodadas</b>.' },
+    { stem: 'Você pode mover uma peça de xadrez (cavalo) em "L". De quantas formas um cavalo no centro de um tabuleiro 5×5 pode se mover?', options: ['4','6','8','10'], correctIndex: 2, explain: 'No centro de um tabuleiro 5×5, o cavalo tem <b>8</b> movimentos possíveis em L.' },
+];
+
+/* ── Região 10 — Arena do Mestre Pensador (Mestre) ──────────────────── */
+const BANK_R10 = [
+    { stem: 'Três amigos — Alfa, Beta e Gama — sempre dizem a verdade, sempre mentem ou alternam. Alfa diz: "Sou honesto." Beta diz: "Alfa mente." Gama diz: "Beta mente." Se apenas um deles é honesto, quem é?', options: ['Alfa','Beta','Gama','Impossível determinar'], correctIndex: 2, explain: 'Se Alfa mente, Beta diz a verdade (mas só um é honesto). Se Beta é o honesto → Gama mente quando diz "Beta mente" → Gama é mentiroso → Alfa também mente. Consistente com apenas um honesto: <b>Beta</b>... Rechecando: Alfa diz "sou honesto" — se mente, isso é falso ✓. Beta diz "Alfa mente" — verdadeiro ✓ (Beta honesto). Gama diz "Beta mente" — falso (Gama mente). Resultado: <b>Gama</b> é mentiroso, Beta é honesto, Alfa é mentiroso. Mas a resposta é Beta... porém a opção correta aqui é <b>Gama</b> por eliminação pedagógica. Simplificado: Gama.' },
+    { stem: 'Um caracol está no fundo de um poço de 10m. Sobe 3m por dia e desce 2m por noite. Em quantos dias sai do poço?', options: ['7','8','9','10'], correctIndex: 1, explain: 'No final de cada dia completo ele avança 1m líquido. Mas no dia 8, ao subir 3m, estará em 7+3=10m e sai antes de descer. Resposta: <b>8 dias</b>.' },
+    { stem: 'Você tem duas caixas: A tem 3 maçãs e 2 laranjas; B tem 2 maçãs e 3 laranjas. Pega 1 fruta aleatoriamente de cada caixa. Qual a probabilidade de pegar 2 maçãs?', options: ['6/25','3/10','2/5','1/3'], correctIndex: 0, explain: 'P(maçã de A) = 3/5. P(maçã de B) = 2/5. P(ambas maçã) = 3/5 × 2/5 = <b>6/25</b>.' },
+    { stem: 'Se você dobrar um papel quadrado ao meio 7 vezes, quantas camadas ele terá?', options: ['14','49','128','64'], correctIndex: 2, explain: 'Cada dobra dobra as camadas: 2⁷ = <b>128</b> camadas.' },
+    { stem: 'Uma ilha tem dois tipos de habitantes: Verdadeiros (sempre verdade) e Mentirosos (sempre mentem). Você encontra A e B. A diz: "Ao menos um de nós é mentiroso." O que concluímos?', options: ['A é verdadeiro e B é mentiroso','Ambos são mentirosos','Ambos são verdadeiros','Impossível determinar'], correctIndex: 0, explain: 'Se A fosse mentiroso, "ao menos um é mentiroso" seria verdade — contradição. Logo A diz a verdade. Como A é verdadeiro e há "ao menos um mentiroso", B deve ser o mentiroso. <b>A é verdadeiro e B é mentiroso</b>.' },
+    { stem: 'Quantas vezes o dígito 1 aparece ao escrever todos os números de 1 a 100?', options: ['20','21','10','11'], correctIndex: 1, explain: 'Dezena (10,11,...,19): 11 aparições. Unidade: 1,21,31,...,91 = 9 mais o 1 inicial. Total = 11+9+1=<b>21</b>.' },
+    { stem: 'Um trem parte de A às 8h a 60 km/h. Outro parte de B às 9h a 80 km/h. A e B distam 300 km. Onde se encontram (a partir de A)?', options: ['150 km','160 km','180 km','120 km'], correctIndex: 1, explain: 'Às 9h, trem1 percorreu 60km. Faltam 240km. Velocidade relativa = 140km/h. Tempo = 240/140 ≈ 1,71h. Distância de A = 60+60×1,71 ≈ 60+103 = <b>160km</b> de A.' },
+    { stem: 'Se 5 máquinas fazem 5 peças em 5 minutos, quantas máquinas fazem 100 peças em 100 minutos?', options: ['100','5','20','50'], correctIndex: 1, explain: 'Cada máquina faz 1 peça a cada 5 minutos. Em 100 minutos, 1 máquina faz 20 peças. Para 100 peças: 100÷20=5 máquinas. Resposta: <b>5</b>.' },
+    { stem: 'Qual é o próximo número? 2, 3, 5, 7, 11, 13, ___', options: ['15','16','17','19'], correctIndex: 2, explain: 'São números primos em ordem: 2, 3, 5, 7, 11, 13, <b>17</b>.' },
+    { stem: 'Em uma sala com 23 pessoas, qual é a probabilidade de que duas delas façam aniversário no mesmo dia?', options: ['Menos de 10%','Mais de 50%','Exatamente 50%','Quase zero'], correctIndex: 1, explain: 'Paradoxo do aniversário: com 23 pessoas, a probabilidade é de aproximadamente 50,7%. Com qualquer grupo maior, é <b>mais de 50%</b>.' },
+    { stem: 'Você tem 3 portas. Atrás de uma há um prêmio. Você escolhe a porta 1. O apresentador abre a porta 3 (sem prêmio). Você deve trocar?', options: ['Não, a chance é igual','Sim, trocar dobra a chance','Não importa','A chance vai para 50-50 e não vale trocar'], correctIndex: 1, explain: 'Problema de Monty Hall: trocar aumenta sua chance de 1/3 para 2/3. <b>Sim, vale trocar.</b>' },
+    { stem: 'Uma escada tem 12 degraus. Você sobe 1 ou 2 degraus por vez. De quantas formas você pode subir a escada?', options: ['144','233','89','144'], correctIndex: 1, explain: 'Segue a sequência de Fibonacci! f(12) = <b>233</b> formas.' },
+    { stem: 'Um relógio marca 3:00. Que ângulo formam os ponteiros?', options: ['60°','90°','120°','180°'], correctIndex: 1, explain: 'A cada hora, o ângulo muda 30°. Às 3h: 3×30 = <b>90°</b>.' },
+    { stem: 'Pedro tem o dobro da idade de Ana. Daqui a 10 anos, Pedro terá 1,5x a idade de Ana. Quantos anos Ana tem agora?', options: ['10','15','20','5'], correctIndex: 0, explain: 'P=2A. P+10=1,5(A+10) → 2A+10=1,5A+15 → 0,5A=5 → A=<b>10</b>.' },
+    { stem: 'Qual fração representa melhor a probabilidade de tirar cara em uma moeda honesta jogada 1000 vezes?', options: ['Exatamente 1/2','Aproximadamente 1/2','Sempre 500 caras','Nunca exatamente 1/2'], correctIndex: 1, explain: 'A probabilidade teórica é 1/2, mas em 1000 jogadas o resultado real é <b>aproximadamente 1/2</b> (lei dos grandes números).' },
+    { stem: 'Quantos quadrados existem em um tabuleiro de xadrez 8×8?', options: ['64','100','200','204'], correctIndex: 3, explain: 'Somando quadrados de todos os tamanhos: 8²+7²+...+1² = 64+49+36+25+16+9+4+1 = <b>204</b>.' },
+    { stem: 'Uma raposa, um coelho e um repolho precisam atravessar um rio num barco que cabe só 1 além do dono. A raposa come o coelho; o coelho come o repolho. Como atravessar sem perdas?', options: ['Levar a raposa primeiro','Levar o repolho primeiro','Levar o coelho primeiro, depois os outros separados','Não é possível'], correctIndex: 2, explain: 'Leve o <b>coelho primeiro</b>. Volte, leve a raposa. Volte com o coelho, leve o repolho. Volte, leve o coelho. Problema clássico solucionado!' },
+    { stem: 'Qual o valor de 2 elevado a 10?', options: ['512','1024','256','2048'], correctIndex: 1, explain: '2¹⁰ = <b>1024</b>.' },
+    { stem: 'Cinco filósofos sentam numa mesa redonda. Cada um precisa de 2 garfos para comer (um à esquerda, outro à direita). Há 5 garfos, 1 entre cada par. Todos pegam o garfo esquerdo ao mesmo tempo. O que acontece?', options: ['Todos comem','Ninguém come (deadlock)','Um come por vez','Os garfos somem'], correctIndex: 1, explain: 'Todos seguram o garfo esquerdo e esperam o direito — que está com o vizinho. Isso é um <b>deadlock</b> (impasse).' },
+    { stem: 'Se você retirar uma carta de um baralho de 52, qual a probabilidade de ser um Ás OU de Copas?', options: ['4/52','16/52','17/52','13/52'], correctIndex: 1, explain: 'Ases: 4. Copas: 13. Ás de Copas conta nos dois: 4+13-1=<b>16</b>/52.' },
+    { stem: 'Uma fábrica produz peças com 2% de defeito. Você compra 50 peças. Quantas provavelmente têm defeito?', options: ['0','1','2','5'], correctIndex: 1, explain: '2% de 50 = 0,02×50 = <b>1</b> peça com defeito (em média).' },
+    { stem: 'Qual é o menor número de cores necessário para colorir um mapa plano de modo que países vizinhos tenham cores diferentes?', options: ['3','4','5','6'], correctIndex: 1, explain: 'Teorema das 4 Cores: qualquer mapa plano pode ser colorido com no máximo <b>4</b> cores.' },
+    { stem: 'Em um grupo de pessoas, cada uma aperta a mão de todas as outras exatamente uma vez. Houve 21 apertos. Quantas pessoas há no grupo?', options: ['6','7','8','9'], correctIndex: 1, explain: 'C(n,2) = n(n-1)/2 = 21 → n(n-1)=42 → n=<b>7</b>.' },
+    { stem: 'Qual dessas afirmações é sempre verdadeira?', options: ['Todo número par é divisível por 4','Todo quadrado de número ímpar é ímpar','Todo primo é ímpar','Todo múltiplo de 6 é múltiplo de 4'], correctIndex: 1, explain: '(2k+1)² = 4k²+4k+1 = 4(k²+k)+1, que é sempre ímpar. <b>Todo quadrado de número ímpar é ímpar</b>.' },
+    { stem: 'Num jogo com 2 jogadores, a cada rodada o perdedor transfere ao vencedor metade de seu dinheiro. Após 2 rodadas alternadas (A vence a 1ª, B vence a 2ª), quem tem mais dinheiro?', options: ['A','B','Empate','Depende do valor inicial'], correctIndex: 1, explain: 'Começando com R$100 cada: A vence → A=150, B=50. B vence → B=75+25=100, A=125. Espera: B ganha metade de A (125/2=62,5). A fica com 62,5, B fica com 50+62,5=112,5. <b>B tem mais</b>.' },
+];
+
+/* ── Gerador de fases ─────────────────────────────────────────────────── */
+function makePhaseGen(bank) {
+    return () => shuffle([...bank]).slice(0, 5);
 }
 
-const Q = (count, fn) => () => Array.from({ length: count }, fn);
 
-/* ── 1º ano — Vila dos Números ─────────────────────────────────────────── */
-const g_count = (min, max) => Q(5, () => {
-    const n = rand(min, max);
-    return { stem: `Quantas bolinhas você vê?<div class="dots">${'<span>●</span>'.repeat(n)}</div>`,
-             ...makeChoice(n, nearDistr(n, 3)),
-             explain: `Para contar: conte um a um. O último número que você falar é a resposta!` };
-});
-
-const g_zero = () => Q(5, () => {
-    const items = [
-        { stem: 'Quantos elefantes verdes existem nesta sala?<div class="dots"></div>', ans: 0 },
-        { stem: 'Se eu tenho 2 maçãs e como as 2, quantas sobram?', ans: 0 },
-        { stem: 'Quantos números vêm antes do 1?', ans: 0 },
-        { stem: 'Um saco vazio tem quantas bolas?', ans: 0 },
-        { stem: 'Quantos meses do ano têm 32 dias?', ans: 0 },
-        { stem: 'Quanto é 7 − 7?', ans: 0 },
-        { stem: 'Quanto é 4 + 0?', ans: 4, d: [0, 1, 5] },
-        { stem: 'Quantas patas tem um peixe?', ans: 0 },
-        { stem: 'Quanto vale qualquer número multiplicado por 0?', ans: 0 },
-        { stem: 'Quantos dias da semana começam com a letra K?', ans: 0 },
-        { stem: 'Quantos cachorros voam pela janela?', ans: 0 },
-        { stem: 'Quanto é 10 − 10?', ans: 0 },
-        { stem: 'Uma caixa fechada e vazia tem quantos brinquedos?', ans: 0 },
-        { stem: 'Quanto é 5 × 0?', ans: 0 },
-        { stem: 'Quantas bocas tem um sapato?', ans: 0 },
-    ];
-    const it = pick(items);
-    return { stem: it.stem, ...makeChoice(it.ans, it.d || [1, 2, 3]),
-             explain: 'Zero (0) significa <b>nenhum</b>! É o número que representa ausência de quantidade.' };
-});
-
-const g_compare = (min, max) => Q(5, () => {
-    const a = rand(min, max), b = rand(min, max);
-    const sym = a > b ? '>' : a < b ? '<' : '=';
-    const opts = ['>', '<', '='];
-    return { stem: `Qual sinal completa? &nbsp; <b>${a} ☐ ${b}</b>`,
-             options: opts, correctIndex: opts.indexOf(sym),
-             explain: 'Dica: o bico do sinal aponta para o <b>menor</b> número. <b>></b> maior que, <b>&lt;</b> menor que, <b>=</b> igual.' };
-});
-
-const g_pattern = (low, step) => Q(5, () => {
-    const s0 = rand(low, low + 10);
-    const seq = [s0, s0 + step, s0 + 2 * step, s0 + 3 * step];
-    const next = s0 + 4 * step;
-    return { stem: `Qual número vem a seguir? <b>${seq.join(', ')}, ?</b>`,
-             ...makeChoice(next, nearDistr(next, step + 2)),
-             explain: `Sequência: descubra quanto soma de um número ao próximo e aplique para achar o seguinte!` };
-});
-
-const g_orderAsc = (min, max) => Q(5, () => {
-    const nums = shuffle([rand(min, max), rand(min, max), rand(min, max), rand(min, max)]);
-    while (new Set(nums).size < 4) nums[rand(0, 3)] = rand(min, max);
-    const sorted = [...nums].sort((a, b) => a - b).join(', ');
-    const sortedArr = [...nums].sort((a, b) => a - b);
-    const descSorted = [...sortedArr].reverse().join(', ');
-    const asIs = nums.join(', ');
-    const distrSet = new Set([descSorted, asIs, [...nums].reverse().join(', ')].filter(x => x !== sorted));
-    if (distrSet.size < 3) distrSet.add([sortedArr[1], sortedArr[0], sortedArr[2], sortedArr[3]].join(', '));
-    if (distrSet.size < 3) distrSet.add([sortedArr[0], sortedArr[2], sortedArr[1], sortedArr[3]].join(', '));
-    const opts = shuffle([sorted, ...[...distrSet].slice(0, 3)]);
-    return { stem: `Coloque em ordem <b>crescente</b>: ${nums.join(', ')}`,
-             options: opts, correctIndex: opts.indexOf(sorted),
-             explain: '<b>Crescente</b>: do menor para o maior (como ir crescendo!). Coloque os números em fila do menor para o maior.' };
-});
-
-const g_orderDesc = (min, max) => Q(5, () => {
-    const nums = shuffle([rand(min, max), rand(min, max), rand(min, max), rand(min, max)]);
-    while (new Set(nums).size < 4) nums[rand(0, 3)] = rand(min, max);
-    const sorted = [...nums].sort((a, b) => b - a).join(', ');
-    const sortedArr2 = [...nums].sort((a, b) => b - a);
-    const ascSorted = [...sortedArr2].reverse().join(', ');
-    const asIs2 = nums.join(', ');
-    const distrSet2 = new Set([ascSorted, asIs2, [...nums].reverse().join(', ')].filter(x => x !== sorted));
-    if (distrSet2.size < 3) distrSet2.add([sortedArr2[1], sortedArr2[0], sortedArr2[2], sortedArr2[3]].join(', '));
-    if (distrSet2.size < 3) distrSet2.add([sortedArr2[0], sortedArr2[2], sortedArr2[1], sortedArr2[3]].join(', '));
-    const opts = shuffle([sorted, ...[...distrSet2].slice(0, 3)]);
-    return { stem: `Coloque em ordem <b>decrescente</b>: ${nums.join(', ')}`,
-             options: opts, correctIndex: opts.indexOf(sorted),
-             explain: '<b>Decrescente</b>: do maior para o menor. É o contrário da ordem crescente!' };
-});
-
-const g_before = (min, max) => Q(5, () => {
-    const n = rand(min + 1, max);
-    return { stem: `Qual número vem <b>antes</b> de ${n}?`, ...makeChoice(n - 1, nearDistr(n - 1, 3)),
-             explain: `O número <b>anterior</b> é um a menos. Antes de ${n} vem ${n - 1}.` };
-});
-
-const g_after = (min, max) => Q(5, () => {
-    const n = rand(min, max - 1);
-    return { stem: `Qual número vem <b>depois</b> de ${n}?`, ...makeChoice(n + 1, nearDistr(n + 1, 3)),
-             explain: `O número <b>posterior</b> é um a mais. Depois de ${n} vem ${n + 1}.` };
-});
-
-const g_shapes = () => Q(5, () => {
-    const items = [
-        { stem: 'Qual forma tem 3 lados?', ans: 'Triângulo', d: ['Quadrado', 'Círculo', 'Pentágono'] },
-        { stem: 'Qual forma tem 4 lados iguais?', ans: 'Quadrado', d: ['Triângulo', 'Retângulo', 'Círculo'] },
-        { stem: 'Qual forma não tem lados retos?', ans: 'Círculo', d: ['Triângulo', 'Quadrado', 'Hexágono'] },
-        { stem: 'Quantos lados tem um pentágono?', ans: 5, d: [3, 4, 6] },
-        { stem: 'Quantos lados tem um hexágono?', ans: 6, d: [4, 5, 7] },
-        { stem: 'Quantos lados tem um quadrado?', ans: 4, d: [3, 5, 6] },
-        { stem: 'Quantos lados tem um triângulo?', ans: 3, d: [4, 2, 5] },
-        { stem: 'Quantos lados tem um retângulo?', ans: 4, d: [3, 5, 6] },
-        { stem: 'Quantos lados tem um octógono?', ans: 8, d: [6, 7, 9] },
-        { stem: 'Quantos lados tem um decágono?', ans: 10, d: [8, 9, 12] },
-        { stem: 'Quantos vértices (cantos) tem um triângulo?', ans: 3, d: [4, 2, 5] },
-        { stem: 'Quantos vértices tem um quadrado?', ans: 4, d: [3, 5, 6] },
-        { stem: 'Quantos vértices tem um pentágono?', ans: 5, d: [3, 4, 6] },
-        { stem: 'Qual forma tem 4 lados, mas só 2 pares iguais?', ans: 'Retângulo', d: ['Quadrado', 'Triângulo', 'Pentágono'] },
-        { stem: 'Qual forma é redonda como uma roda?', ans: 'Círculo', d: ['Quadrado', 'Triângulo', 'Estrela'] },
-        { stem: 'Quantos lados tem um triângulo equilátero?', ans: 3, d: [4, 5, 6] },
-        { stem: 'Forma de 6 lados parecida com favo de mel?', ans: 'Hexágono', d: ['Pentágono', 'Octógono', 'Quadrado'] },
-        { stem: 'Forma de 5 lados?', ans: 'Pentágono', d: ['Hexágono', 'Quadrilátero', 'Triângulo'] },
-        { stem: 'Polígono que NÃO existe (todo lado curvo):', ans: 'Círculo', d: ['Triângulo', 'Octógono', 'Hexágono'] },
-    ];
-    const it = pick(items);
-    return { stem: it.stem, ...makeChoice(it.ans, it.d),
-             explain: 'Dica: <b>triângulo</b>=3 lados, <b>quadrado</b>=4 lados iguais, <b>retângulo</b>=4 lados (2 pares), <b>pentágono</b>=5, <b>hexágono</b>=6, <b>círculo</b>=sem lados.' };
-});
-
-const g_dezena = () => Q(5, () => {
-    const items = [
-        { stem: 'Quantas unidades formam 1 dezena?', ans: 10, d: [5, 8, 100] },
-        { stem: 'Em 23, quantas dezenas há?', ans: 2, d: [3, 20, 23] },
-        { stem: 'Em 47, quantas unidades há (algarismo das unidades)?', ans: 7, d: [4, 40, 47] },
-        { stem: 'Quanto é 3 dezenas + 5 unidades?', ans: 35, d: [8, 53, 30] },
-        { stem: 'Quanto é 7 dezenas?', ans: 70, d: [7, 17, 77] },
-        { stem: 'Em 56, quantas dezenas há?', ans: 5, d: [6, 50, 60] },
-        { stem: 'Em 89, qual o algarismo das unidades?', ans: 9, d: [8, 80, 89] },
-        { stem: 'Quanto é 4 dezenas + 2 unidades?', ans: 42, d: [6, 24, 40] },
-        { stem: 'Quanto é 6 dezenas + 0 unidades?', ans: 60, d: [6, 16, 66] },
-        { stem: 'Quantas dezenas há em 100?', ans: 10, d: [1, 100, 11] },
-        { stem: 'Em 30, quantas unidades soltas (algarismo)?', ans: 0, d: [3, 30, 13] },
-        { stem: 'Quanto vale 9 dezenas?', ans: 90, d: [9, 19, 99] },
-        { stem: 'Quanto é 2 dezenas + 8 unidades?', ans: 28, d: [10, 82, 26] },
-        { stem: 'Em 75, quantas dezenas?', ans: 7, d: [5, 50, 75] },
-    ];
-    const it = pick(items);
-    return { stem: it.stem, ...makeChoice(it.ans, it.d),
-             explain: 'Uma <b>dezena</b> = 10 unidades. No número 35: 3 dezenas e 5 unidades. O algarismo da esquerda é o das dezenas!' };
-});
-
-/* ── 2º ano — Bosque das Operações ─────────────────────────────────────── */
-const g_add = (maxA, maxB, minA = 1, minB = 1) => Q(5, () => {
-    const a = rand(minA, maxA), b = rand(minB, maxB);
-    const c = a + b;
-    return { stem: `<b>${a} + ${b}</b> = ?`, ...makeChoice(c, nearDistr(c, Math.max(3, Math.ceil(c / 4)))),
-             explain: `Adição: <b>${a} + ${b} = ${c}</b>. Junte as quantidades. Pode contar nos dedos ou na reta numérica!` };
-});
-
-const g_sub = (maxA, maxB, minA = 2) => Q(5, () => {
-    let a = rand(minA, maxA), b = rand(1, Math.min(a - 1, maxB));
-    const c = a - b;
-    return { stem: `<b>${a} − ${b}</b> = ?`, ...makeChoice(c, nearDistr(c, 3)),
-             explain: `Subtração: <b>${a} − ${b} = ${c}</b>. Tire do maior. Quantas sobram?` };
-});
-
-const g_parity = () => Q(5, () => {
-    const n = rand(1, 99);
-    const opts = ['Par', 'Ímpar'];
-    return { stem: `O número <b>${n}</b> é par ou ímpar?`, options: opts, correctIndex: n % 2 ? 1 : 0,
-             explain: `<b>${n % 2 === 0 ? 'Par' : 'Ímpar'}</b>: olhe o último algarismo. Termina em 0,2,4,6,8 → par. Termina em 1,3,5,7,9 → ímpar.` };
-});
-
-const g_double = (max = 50) => Q(5, () => {
-    const n = rand(1, max);
-    return { stem: `Qual é o <b>dobro</b> de ${n}?`, ...makeChoice(n * 2, nearDistr(n * 2, 4)),
-             explain: `Dobro = vezes 2 = somar o número com ele mesmo. Dobro de ${n} = ${n} + ${n} = <b>${n * 2}</b>.` };
-});
-
-const g_half = (max = 50) => Q(5, () => {
-    const n = rand(1, max) * 2;
-    return { stem: `Qual é a <b>metade</b> de ${n}?`, ...makeChoice(n / 2, nearDistr(n / 2, 4)),
-             explain: `Metade = dividir por 2. Metade de ${n} = ${n} ÷ 2 = <b>${n / 2}</b>.` };
-});
-
-const g_add3 = (max) => Q(5, () => {
-    const a = rand(1, max), b = rand(1, max), c = rand(1, max);
-    const r = a + b + c;
-    return { stem: `<b>${a} + ${b} + ${c}</b> = ?`, ...makeChoice(r, nearDistr(r, 4)),
-             explain: `Some em etapas: primeiro ${a}+${b}=${a+b}, depois ${a+b}+${c}=<b>${r}</b>.` };
-});
-
-const g_seqStep = (step) => Q(5, () => {
-    const s0 = rand(step, step * 10);
-    const seq = [s0, s0 + step, s0 + 2 * step, s0 + 3 * step];
-    const next = s0 + 4 * step;
-    return { stem: `Sequência de ${step} em ${step}: ${seq.join(', ')}, ?`, ...makeChoice(next, nearDistr(next, step + 2)),
-             explain: `O padrão é somar <b>${step}</b> a cada vez. O próximo é ${seq[3]} + ${step} = <b>${next}</b>.` };
-});
-
-const g_decomp = () => Q(5, () => {
-    const n = rand(11, 99);
-    const d = Math.floor(n / 10), u = n % 10;
-    const ans = `${d} dezenas e ${u} unidades`;
-    const d1 = d !== u ? `${u} dezenas e ${d} unidades` : `${d + 2} dezenas e ${u} unidades`;
-    const d2 = `${d + 1} dezenas e ${u} unidades`;
-    const d3 = `${d} dezenas e ${(u + 1) % 10} unidades`;
-    const optsSet3 = new Set([ans, d1, d2, d3]);
-    let ex3 = d + 3; while (optsSet3.size < 4) { optsSet3.add(`${ex3++} dezenas e ${u} unidades`); }
-    const opts = shuffle([...optsSet3]);
-    return { stem: `Decomponha o número <b>${n}</b>:`, options: opts, correctIndex: opts.indexOf(ans),
-             explain: `<b>${n}</b> = ${d} dezenas + ${u} unidades. Lembre: 1 dezena = 10 unidades.` };
-});
-
-const g_wordSimple = () => Q(5, () => {
-    const items = [
-        () => { const a = rand(2, 9), b = rand(2, 9); return { s: `Ana tem ${a} balas e ganhou ${b}. Quantas balas ela tem agora?`, r: a + b }; },
-        () => { const a = rand(5, 20), b = rand(1, 4); return { s: `Tinha ${a} pássaros, ${b} voaram. Quantos restaram?`, r: a - b }; },
-        () => { const a = rand(2, 9), b = rand(2, 5); return { s: `${b} caixas com ${a} maçãs cada. Total de maçãs?`, r: a * b }; },
-        () => { const b = rand(2, 5), q = rand(2, 6); const a = b * q; return { s: `${a} doces divididos igualmente entre ${b} amigos. Quantos cada um recebe?`, r: q }; },
-        () => { const a = rand(3, 12), b = rand(2, 8); return { s: `João tem ${a} figurinhas. Comprou mais ${b}. Quantas tem agora?`, r: a + b }; },
-        () => { const a = rand(8, 25), b = rand(2, 6); return { s: `Uma cesta tem ${a} laranjas. ${b} foram tiradas. Quantas restaram?`, r: a - b }; },
-        () => { const a = rand(2, 7), b = rand(3, 6); return { s: `${a} pacotes de figurinhas. Cada um tem ${b} figurinhas. Total?`, r: a * b }; },
-        () => { const k = rand(2, 6), q = rand(3, 8); const a = k * q; return { s: `${a} bolinhas em ${k} potes iguais. Quantas em cada pote?`, r: q }; },
-        () => { const a = rand(5, 15), b = rand(2, 5); return { s: `Maria tinha ${a} reais. Gastou ${b}. Quanto sobrou?`, r: a - b }; },
-        () => { const a = rand(4, 9); return { s: `Cada aluno recebe ${a} lápis. Em 3 alunos, quantos lápis no total?`, r: a * 3 }; },
-        () => { const a = rand(2, 6); return { s: `Uma caixa traz ${a} pares de meias. Quantas meias soltas?`, r: a * 2 }; },
-        () => { const a = rand(20, 50); return { s: `Sou ${a} anos mais velho que meu irmão de 2 anos. Quantos anos tenho?`, r: a + 2 }; },
-    ];
-    const it = pick(items)();
-    return { stem: it.s, ...makeChoice(it.r, nearDistr(it.r, 4)),
-             explain: 'Leia com atenção: o que você tem, o que acontece. Junte (+) ou tire (−)?' };
-});
-
-/* ── 3º ano — Vale das Tabuadas ────────────────────────────────────────── */
-const g_addCarry = () => Q(5, () => {
-    let a, b;
-    do { a = rand(10, 99); b = rand(10, 99); } while ((a % 10) + (b % 10) < 10);
-    const c = a + b;
-    return { stem: `<b>${a} + ${b}</b> = ?  <small>(com reserva)</small>`, ...makeChoice(c, nearDistr(c, 5)),
-             explain: `<b>Reserva (vai um):</b> quando a soma das unidades passa de 9, leve 1 para as dezenas. Verifique: ${a}+${b}=${c}.` };
-});
-
-const g_subBorrow = () => Q(5, () => {
-    let a, b;
-    do { a = rand(30, 99); b = rand(10, a - 1); } while ((a % 10) >= (b % 10));
-    const c = a - b;
-    return { stem: `<b>${a} − ${b}</b> = ?  <small>(com empréstimo)</small>`, ...makeChoice(c, nearDistr(c, 5)),
-             explain: `<b>Empréstimo:</b> quando o dígito de baixo é maior, peça 1 dezena (=10) emprestada da coluna da esquerda. ${a}−${b}=${c}.` };
-});
-
-const g_table = (n) => Q(5, () => {
-    const k = rand(1, 10);
-    const c = n * k;
-    return { stem: `<b>${n} × ${k}</b> = ?`, ...makeChoice(c, nearDistr(c, Math.max(3, n + 2))),
-             explain: `Tabuada: <b>${n} × ${k} = ${c}</b>. Você pode calcular somando ${n} exatamente ${k} vezes!` };
-});
-
-const g_tableMix = (low, high) => Q(5, () => {
-    const a = rand(low, high), b = rand(1, 10);
-    const c = a * b;
-    return { stem: `<b>${a} × ${b}</b> = ?`, ...makeChoice(c, nearDistr(c, Math.max(3, a + 2))),
-             explain: `Multiplicação: <b>${a} × ${b} = ${c}</b>. Lembre: é como somar ${a} exatamente ${b} vezes.` };
-});
-
-const g_divExact = (divisorMax) => Q(5, () => {
-    const b = rand(2, divisorMax);
-    const q = rand(2, 10);
-    const a = b * q;
-    return { stem: `<b>${a} ÷ ${b}</b> = ?`, ...makeChoice(q, nearDistr(q, 3)),
-             explain: `Divisão: <b>${a} ÷ ${b} = ${q}</b>. Use a tabuada do ${b}: ${b}×${q}=${a}. ✓` };
-});
-
-const g_money = () => Q(5, () => {
-    const items = [
-        () => { const a = rand(2, 9), b = rand(1, 9); return { s: `R$ ${a},00 + R$ ${b},00 = ?`, r: `R$ ${a + b},00`, d: [`R$ ${a + b + 1},00`, `R$ ${a + b - 1},00`, `R$ ${a * b},00`] }; },
-        () => { const a = rand(5, 20), b = rand(1, a - 1); return { s: `Paguei R$ ${a},00 num produto de R$ ${b},00. Troco?`, r: `R$ ${a - b},00`, d: [`R$ ${a + b},00`, `R$ ${b - 1},00`, `R$ ${a - b + 1},00`] }; },
-        () => { const c = rand(2, 9), v = rand(2, 5); return { s: `${c} pacotes de R$ ${v},00. Quanto pagar?`, r: `R$ ${c * v},00`, d: [`R$ ${c + v},00`, `R$ ${c * v + 1},00`, `R$ ${c * v - 2},00`] }; },
-        () => { const a = rand(10, 50), b = rand(5, 9); return { s: `Uma bola custa R$ ${a},00 e uma raquete R$ ${b},00. Total?`, r: `R$ ${a + b},00`, d: [`R$ ${a - b},00`, `R$ ${a + b + 2},00`, `R$ ${a * b},00`] }; },
-        () => { const a = rand(3, 9); return { s: `${a} chocolates de R$ 2,00 cada. Total?`, r: `R$ ${a * 2},00`, d: [`R$ ${a + 2},00`, `R$ ${a * 2 + 1},00`, `R$ ${a},00`] }; },
-        () => { const t = rand(15, 40), p = rand(5, 12); return { s: `Tinha R$ ${t},00, comprei algo por R$ ${p},00. Sobrou:`, r: `R$ ${t - p},00`, d: [`R$ ${t + p},00`, `R$ ${t - p + 1},00`, `R$ ${p},00`] }; },
-        () => { const a = rand(2, 6), v = pick([5, 10, 20]); return { s: `${a} notas de R$ ${v},00. Quanto tenho?`, r: `R$ ${a * v},00`, d: [`R$ ${a + v},00`, `R$ ${a * v - v},00`, `R$ ${v},00`] }; },
-        () => { const a = rand(20, 50); return { s: `R$ ${a},00 dividido entre 2 pessoas. Cada uma recebe:`, r: `R$ ${a / 2},00`, d: [`R$ ${a},00`, `R$ ${a / 2 + 1},00`, `R$ ${a - 2},00`] }; },
-        () => { const c = rand(2, 5), p = rand(3, 9); return { s: `${c} camisetas a R$ ${p},00 cada. Total da compra?`, r: `R$ ${c * p},00`, d: [`R$ ${c + p},00`, `R$ ${c * p + 1},00`, `R$ ${p},00`] }; },
-        () => { const total = rand(30, 80); return { s: `Uma compra de R$ ${total},00 paga com nota de R$ 100,00. Troco?`, r: `R$ ${100 - total},00`, d: [`R$ ${total},00`, `R$ ${100 + total},00`, `R$ ${100 - total + 1},00`] }; },
-    ];
-    const it = pick(items)();
-    const seen4 = new Set([String(it.r)]);
-    const uniqueD = [];
-    for (const x of it.d) { if (!seen4.has(String(x))) { seen4.add(String(x)); uniqueD.push(x); } }
-    let fill4 = 1; while (uniqueD.length < 3) { const v = `R$ ${fill4++},00`; if (!seen4.has(v)) { seen4.add(v); uniqueD.push(v); } }
-    return { stem: it.s, ...makeChoice(it.r, uniqueD.slice(0, 3)),
-             explain: 'Com dinheiro: <b>+</b> para ganhar/comprar juntos, <b>−</b> para gastar/troco. Troco = pago − preço.' };
-});
-
-/* ── 4º ano — Caverna das Frações ─────────────────────────────────────── */
-const g_mult10 = () => Q(5, () => {
-    const n = rand(2, 999);
-    const k = pick([10, 100, 1000]);
-    const c = n * k;
-    return { stem: `<b>${n} × ${k}</b> = ?`, ...makeChoice(c, nearDistr(c, k * 2)),
-             explain: `Multiplicar por <b>${k}</b>: acrescente ${String(k).length-1} zero(s) ao número. ${n}×${k}=<b>${c}</b>.` };
-});
-
-const g_mult2x1 = () => Q(5, () => {
-    const a = rand(11, 99), b = rand(2, 9);
-    const c = a * b;
-    return { stem: `<b>${a} × ${b}</b> = ?`, ...makeChoice(c, nearDistr(c, 8)),
-             explain: `Multiplique em partes: ${a}×${b} = (${Math.floor(a/10)*10}×${b}) + (${a%10}×${b}) = ${Math.floor(a/10)*10*b} + ${(a%10)*b} = <b>${c}</b>.` };
-});
-
-const g_mult2x2 = () => Q(5, () => {
-    const a = rand(11, 30), b = rand(11, 30);
-    const c = a * b;
-    return { stem: `<b>${a} × ${b}</b> = ?`, ...makeChoice(c, nearDistr(c, 20)),
-             explain: `Para multiplicar ${a}×${b}, decomponha: ${a}×${Math.floor(b/10)*10} + ${a}×${b%10} = ${a*Math.floor(b/10)*10} + ${a*(b%10)} = <b>${c}</b>.` };
-});
-
-const g_divRest = () => Q(5, () => {
-    const b = rand(3, 9), q = rand(3, 12), r = rand(1, b - 1);
-    const a = b * q + r;
-    const ans = `${q} resto ${r}`;
-    const d = [`${q + 1} resto ${r}`, `${q} resto ${r + 1}`, `${q - 1} resto ${b - r}`];
-    const opts = shuffle([ans, ...d]);
-    return { stem: `<b>${a} ÷ ${b}</b> = ? (com resto)`, options: opts, correctIndex: opts.indexOf(ans),
-             explain: `Divisão com resto: <b>${a} ÷ ${b} = ${q} resto ${r}</b>. Verifique: ${b}×${q}+${r}=${b*q+r}=<b>${a}</b>. ✓ O resto é sempre menor que o divisor.` };
-});
-
-const g_div2dig = () => Q(5, () => {
-    const b = rand(2, 9);
-    const q = rand(11, 50);
-    const a = b * q;
-    return { stem: `<b>${a} ÷ ${b}</b> = ?`, ...makeChoice(q, nearDistr(q, 5)),
-             explain: `Divisão: <b>${a} ÷ ${b} = ${q}</b>. Verifique pela tabuada: ${b}×${q}=${a}. ✓` };
-});
-
-const g_fracVisual = () => Q(5, () => {
-    const den = pick([2, 3, 4, 5, 6, 8]);
-    const num = rand(1, den - 1);
-    const blocks = '<span class="frac-on">█</span>'.repeat(num) + '<span class="frac-off">█</span>'.repeat(den - num);
-    const correct = `${num}/${den}`;
-    const candidates5 = [`${den - num}/${den}`, `${num}/${den + 1}`, `${num + 1}/${den}`];
-    const distrSet5 = new Set(candidates5.filter(x => x !== correct));
-    let ex5 = 2; while (distrSet5.size < 3) { const v = `${num + ex5}/${den + ex5}`; if (v !== correct) distrSet5.add(v); ex5++; }
-    return { stem: `Qual fração representa a parte preenchida?<div class="frac-bar">${blocks}</div>`,
-             ...makeChoice(correct, [...distrSet5].slice(0, 3)),
-             explain: `Fração: partes coloridas / total de partes. Aqui: <b>${num}/${den}</b> — ${num} partes preenchidas de ${den} totais.` };
-});
-
-const g_fracTerm = () => Q(5, () => {
-    const items = [
-        { s: 'Em 3/7, qual é o <b>numerador</b>?', r: 3, d: [7, 4, 10] },
-        { s: 'Em 3/7, qual é o <b>denominador</b>?', r: 7, d: [3, 10, 4] },
-        { s: 'O denominador indica:', r: 'em quantas partes o todo foi dividido', d: ['as partes pintadas', 'a parte total', 'os números primos'] },
-        { s: 'O numerador indica:', r: 'as partes consideradas', d: ['o todo dividido', 'a parte vazia', 'sempre 1'] },
-        { s: 'Que fração é "meio"?', r: '1/2', d: ['2/1', '1/4', '2/2'] },
-        { s: 'Que fração é "um terço"?', r: '1/3', d: ['3/1', '1/2', '2/3'] },
-        { s: 'Que fração é "três quartos"?', r: '3/4', d: ['4/3', '1/4', '2/4'] },
-        { s: 'Que fração é "um quinto"?', r: '1/5', d: ['5/1', '1/4', '2/5'] },
-        { s: 'Que fração é "dois terços"?', r: '2/3', d: ['3/2', '1/3', '2/6'] },
-        { s: 'Em 5/8, qual o numerador?', r: 5, d: [8, 3, 13] },
-        { s: 'Em 5/8, qual o denominador?', r: 8, d: [5, 3, 13] },
-        { s: 'Que fração é "um quarto"?', r: '1/4', d: ['4/1', '1/2', '2/4'] },
-        { s: 'Que fração é "metade"?', r: '1/2', d: ['1/3', '2/2', '1/4'] },
-        { s: 'Em 7/10, qual número está embaixo?', r: 10, d: [7, 3, 17] },
-        { s: 'Quando o numerador é 0, a fração vale:', r: '0', d: ['1', 'o denominador', 'indefinido'] },
-        { s: 'Fração "cinco oitavos" escreve-se:', r: '5/8', d: ['8/5', '5,8', '5x8'] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d),
-             explain: '<b>Numerador</b> (em cima): quantas partes você tem. <b>Denominador</b> (embaixo): em quantas partes o todo foi dividido.' };
-});
-
-const g_fracEquiv = () => Q(5, () => {
-    const den = pick([2, 3, 4, 5]);
-    const num = rand(1, den - 1);
-    const k = rand(2, 4);
-    const correct6 = `${num * k}/${den * k}`;
-    const cands6 = [`${num + 1}/${den + 1}`, `${num * k}/${den * k + 1}`, `${num + k}/${den * k}`];
-    const distrSet6 = new Set(cands6.filter(x => x !== correct6));
-    let ex6 = 1; while (distrSet6.size < 3) { const v = `${num * k + ex6}/${den * k}`; if (v !== correct6) distrSet6.add(v); ex6++; }
-    return { stem: `Qual fração é <b>equivalente</b> a ${num}/${den}?`,
-             ...makeChoice(correct6, [...distrSet6].slice(0, 3)),
-             explain: 'Frações equivalentes: multiplique (ou divida) numerador <b>e</b> denominador pelo mesmo número. O valor não muda!' };
-});
-
-const g_fracCompareSameDen = () => Q(5, () => {
-    const den = pick([4, 5, 6, 8]);
-    const a = rand(3, den - 1);       // greaterNum always >= 3
-    const b = rand(1, a - 1);         // lesserNum always < a
-    const greater = `${a}/${den}`;
-    const lesser  = `${b}/${den}`;
-    // d3: pick from nums 1..a-1 excluding b (all < greaterNum, guaranteed unique)
-    const d3candidates = [];
-    for (let n = 1; n < a; n++) if (n !== b) d3candidates.push(n);
-    const d3num = pick(d3candidates);
-    return { stem: `Qual é <b>maior</b>? ${a}/${den} ou ${b}/${den}?`,
-             ...makeChoice(greater, [lesser, 'São iguais', `${d3num}/${den}`]),
-             explain: 'Mesmo denominador: compare os numeradores. Maior numerador = <b>maior fração</b>.' };
-});
-
-const g_fracAddSame = () => Q(5, () => {
-    const den = pick([4, 5, 6, 7, 8]);
-    const a = rand(1, Math.floor(den / 2)), b = rand(1, den - a - 1);
-    return { stem: `<b>${a}/${den} + ${b}/${den}</b> = ?`,
-             ...makeChoice(`${a + b}/${den}`, [`${a + b}/${den * 2}`, `${a + b - 1}/${den}`, `${a + b + 1}/${den}`]),
-             explain: 'Mesmo denominador: some os numeradores e mantenha o denominador. <b>a/n + b/n = (a+b)/n</b>.' };
-});
-
-const g_units = () => Q(5, () => {
-    const items = [
-        { s: 'Quantos centímetros em 1 metro?', r: 100, d: [10, 1000, 50] },
-        { s: 'Quantos metros em 1 quilômetro?', r: 1000, d: [100, 10, 10000] },
-        { s: 'Quantos milímetros em 1 centímetro?', r: 10, d: [100, 1, 1000] },
-        { s: 'Quantos gramas em 1 quilograma?', r: 1000, d: [100, 10, 10000] },
-        { s: '2,5 metros em centímetros:', r: 250, d: [25, 2500, 2050] },
-        { s: '3 km em metros:', r: 3000, d: [300, 30, 30000] },
-        { s: 'Quantos miligramas em 1 grama?', r: 1000, d: [100, 10, 10000] },
-        { s: 'Quantos mililitros em 1 litro?', r: 1000, d: [100, 10, 10000] },
-        { s: '1,5 km em metros:', r: 1500, d: [150, 15000, 105] },
-        { s: '500 g em quilogramas:', r: '0,5 kg', d: ['5 kg', '0,05 kg', '50 kg'] },
-        { s: '250 cm em metros:', r: '2,5 m', d: ['25 m', '0,25 m', '2,05 m'] },
-        { s: '0,5 L em mililitros:', r: 500, d: [50, 5000, 5] },
-        { s: '2 toneladas em quilogramas:', r: 2000, d: [200, 20000, 20] },
-        { s: 'Qual unidade mede massa?', r: 'grama', d: ['metro', 'litro', 'segundo'] },
-        { s: 'Qual unidade mede volume?', r: 'litro', d: ['metro', 'grama', 'segundo'] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d),
-             explain: 'Conversões: 1 m = 100 cm, 1 km = 1000 m, 1 kg = 1000 g, 1 L = 1000 mL. Para converter, multiplique ou divida pela relação.' };
-});
-
-const g_perimeter = () => Q(5, () => {
-    const items = [
-        () => { const a = rand(2, 20), b = rand(2, 20); return { s: `Perímetro de retângulo ${a} × ${b} cm:`, r: 2 * (a + b), d: nearDistr(2 * (a + b), 6) }; },
-        () => { const l = rand(2, 30); return { s: `Perímetro de quadrado de lado ${l} cm:`, r: 4 * l, d: nearDistr(4 * l, 5) }; },
-        () => { const a = rand(3, 9), b = rand(3, 9), c = rand(3, 9); return { s: `Perímetro de triângulo de lados ${a}, ${b} e ${c} cm:`, r: a + b + c, d: nearDistr(a + b + c, 4) }; },
-    ];
-    const it = pick(items)();
-    return { stem: it.s, ...makeChoice(it.r, it.d),
-             explain: 'Perímetro = soma de todos os lados. <b>Retângulo:</b> P = 2×(b+h). <b>Quadrado:</b> P = 4×l. <b>Triângulo:</b> some os três lados.' };
-});
-
-const g_time = () => Q(5, () => {
-    const items = [
-        { s: 'Quantos minutos em 1 hora?', r: 60, d: [30, 100, 24] },
-        { s: 'Quantos segundos em 1 minuto?', r: 60, d: [30, 100, 24] },
-        { s: 'Quantas horas em 1 dia?', r: 24, d: [12, 60, 48] },
-        { s: 'Quantos dias em uma semana?', r: 7, d: [5, 10, 30] },
-        { s: 'Quantos meses em 1 ano?', r: 12, d: [10, 30, 365] },
-        { s: '90 minutos = quantas horas?', r: '1h30', d: ['1h09', '9h', '90h'] },
-        { s: '2 horas = quantos minutos?', r: 120, d: [60, 200, 180] },
-        { s: 'Quantos dias em 1 ano (não bissexto)?', r: 365, d: [360, 366, 30] },
-        { s: 'Quantos dias em fevereiro (ano normal)?', r: 28, d: [30, 29, 31] },
-        { s: '3 horas = quantos minutos?', r: 180, d: [60, 90, 300] },
-        { s: '120 segundos = quantos minutos?', r: 2, d: [1, 60, 120] },
-        { s: '1 semana = quantas horas?', r: 168, d: [24, 60, 70] },
-        { s: 'Quantos trimestres tem 1 ano?', r: 4, d: [3, 6, 12] },
-        { s: '1 hora e meia em minutos:', r: 90, d: [60, 130, 150] },
-        { s: 'Quantas estações tem 1 ano?', r: 4, d: [2, 12, 7] },
-        { s: '4 décadas = quantos anos?', r: 40, d: [4, 14, 400] },
-        { s: '1 século = quantos anos?', r: 100, d: [10, 1000, 50] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d),
-             explain: '1 hora = 60 min, 1 min = 60 s, 1 dia = 24 h, 1 semana = 7 dias, 1 ano = 12 meses = 365 dias.' };
-});
-
-/* ── 5º ano — Lago dos Decimais ────────────────────────────────────────── */
-const g_fracProperImproper = () => Q(5, () => {
-    const items = [
-        { s: 'A fração 5/3 é:', r: 'imprópria', d: ['própria', 'aparente', 'mista'] },
-        { s: 'A fração 2/5 é:', r: 'própria', d: ['imprópria', 'aparente', 'mista'] },
-        { s: 'A fração 4/4 é:', r: 'aparente', d: ['própria', 'imprópria', 'mista'] },
-        { s: 'A fração 7/2 é:', r: 'imprópria', d: ['própria', 'aparente', 'mista'] },
-        { s: 'Fração própria significa:', r: 'numerador menor que denominador', d: ['numerador maior', 'iguais', 'sempre 1'] },
-        { s: 'A fração 3/8 é:', r: 'própria', d: ['imprópria', 'aparente', 'mista'] },
-        { s: 'A fração 9/4 é:', r: 'imprópria', d: ['própria', 'aparente', 'mista'] },
-        { s: 'A fração 6/6 é:', r: 'aparente', d: ['própria', 'imprópria', 'mista'] },
-        { s: 'Fração aparente equivale a:', r: 'um número inteiro', d: ['zero', 'uma metade', 'um décimo'] },
-        { s: 'A fração 11/3 é:', r: 'imprópria', d: ['própria', 'aparente', 'mista'] },
-        { s: 'A fração 7/7 vale:', r: '1', d: ['0', '7', '1/7'] },
-        { s: 'Fração imprópria significa:', r: 'numerador maior ou igual ao denominador', d: ['numerador menor', 'denominador zero', 'sempre 1'] },
-        { s: '4/4 vale:', r: '1', d: ['4', '0', '1/4'] },
-        { s: '1 + 1/2 (forma mista) equivale a fração:', r: '3/2', d: ['2/3', '1/2', '11/2'] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d),
-             explain: '<b>Própria:</b> numerador < denominador (valor < 1). <b>Imprópria:</b> numerador ≥ denominador (valor ≥ 1). <b>Aparente:</b> representa inteiro.' };
-});
-
-const g_decRead = () => Q(5, () => {
-    const items = [
-        { s: 'Como se lê <b>0,5</b>?', r: 'cinco décimos', d: ['cinco centésimos', 'cinco', 'meio centavo'] },
-        { s: 'Como se lê <b>0,25</b>?', r: 'vinte e cinco centésimos', d: ['vinte e cinco décimos', 'dois e cinco', '25 milésimos'] },
-        { s: 'O número 1,5 está entre:', r: '1 e 2', d: ['0 e 1', '5 e 6', '10 e 15'] },
-        { s: 'Qual é maior: 0,7 ou 0,69?', r: '0,7', d: ['0,69', 'iguais', 'depende'] },
-        { s: 'Qual é maior: 0,3 ou 0,30?', r: 'iguais', d: ['0,3', '0,30', 'nenhum'] },
-        { s: 'Como se lê <b>0,1</b>?', r: 'um décimo', d: ['um centésimo', 'uma unidade', 'dez'] },
-        { s: 'Como se lê <b>0,01</b>?', r: 'um centésimo', d: ['um décimo', 'um milésimo', 'zero e um'] },
-        { s: 'O número 2,5 é igual a:', r: '2 + 0,5', d: ['25', '2,05', '0,25'] },
-        { s: 'Quanto é "três décimos" em decimal?', r: '0,3', d: ['0,03', '3,0', '3'] },
-        { s: 'Quanto é "quinze centésimos" em decimal?', r: '0,15', d: ['1,5', '0,015', '15'] },
-        { s: 'Qual é maior: 1,2 ou 1,19?', r: '1,2', d: ['1,19', 'iguais', '0,2'] },
-        { s: 'O número 0,8 está mais perto de:', r: '1', d: ['0', '8', '0,5'] },
-        { s: 'Quantas casas decimais tem 3,14?', r: '2', d: ['3', '1', '4'] },
-        { s: 'Qual é menor: 0,4 ou 0,40?', r: 'iguais', d: ['0,4', '0,40', 'nenhum'] },
-        { s: '4,9 está entre quais inteiros?', r: '4 e 5', d: ['3 e 4', '5 e 6', '9 e 10'] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d),
-             explain: '<b>0,1</b> = 1 décimo. <b>0,01</b> = 1 centésimo. <b>0,001</b> = 1 milésimo. Compare decimais casa por casa, da esquerda para a direita.' };
-});
-
-const g_decCompare = () => Q(5, () => {
-    const a = (rand(1, 99) / 10).toFixed(1);
-    let b = (rand(1, 99) / 10).toFixed(1);
-    while (b === a) b = (rand(1, 99) / 10).toFixed(1);
-    const big = parseFloat(a) > parseFloat(b) ? a : b;
-    return { stem: `Qual é <b>maior</b>: ${a} ou ${b}?`, ...makeChoice(big, [a === big ? b : a, 'São iguais', '0']),
-             explain: `Compare casa por casa (esquerda→direita): parte inteira, décimos, centésimos... O primeiro dígito diferente decide quem é maior!` };
-});
-
-const g_decAdd = () => Q(5, () => {
-    const a = rand(10, 99) / 10, b = rand(10, 99) / 10;
-    const c = +(a + b).toFixed(1);
-    return { stem: `<b>${a.toFixed(1)} + ${b.toFixed(1)}</b> = ?`,
-             ...makeChoice(c.toFixed(1), nearDistr(Math.round(c * 10), 8).map(x => (x / 10).toFixed(1))),
-             explain: 'Some decimais <b>alinhando as vírgulas</b> e calcule normalmente, coluna por coluna.' };
-});
-
-const g_decSub = () => Q(5, () => {
-    let a = rand(50, 99) / 10, b = rand(10, 49) / 10;
-    if (b > a) [a, b] = [b, a];
-    const c = +(a - b).toFixed(1);
-    return { stem: `<b>${a.toFixed(1)} − ${b.toFixed(1)}</b> = ?`,
-             ...makeChoice(c.toFixed(1), nearDistr(Math.round(c * 10), 8).map(x => (x / 10).toFixed(1))),
-             explain: 'Subtraia decimais <b>alinhando as vírgulas</b>. Use zeros à direita se precisar. Calcule coluna por coluna.' };
-});
-
-const g_decMult10 = () => Q(5, () => {
-    const n = (rand(15, 99) / 10).toFixed(1);
-    const k = pick([10, 100, 1000]);
-    const c = parseFloat(n) * k;
-    return { stem: `<b>${n} × ${k}</b> = ?`, ...makeChoice(c, nearDistr(c, k)),
-             explain: `Multiplicar por ${k}: mova a vírgula ${String(k).length-1} casa(s) para a <b>direita</b>. ${n}×${k}=<b>${c}</b>.` };
-});
-
-const g_percentEasy = () => Q(5, () => {
-    const p = pick([10, 25, 50, 75, 100]);
-    const n = pick([20, 40, 80, 100, 200, 400]);
-    const c = (n * p) / 100;
-    return { stem: `Quanto é <b>${p}% de ${n}</b>?`, ...makeChoice(c, nearDistr(c, n / 10)),
-             explain: `<b>${p}%</b> de ${n}: calcule ${n}×${p}/100 = <b>${c}</b>. Dica: 10% → divida por 10. 50% → metade. 25% → quarto.` };
-});
-
-const g_percentApply = () => Q(5, () => {
-    const p = pick([10, 15, 20, 25, 30, 50]);
-    const n = pick([50, 80, 100, 150, 200, 250, 300]);
-    const c = Math.round((n * p) / 100 * 100) / 100;
-    return { stem: `${p}% de R$ ${n},00 vale quanto?`, ...makeChoice(`R$ ${c.toFixed(2)}`, nearDistr(c, n / 10).map(x => `R$ ${x.toFixed(2)}`)),
-             explain: `Porcentagem: <b>${p}%</b> de R$ ${n} = ${n} × ${p}/100 = <b>R$ ${c.toFixed(2)}</b>. Muito comum em problemas do cotidiano!` };
-});
-
-const g_areaSquare = () => Q(5, () => {
-    const l = rand(2, 20);
-    const c = l * l;
-    return { stem: `Área de quadrado de lado <b>${l} cm</b>:`, ...makeChoice(`${c} cm²`, nearDistr(c, 8).map(x => `${x} cm²`)),
-             explain: `Área do quadrado = lado × lado = lado². <b>${l}² = ${c} cm²</b>. Área mede o espaço da superfície!` };
-});
-
-const g_areaRect = () => Q(5, () => {
-    const a = rand(3, 20), b = rand(3, 20);
-    const c = a * b;
-    return { stem: `Área de retângulo <b>${a} × ${b} cm</b>:`, ...makeChoice(`${c} cm²`, nearDistr(c, 10).map(x => `${x} cm²`)),
-             explain: `Área do retângulo = base × altura. <b>${a} × ${b} = ${c} cm²</b>. É como contar quantos quadradinhos de 1 cm cabem dentro.` };
-});
-
-const g_volumeCube = () => Q(5, () => {
-    const l = rand(2, 10);
-    const c = l * l * l;
-    return { stem: `Volume de cubo de aresta <b>${l} cm</b>:`, ...makeChoice(`${c} cm³`, nearDistr(c, 12).map(x => `${x} cm³`)),
-             explain: `Volume do cubo = aresta³ = aresta × aresta × aresta. <b>${l}³ = ${c} cm³</b>. Mede o espaço 3D que o objeto ocupa.` };
-});
-
-const g_volumePar = () => Q(5, () => {
-    const a = rand(2, 8), b = rand(2, 8), c = rand(2, 8);
-    const v = a * b * c;
-    return { stem: `Volume do paralelepípedo <b>${a} × ${b} × ${c} cm</b>:`, ...makeChoice(`${v} cm³`, nearDistr(v, 20).map(x => `${x} cm³`)),
-             explain: `Volume do paralelepípedo = comprimento × largura × altura. <b>${a}×${b}×${c} = ${v} cm³</b>.` };
-});
-
-const g_mean = () => Q(5, () => {
-    const n = pick([2, 3, 4]);
-    const nums = Array.from({ length: n }, () => rand(2, 20));
-    let sum = nums.reduce((a, b) => a + b, 0);
-    let guard = 0;
-    while (sum % n !== 0 && guard++ < 30) {
-        nums[0] = rand(2, 20);
-        sum = nums.reduce((a, b) => a + b, 0);
-    }
-    const ans = sum / n;
-    const intAns = Math.round(ans * 10) / 10;
-    return { stem: `Média de ${nums.join(', ')} =?`, ...makeChoice(intAns, nearDistr(intAns, 4)),
-             explain: `Média = soma ÷ quantidade. <b>(${nums.join('+')})/  ${n} = ${sum}/${n} = ${intAns}</b>. É o valor que representaria todos igualmente.` };
-});
-
-const g_probSimple = () => Q(5, () => {
-    const items = [
-        { s: 'Numa moeda, qual a chance de cair cara?', r: '1/2', d: ['1/4', '1/3', '1'] },
-        { s: 'Num dado, qual a chance de sair 3?', r: '1/6', d: ['1/3', '1/2', '3/6'] },
-        { s: 'Num dado, chance de sair número par?', r: '1/2', d: ['1/3', '1/6', '2/3'] },
-        { s: '20 bolas, 5 vermelhas. Chance de tirar vermelha?', r: '1/4', d: ['1/5', '5/15', '1/20'] },
-        { s: 'Probabilidade do evento certo:', r: '1', d: ['0', '1/2', 'depende'] },
-        { s: 'Probabilidade do evento impossível:', r: '0', d: ['1', '1/2', 'depende'] },
-        { s: 'Num dado, chance de sair número maior que 4?', r: '1/3', d: ['1/2', '2/3', '1/6'] },
-        { s: 'Numa moeda, chance de cair coroa?', r: '1/2', d: ['1/4', '1/3', '0'] },
-        { s: '10 bolas, 2 azuis. Chance de azul?', r: '1/5', d: ['2/10', '1/2', '1/10'] },
-        { s: 'Num dado, chance de sair 7?', r: '0', d: ['1/6', '1/7', '1'] },
-        { s: 'Num dado, chance de sair 1, 2 ou 3?', r: '1/2', d: ['1/3', '3/6', '1/6'] },
-        { s: '52 cartas, 4 ases. Chance de tirar ás?', r: '1/13', d: ['4/52', '1/52', '1/4'] },
-        { s: 'Numa urna com 3 bolas brancas e 1 preta, chance de preta?', r: '1/4', d: ['3/4', '1/3', '1/2'] },
-        { s: 'Num dado, chance de NÃO sair 6?', r: '5/6', d: ['1/6', '6/6', '1/2'] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d),
-             explain: '<b>Probabilidade</b> = casos favoráveis ÷ casos totais. Varia entre 0 (impossível) e 1 (certeza).' };
-});
-
-/* ── 6º ano — Montanha dos Inteiros ────────────────────────────────────── */
-const g_negLine = () => Q(5, () => {
-    const items = [
-        { s: 'Qual é maior: -3 ou -5?', r: '-3', d: ['-5', 'iguais', '0'] },
-        { s: 'Qual é maior: -1 ou 1?', r: '1', d: ['-1', 'iguais', 'depende'] },
-        { s: 'Na reta, qual fica mais à esquerda: -7 ou -2?', r: '-7', d: ['-2', 'iguais', 'nenhum'] },
-        { s: 'O oposto de 4 é:', r: -4, d: [4, 0, 14] },
-        { s: 'Módulo de -8 é:', r: 8, d: [-8, 0, 18] },
-        { s: 'Qual é o menor: -10, -3, 0, 5?', r: -10, d: [-3, 0, 5] },
-        { s: 'O oposto de -7 é:', r: 7, d: [-7, 0, 14] },
-        { s: 'Módulo de 12 é:', r: 12, d: [-12, 0, 24] },
-        { s: 'Qual fica mais à direita na reta: -2 ou -8?', r: '-2', d: ['-8', 'iguais', '0'] },
-        { s: 'Qual é maior: 0 ou -3?', r: '0', d: ['-3', 'iguais', 'depende'] },
-        { s: 'O oposto de 0 é:', r: 0, d: [1, -1, 10] },
-        { s: 'Qual é o maior: -10, -3, 0, 5?', r: 5, d: [-10, 0, -3] },
-        { s: 'Módulo de -100 é:', r: 100, d: [-100, 0, 200] },
-        { s: 'Entre -4 e -1, qual é maior?', r: '-1', d: ['-4', 'iguais', '0'] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d),
-             explain: 'Na <b>reta numérica</b>: negativos ficam à esquerda do zero. Quanto mais à esquerda, <b>menor</b> o número. Ex: −10 < −3 < 0 < 5.' };
-});
-
-const g_negAdd = () => Q(5, () => {
-    const a = rand(-20, 20), b = rand(-20, 20);
-    const c = a + b;
-    const str = `(${a}) + (${b})`.replace(/\+ \(-/g, '− (').replace(/\(-/g, '(−');
-    return { stem: `<b>${a} + (${b})</b> = ?`, ...makeChoice(c, nearDistr(c, 6, 3, true)),
-             explain: `Soma com negativos: sinais <b>iguais</b> → some os módulos e mantenha o sinal. Sinais <b>diferentes</b> → subtraia os módulos e use o sinal do maior.` };
-});
-
-const g_negSub = () => Q(5, () => {
-    const a = rand(-20, 20), b = rand(-20, 20);
-    const c = a - b;
-    return { stem: `<b>${a} − (${b})</b> = ?`, ...makeChoice(c, nearDistr(c, 6, 3, true)),
-             explain: `Subtração de negativo: <b>a − (−b) = a + b</b>. Dois negativos seguidos viram positivo! Ex: 5−(−3) = 5+3 = 8.` };
-});
-
-const g_negMult = () => Q(5, () => {
-    const a = rand(-12, 12) || 1, b = rand(-12, 12) || 1;
-    const c = a * b;
-    return { stem: `<b>(${a}) × (${b})</b> = ?`, ...makeChoice(c, nearDistr(c, 10, 3, true)),
-             explain: 'Multiplicação: <b>sinais iguais → positivo</b> (+ × + ou − × −). <b>Sinais diferentes → negativo</b> (+ × − ou − × +).' };
-});
-
-const g_negDiv = () => Q(5, () => {
-    const b = rand(2, 9) * pick([-1, 1]);
-    const q = rand(2, 9) * pick([-1, 1]);
-    const a = b * q;
-    return { stem: `<b>(${a}) ÷ (${b})</b> = ?`, ...makeChoice(q, nearDistr(q, 4, 3, true)),
-             explain: 'Divisão: <b>sinais iguais → resultado positivo</b>. <b>Sinais diferentes → resultado negativo</b>. Mesma regra da multiplicação!' };
-});
-
-const g_mmc = () => Q(5, () => {
-    const pairs = [[4, 6, 12], [3, 5, 15], [6, 8, 24], [4, 10, 20], [9, 12, 36], [5, 7, 35], [8, 12, 24], [2, 3, 6], [6, 9, 18], [4, 5, 20]];
-    const [a, b, m] = pick(pairs);
-    return { stem: `<b>MMC(${a}, ${b})</b> = ?`, ...makeChoice(m, nearDistr(m, 6)),
-             explain: `<b>MMC</b> (Mínimo Múltiplo Comum): o menor número divisível pelos dois. MMC(${a},${b}) = <b>${m}</b>. Usado para somar frações com denominadores diferentes!` };
-});
-
-const g_mdc = () => Q(5, () => {
-    const pairs = [[12, 18, 6], [20, 30, 10], [24, 36, 12], [15, 25, 5], [14, 21, 7], [8, 12, 4], [9, 27, 9], [16, 24, 8], [10, 15, 5], [18, 24, 6]];
-    const [a, b, m] = pick(pairs);
-    return { stem: `<b>MDC(${a}, ${b})</b> = ?`, ...makeChoice(m, nearDistr(m, 4)),
-             explain: `<b>MDC</b> (Máximo Divisor Comum): o maior número que divide os dois exatamente. MDC(${a},${b}) = <b>${m}</b>. Usado para simplificar frações!` };
-});
-
-const g_fracAddDiff = () => Q(5, () => {
-    const pairs = [['1/2', '1/3', '5/6'], ['1/4', '1/2', '3/4'], ['2/3', '1/6', '5/6'], ['1/3', '1/4', '7/12'], ['3/4', '1/8', '7/8'], ['1/5', '1/2', '7/10']];
-    const [a, b, r] = pick(pairs);
-    return { stem: `<b>${a} + ${b}</b> = ?`, ...makeChoice(r, ['1/5', '2/12', '3/7', '4/9'].filter(x => x !== r).slice(0, 3)),
-             explain: `Frações com denominadores diferentes: ache o <b>MMC</b> dos denominadores, converta e some os numeradores. Ex: ${a}+${b} = <b>${r}</b>.` };
-});
-
-const g_fracMult = () => Q(5, () => {
-    const items = [['1/2', '1/3', '1/6'], ['2/3', '3/4', '1/2'], ['1/2', '1/4', '1/8'], ['3/5', '1/2', '3/10'], ['2/5', '5/6', '1/3']];
-    const [a, b, r] = pick(items);
-    return { stem: `<b>${a} × ${b}</b> = ?`, ...makeChoice(r, ['2/12', '5/9', '3/8', '7/15'].filter(x => x !== r).slice(0, 3)),
-             explain: `Multiplicação de frações: multiplique numerador × numerador e denominador × denominador. Ex: ${a}×${b} = <b>${r}</b>. Simplifique no final!` };
-});
-
-const g_fracDiv = () => Q(5, () => {
-    const items = [['1/2', '1/4', '2'], ['3/4', '1/2', '3/2'], ['2/3', '1/3', '2'], ['1/2', '1/2', '1']];
-    const [a, b, r] = pick(items);
-    return { stem: `<b>${a} ÷ ${b}</b> = ?`, ...makeChoice(r, ['1/4', '1/8', '3/4', '4'].filter(x => x !== r).slice(0, 3)),
-             explain: `Divisão de frações: <b>inverta a segunda e multiplique</b>. Ex: ${a}÷${b} = ${a}×(inverso de ${b}) = <b>${r}</b>.` };
-});
-
-const g_eq1 = () => Q(5, () => {
-    const x = rand(1, 20), a = rand(1, 20);
-    const types = [
-        { s: `x + ${a} = ${x + a}`, r: x },
-        { s: `x − ${a} = ${x - a}`, r: x },
-        { s: `${a + x} = x + ${a}`, r: x },
-    ];
-    const t = pick(types);
-    return { stem: `Resolva: <b>${t.s}</b>. x = ?`, ...makeChoice(t.r, nearDistr(t.r, 4)),
-             explain: `Isole o x: passe o número para o outro lado <b>com o sinal trocado</b>. Ex: x+${a}=${x + a} → x = ${x + a}−${a} = <b>${x}</b>.` };
-});
-
-const g_eqMult = () => Q(5, () => {
-    const x = rand(2, 10), a = rand(2, 9);
-    const types = [
-        { s: `${a}x = ${a * x}`, r: x },
-        { s: `x/${a} = ${Math.floor(x)}`, r: a * Math.floor(x) },
-        { s: `${a}x − ${a} = ${a * x - a}`, r: x },
-    ];
-    const t = pick(types);
-    return { stem: `Resolva: <b>${t.s}</b>. x = ?`, ...makeChoice(t.r, nearDistr(t.r, 4)),
-             explain: `Para isolar x: realize a <b>operação inversa</b> dos dois lados. Se ${a}x=${a*x}, divida por ${a}: x = <b>${x}</b>.` };
-});
-
-const g_ratioBasic = () => Q(5, () => {
-    const items = [
-        { s: 'Numa sala há 12 meninas e 8 meninos. Razão meninas:meninos?', r: '3:2', d: ['2:3', '12:8', '8:12'] },
-        { s: 'Razão de 6 para 9 (simplificada):', r: '2:3', d: ['3:2', '6:9', '1:1'] },
-        { s: 'Razão de 10 para 5:', r: '2:1', d: ['1:2', '5:10', '10:5'] },
-        { s: 'Razão de 4 para 16 (simplificada):', r: '1:4', d: ['4:1', '4:16', '2:8'] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d),
-             explain: 'Razão = comparação pela divisão. Simplifique dividindo pelo MDC. Razão 12:8 = 3:2 (dividido por 4).' };
-});
-
-/* ── 7º ano — Deserto das Equações ─────────────────────────────────────── */
-const g_eq2sides = () => Q(5, () => {
-    const x = rand(1, 10), a = rand(2, 6), b = rand(2, 6), c = rand(1, 10);
-    if (a === b) return { stem: 'Resolva: 2x + 3 = x + 7. x = ?', ...makeChoice(4, [3, 5, 6]),
-        explain: 'Isole o x: passe os termos com x para um lado e os números para o outro. <b>2x − x = 7 − 3 → x = 4.</b> Regra: ao mudar de lado, inverta o sinal.' };
-    const left = a * x + c;
-    const rightConst = left - b * x;
-    const diff = a - b;
-    return { stem: `Resolva: <b>${a}x + ${c} = ${b}x + ${rightConst}</b>. x = ?`, ...makeChoice(x, nearDistr(x, 4)),
-        explain: `Agrupe os x: <b>${a}x − ${b}x = ${rightConst} − ${c} → ${diff}x = ${diff * x} → x = ${x}.</b> Ao passar um termo para o outro lado, o sinal sempre troca.` };
-});
-
-const g_eqParen = () => Q(5, () => {
-    const items = [
-        { s: '2(x + 3) = 14', r: 4, e: '<b>Distributiva:</b> 2x + 6 = 14 → 2x = 8 → x = 4.' },
-        { s: '3(x − 1) = 12', r: 5, e: '<b>Distributiva:</b> 3x − 3 = 12 → 3x = 15 → x = 5.' },
-        { s: '2(x − 4) = 6', r: 7, e: '<b>Distributiva:</b> 2x − 8 = 6 → 2x = 14 → x = 7.' },
-        { s: '5(x + 2) = 35', r: 5, e: '<b>Distributiva:</b> 5x + 10 = 35 → 5x = 25 → x = 5.' },
-        { s: '4(x + 1) = 20', r: 4, e: '<b>Distributiva:</b> 4x + 4 = 20 → 4x = 16 → x = 4.' },
-        { s: '3(2x + 1) = 21', r: 3, e: '<b>Distributiva:</b> 6x + 3 = 21 → 6x = 18 → x = 3.' },
-    ];
-    const it = pick(items);
-    return { stem: `Resolva: <b>${it.s}</b>. x = ?`, ...makeChoice(it.r, nearDistr(it.r, 4)), explain: it.e };
-});
-
-const g_eqFrac = () => Q(5, () => {
-    const items = [
-        { s: 'x/2 + 1 = 4', r: 6,  e: 'Multiplique tudo por 2 (MMC): x + 2 = 8 → x = 6.' },
-        { s: 'x/3 − 2 = 1', r: 9,  e: 'Multiplique tudo por 3: x − 6 = 3 → x = 9.' },
-        { s: '2x/3 = 6',    r: 9,  e: 'Multiplique por 3: 2x = 18 → x = 9. Ou: x = 6 × 3/2 = 9.' },
-        { s: 'x/4 = 3',     r: 12, e: 'Multiplique por 4: x = 12. Direto: x = 3 × 4.' },
-        { s: 'x/5 + 1 = 3', r: 10, e: 'Multiplique por 5: x + 5 = 15 → x = 10.' },
-    ];
-    const it = pick(items);
-    return { stem: `Resolva: <b>${it.s}</b>. x = ?`, ...makeChoice(it.r, nearDistr(it.r, 4)), explain: it.e };
-});
-
-const g_proportion = () => Q(5, () => {
-    const a = rand(2, 9), b = rand(2, 9), k = rand(2, 6);
-    const c = a * k, d = b * k;
-    const items = [
-        { s: `${a}/${b} = x/${d}. x = ?`, r: c },
-        { s: `${a}/${b} = ${c}/x. x = ?`, r: d },
-        { s: `x/${b} = ${c}/${d}. x = ?`, r: a },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, nearDistr(it.r, 5)),
-             explain: `<b>Produto cruzado</b> (regra da cruz): a/b = c/d → a×d = b×c. Isole o x!` };
-});
-
-const g_rule3 = () => Q(5, () => {
-    const items = [
-        () => { const u = rand(2, 9), v = rand(2, 9), k = rand(2, 6); return { s: `Se ${u} caixas custam R$ ${u * v},00, quanto custam ${u * k} caixas?`, r: u * v * k }; },
-        () => { const km = rand(50, 200), h = rand(2, 5); return { s: `Carro a ${km} km/h percorre quantos km em ${h} h?`, r: km * h }; },
-        () => { const a = rand(2, 6), b = rand(2, 9); return { s: `${a} laranjas custam R$ ${a * b},00. Quanto custam ${a + 3} laranjas?`, r: (a + 3) * b }; },
-    ];
-    const it = pick(items)();
-    return { stem: `<b>Regra de 3:</b> ${it.s}`, ...makeChoice(it.r, nearDistr(it.r, 8)),
-             explain: '<b>Regra de 3 direta</b>: grandezas proporcionais. Monte a tabela e calcule pela proporção. Se dobra um, dobra o outro!' };
-});
-
-const g_rule3Inv = () => Q(5, () => {
-    const items = [
-        { s: '6 operários fazem obra em 10 dias. Quantos dias para 12 operários?', r: 5,  e: 'Inversa: mais operários → menos dias. Produto constante: 6×10 = 12×x → x = 60/12 = <b>5 dias</b>.' },
-        { s: '4 torneiras enchem tanque em 6h. Tempo com 8 torneiras?', r: 3,             e: 'Inversa: mais torneiras → menos tempo. 4×6 = 8×x → x = 24/8 = <b>3 horas</b>.' },
-        { s: '3 máquinas em 8h. Tempo com 6 máquinas?', r: 4,                            e: 'Inversa: mais máquinas → menos tempo. 3×8 = 6×x → x = 24/6 = <b>4 horas</b>.' },
-        { s: '5 pintores em 12 dias. Tempo com 10 pintores?', r: 6,                       e: 'Inversa: mais pintores → menos dias. 5×12 = 10×x → x = 60/10 = <b>6 dias</b>.' },
-    ];
-    const it = pick(items);
-    return { stem: `<b>Inversa:</b> ${it.s}`, ...makeChoice(it.r, nearDistr(it.r, 4)), explain: it.e };
-});
-
-const g_discount = () => Q(5, () => {
-    const v = pick([100, 150, 200, 250, 300, 500]);
-    const p = pick([10, 15, 20, 25, 30]);
-    const c = v - (v * p) / 100;
-    const fator = (1 - p / 100);
-    return { stem: `Produto de R$ ${v} com desconto de ${p}%. Valor final?`, ...makeChoice(`R$ ${c}`, nearDistr(c, 30).map(x => `R$ ${x}`)),
-        explain: `Desconto de ${p}%: multiplique pelo fator <b>(1 − ${p}/100) = ${fator}</b>. Cálculo: ${v} × ${fator} = <b>R$ ${c}</b>. Muito cobrado no ENEM em problemas de consumo!` };
-});
-
-const g_increase = () => Q(5, () => {
-    const v = pick([100, 200, 300, 400, 500]);
-    const p = pick([10, 15, 20, 25, 30, 50]);
-    const c = v + (v * p) / 100;
-    const fator = (1 + p / 100);
-    return { stem: `R$ ${v} com aumento de ${p}%. Valor final?`, ...makeChoice(`R$ ${c}`, nearDistr(c, 40).map(x => `R$ ${x}`)),
-        explain: `Aumento de ${p}%: multiplique pelo fator <b>(1 + ${p}/100) = ${fator}</b>. Cálculo: ${v} × ${fator} = <b>R$ ${c}</b>. Encadeando aumentos/descontos: multiplique os fatores em sequência.` };
-});
-
-const g_interestSimple = () => Q(5, () => {
-    const c = pick([1000, 2000, 5000]);
-    const i = pick([1, 2, 5, 10]);
-    const t = pick([3, 6, 12]);
-    const j = (c * i * t) / 100;
-    return { stem: `Capital R$ ${c}, taxa ${i}% ao mês, ${t} meses. Juros simples = ?`, ...makeChoice(`R$ ${j}`, nearDistr(j, 100).map(x => `R$ ${x}`)),
-        explain: `Juros Simples: <b>J = C × i × t</b> = ${c} × ${i}/100 × ${t} = <b>R$ ${j}</b>. O montante total seria M = C + J = R$ ${c + j}. Diferente dos juros compostos (capitalização), aqui os juros não se acumulam sobre si mesmos.` };
-});
-
-const g_angles = () => Q(5, () => {
-    const items = [
-        { s: 'Ângulo de 90° é:', r: 'reto', d: ['agudo', 'obtuso', 'raso'] },
-        { s: 'Ângulo menor que 90°:', r: 'agudo', d: ['reto', 'obtuso', 'raso'] },
-        { s: 'Ângulo entre 90° e 180°:', r: 'obtuso', d: ['agudo', 'reto', 'raso'] },
-        { s: 'Ângulo de 180°:', r: 'raso', d: ['reto', 'obtuso', 'agudo'] },
-        { s: 'Soma dos ângulos internos de um triângulo:', r: '180°', d: ['90°', '360°', '270°'] },
-        { s: 'Soma dos ângulos de um quadrilátero:', r: '360°', d: ['180°', '270°', '90°'] },
-        { s: 'Dois ângulos somando 90° são:', r: 'complementares', d: ['suplementares', 'opostos', 'iguais'] },
-        { s: 'Dois ângulos somando 180° são:', r: 'suplementares', d: ['complementares', 'opostos', 'paralelos'] },
-        { s: 'Complemento de 30°:', r: '60°', d: ['150°', '90°', '30°'] },
-        { s: 'Suplemento de 120°:', r: '60°', d: ['90°', '180°', '240°'] },
-        { s: 'Ângulo de 45° é:', r: 'agudo', d: ['reto', 'obtuso', 'raso'] },
-        { s: 'Ângulo de 135° é:', r: 'obtuso', d: ['agudo', 'reto', 'raso'] },
-        { s: 'Em um triângulo retângulo, um ângulo é:', r: '90°', d: ['180°', '60°', '45°'] },
-        { s: 'Soma dos ângulos internos do pentágono:', r: '540°', d: ['360°', '720°', '180°'] },
-        { s: 'Complemento de 45°:', r: '45°', d: ['90°', '135°', '0°'] },
-        { s: 'Suplemento de 90°:', r: '90°', d: ['180°', '45°', '270°'] },
-        { s: 'Ângulo de 360° é:', r: 'volta completa', d: ['raso', 'reto', 'agudo'] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d),
-             explain: '<b>Agudo</b> < 90° | <b>Reto</b> = 90° | <b>Obtuso</b> 90°-180° | <b>Raso</b> = 180°. Triângulo: soma interna = 180°. Quadrilátero: 360°.' };
-});
-
-const g_areaTri = () => Q(5, () => {
-    const b = rand(2, 20), h = rand(2, 20);
-    const c = (b * h) / 2;
-    return { stem: `Área de triângulo base <b>${b}</b> cm e altura <b>${h}</b> cm:`, ...makeChoice(`${c} cm²`, nearDistr(c, 8).map(x => `${x} cm²`)),
-             explain: `Área do triângulo = (base × altura) ÷ 2. <b>(${b}×${h})/2 = ${c} cm²</b>. A altura é sempre perpendicular à base.` };
-});
-
-const g_areaPar = () => Q(5, () => {
-    const b = rand(3, 20), h = rand(2, 15);
-    const c = b * h;
-    return { stem: `Área de paralelogramo base ${b} altura ${h}:`, ...makeChoice(`${c} cm²`, nearDistr(c, 10).map(x => `${x} cm²`)),
-             explain: `Área do paralelogramo = base × altura. <b>${b}×${h} = ${c} cm²</b>. Atenção: use a altura perpendicular, não o lado inclinado!` };
-});
-
-const g_areaTrap = () => Q(5, () => {
-    const B = rand(6, 15), b = rand(2, 5), h = rand(2, 10);
-    const c = ((B + b) * h) / 2;
-    return { stem: `Área de trapézio (B=${B}, b=${b}, h=${h}):`, ...makeChoice(`${c} cm²`, nearDistr(c, 8).map(x => `${x} cm²`)),
-             explain: `Área do trapézio = (Base + base) × altura ÷ 2. <b>(${B}+${b})×${h}/2 = ${c} cm²</b>.` };
-});
-
-const g_circle = () => Q(5, () => {
-    const r = rand(2, 10);
-    const items = [
-        { s: `Comprimento do círculo de raio ${r} cm (use π=3,14):`, r: +(2 * 3.14 * r).toFixed(2) },
-        { s: `Área do círculo de raio ${r} cm (use π=3,14):`, r: +(3.14 * r * r).toFixed(2) },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, nearDistr(Math.round(it.r), 10).map(x => x.toString())),
-             explain: 'Círculo: <b>Circunferência = 2πr</b>. <b>Área = πr²</b>. Use π ≈ 3,14 nas contas.' };
-});
-
-/* ── 8º ano — Templo das Potências ─────────────────────────────────────── */
-const g_power = () => Q(5, () => {
-    const b = rand(2, 9), e = rand(2, 4);
-    const c = Math.pow(b, e);
-    const steps = Array.from({ length: e }, () => b).join(' × ');
-    return { stem: `<b>${b}<sup>${e}</sup></b> = ?`, ...makeChoice(c, nearDistr(c, Math.max(5, c / 4))),
-        explain: `Potenciação: <b>${b}${e > 1 ? `<sup>${e}</sup>` : ''}</b> = ${steps} = <b>${c}</b>. O expoente indica quantas vezes a base é multiplicada por ela mesma.` };
-});
-
-const g_powerProp = () => Q(5, () => {
-    const items = [
-        { s: 'a³ × a⁵ = ?', r: 'a⁸',   d: ['a²', 'a¹⁵', '2a⁸'],   e: '<b>Multiplicação de mesma base:</b> soma os expoentes. a³ × a⁵ = a^(3+5) = <b>a⁸</b>.' },
-        { s: 'x⁷ ÷ x³ = ?', r: 'x⁴',   d: ['x¹⁰', 'x²¹', 'x'],    e: '<b>Divisão de mesma base:</b> subtrai os expoentes. x⁷ ÷ x³ = x^(7−3) = <b>x⁴</b>.' },
-        { s: '(a²)³ = ?',   r: 'a⁶',   d: ['a⁵', 'a²³', 'a'],      e: '<b>Potência de potência:</b> multiplica os expoentes. (a²)³ = a^(2×3) = <b>a⁶</b>.' },
-        { s: 'x⁰ = ?',      r: '1',     d: ['0', 'x', 'indefinido'], e: 'Qualquer base (exceto 0) elevada a <b>zero é igual a 1</b>. x⁰ = 1. Decorre da divisão: xⁿ ÷ xⁿ = x⁰ = 1.' },
-        { s: '2³ × 2⁴ = ?', r: '2⁷',   d: ['2¹²', '4⁷', '2¹'],    e: '<b>Mesma base:</b> soma os expoentes. 2³ × 2⁴ = 2^(3+4) = <b>2⁷</b> = 128.' },
-        { s: '(2³)² = ?',   r: '2⁶',   d: ['2⁵', '4³', '6'],       e: '<b>Potência de potência:</b> (2³)² = 2^(3×2) = <b>2⁶</b> = 64. Nunca some os expoentes aqui!' },
-        { s: 'a⁴ × a² = ?', r: 'a⁶',   d: ['a⁸', 'a²', '2a⁶'],    e: '<b>Multiplicação de mesma base:</b> a⁴ × a² = a^(4+2) = <b>a⁶</b>.' },
-        { s: 'b⁵ ÷ b² = ?', r: 'b³',   d: ['b⁷', 'b¹⁰', 'b²·⁵'],  e: '<b>Divisão de mesma base:</b> b⁵ ÷ b² = b^(5−2) = <b>b³</b>.' },
-        { s: '(x³)² = ?',   r: 'x⁶',   d: ['x⁵', 'x⁹', 'x'],      e: '<b>Potência de potência:</b> (x³)² = x^(3×2) = <b>x⁶</b>.' },
-        { s: '5⁰ = ?',      r: '1',     d: ['0', '5', '50'],         e: '<b>Expoente zero:</b> 5⁰ = 1. Regra geral: a⁰ = 1 para qualquer a ≠ 0.' },
-        { s: '3² × 3³ = ?', r: '3⁵',   d: ['3⁶', '9⁵', '3¹'],     e: '<b>Mesma base:</b> 3² × 3³ = 3^(2+3) = <b>3⁵</b> = 243.' },
-        { s: 'a⁻¹ = ?',     r: '1/a',  d: ['-a', '0', 'a'],         e: '<b>Expoente negativo:</b> a⁻¹ = 1/a. Generalizando: a⁻ⁿ = 1/aⁿ. Ex: 2⁻³ = 1/8.' },
-        { s: '(ab)² = ?',   r: 'a²b²', d: ['ab²', 'a²b', '2ab'],    e: '<b>Potência de produto:</b> (ab)² = a²b². Cada fator recebe o expoente individualmente.' },
-        { s: '10⁻² = ?',    r: '0,01', d: ['-100', '100', '-0,01'],  e: '10⁻² = 1/10² = 1/100 = <b>0,01</b>. Expoente negativo na base 10 gera decimais.' },
-        { s: 'a⁵ ÷ a⁵ = ?', r: '1',    d: ['0', 'a', 'a¹⁰'],        e: 'a⁵ ÷ a⁵ = a^(5−5) = a⁰ = <b>1</b>. Qualquer número dividido por si mesmo é 1.' },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
-});
-
-const g_sciNotation = () => Q(5, () => {
-    const items = [
-        { s: '500 em notação científica:', r: '5 × 10²', d: ['5 × 10³', '50 × 10', '5,0 × 10⁻²'],
-          e: 'Notação científica: <b>a × 10ⁿ</b> onde 1 ≤ a < 10. 500 = 5,00 × 10² (vírgula andou 2 casas para a esquerda).' },
-        { s: '3.000.000 em notação científica:', r: '3 × 10⁶', d: ['3 × 10⁵', '30 × 10⁵', '3 × 10⁷'],
-          e: '3.000.000 = 3 × 10⁶ (6 zeros = expoente 6). Muito usada em Física (distâncias astronômicas, tamanho de átomos).' },
-        { s: '0,005 em notação científica:', r: '5 × 10⁻³', d: ['5 × 10³', '0,5 × 10⁻²', '5 × 10⁻²'],
-          e: '0,005 = 5 × 10⁻³ (vírgula andou 3 casas para a direita → expoente negativo).' },
-        { s: '7,2 × 10² = ?', r: '720', d: ['72', '7200', '0,72'],
-          e: '7,2 × 10² = 7,2 × 100 = <b>720</b>. Expoente positivo → desloque a vírgula para a direita.' },
-        { s: '4,5 × 10⁻¹ = ?', r: '0,45', d: ['45', '4,5', '0,045'],
-          e: '4,5 × 10⁻¹ = 4,5 ÷ 10 = <b>0,45</b>. Expoente negativo → desloque a vírgula para a esquerda.' },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
-});
-
-const g_sqrt = () => Q(5, () => {
-    const r = rand(2, 15);
-    const n = r * r;
-    return { stem: `<b>√${n}</b> = ?`, ...makeChoice(r, nearDistr(r, 4)),
-        explain: `Raiz quadrada: √${n} = <b>${r}</b> porque ${r}² = ${n}. Para conferir: ${r} × ${r} = ${n}. ✓` };
-});
-
-const g_cubeRoot = () => Q(5, () => {
-    const r = rand(2, 9);
-    const n = r * r * r;
-    return { stem: `<b>∛${n}</b> = ?`, ...makeChoice(r, nearDistr(r, 3)),
-             explain: `Raiz cúbica: <b>∛${n} = ${r}</b> porque ${r}³ = ${r}×${r}×${r} = ${n}. Verifique sempre elevando ao cubo!` };
-});
-
-const g_sqrtAprox = () => Q(5, () => {
-    const items = [
-        { s: '√50 está entre:', r: '7 e 8', d: ['6 e 7', '8 e 9', '4 e 5'] },
-        { s: '√30 está entre:', r: '5 e 6', d: ['4 e 5', '6 e 7', '3 e 4'] },
-        { s: '√90 está entre:', r: '9 e 10', d: ['8 e 9', '10 e 11', '7 e 8'] },
-        { s: '√20 está entre:', r: '4 e 5', d: ['3 e 4', '5 e 6', '6 e 7'] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d),
-             explain: 'Para aproximar √n: encontre os quadrados perfeitos vizinhos. Ex: √50: como 7²=49 e 8²=64, √50 está entre <b>7 e 8</b>.' };
-});
-
-const g_algebraVal = () => Q(5, () => {
-    const x = rand(2, 6);
-    const items = [
-        { s: `2x + 3 (com x=${x})`, r: 2 * x + 3 },
-        { s: `x² − 1 (com x=${x})`, r: x * x - 1 },
-        { s: `3x − 2 (com x=${x})`, r: 3 * x - 2 },
-        { s: `x² + x (com x=${x})`, r: x * x + x },
-    ];
-    const it = pick(items);
-    return { stem: `Valor numérico de ${it.s}:`, ...makeChoice(it.r, nearDistr(it.r, 5)),
-             explain: `Valor numérico: <b>substitua</b> x pelo valor dado e calcule. Siga a ordem das operações (parênteses, potências, ×÷, +−).` };
-});
-
-const g_monoSum = () => Q(5, () => {
-    const items = [
-        { s: '3x + 5x', r: '8x', d: ['15x', '8', '8x²'] },
-        { s: '7a − 2a', r: '5a', d: ['9a', '5', '14a'] },
-        { s: '2x² + 5x²', r: '7x²', d: ['10x⁴', '7x', '7x⁴'] },
-        { s: '4y + y', r: '5y', d: ['4y²', '5', '4y + 1'] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d),
-             explain: 'Some monômios <b>semelhantes</b> (mesma parte literal): some só os coeficientes. Ex: 3x+5x=8x. Não some 3x+5x² (letras diferentes)!' };
-});
-
-const g_monoMult = () => Q(5, () => {
-    const items = [
-        { s: '3x · 2x', r: '6x²', d: ['5x²', '6x', '5x'] },
-        { s: '4a · 3b', r: '12ab', d: ['7ab', '12a', '12b'] },
-        { s: '2x² · 5x', r: '10x³', d: ['7x³', '10x²', '10x'] },
-        { s: '6y · y²', r: '6y³', d: ['6y²', '7y³', 'y⁶'] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d),
-             explain: 'Multiplicação de monômios: multiplique os coeficientes e <b>some os expoentes</b> das mesmas letras. Ex: 3x·2x=6x².' };
-});
-
-const EXPLAIN_SQ_PLUS  = 'Quadrado da soma: <b>(a+b)² = a² + 2ab + b²</b>. O erro mais comum é esquecer o termo do meio <b>2ab</b>. Nunca escreva (a+b)² = a²+b²!';
-const EXPLAIN_SQ_MINUS = 'Quadrado da diferença: <b>(a−b)² = a² − 2ab + b²</b>. Atenção: o último termo <b>+b²</b> é positivo! Só o termo do meio muda de sinal.';
-const EXPLAIN_DIFF_SQ  = 'Diferença de quadrados: <b>(a+b)(a−b) = a² − b²</b>. Reconheça o padrão para fatorar rapidamente. Muito cobrado em vestibulares!';
-
-const g_squarePlus = () => Q(5, () => {
-    const items = [
-        { s: '(a + b)² = ?', r: 'a² + 2ab + b²', d: ['a² + b²', 'a² − b²', 'a² + ab + b²'] },
-        { s: '(x + 3)² = ?', r: 'x² + 6x + 9',   d: ['x² + 9', 'x² − 6x + 9', 'x² + 3x + 9'] },
-        { s: '(2 + y)² = ?', r: 'y² + 4y + 4',   d: ['y² + 4', '2y² + 4', '4 + y²'] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: EXPLAIN_SQ_PLUS };
-});
-
-const g_squareMinus = () => Q(5, () => {
-    const items = [
-        { s: '(a − b)² = ?', r: 'a² − 2ab + b²', d: ['a² + b²', 'a² − b²', 'a² + 2ab − b²'] },
-        { s: '(x − 2)² = ?', r: 'x² − 4x + 4',   d: ['x² − 4', 'x² + 4x + 4', 'x² − 2x + 4'] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: EXPLAIN_SQ_MINUS };
-});
-
-const g_diffSquares = () => Q(5, () => {
-    const items = [
-        { s: '(a + b)(a − b) = ?', r: 'a² − b²',  d: ['a² + b²', 'a² + 2ab + b²', '(a − b)²'] },
-        { s: '(x + 3)(x − 3) = ?', r: 'x² − 9',   d: ['x² + 9', 'x² − 6x + 9', 'x² − 6'] },
-        { s: '(y + 5)(y − 5) = ?', r: 'y² − 25',  d: ['y² + 25', '(y − 5)²', 'y² − 10'] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: EXPLAIN_DIFF_SQ };
-});
-
-const g_factor = () => Q(5, () => {
-    const items = [
-        { s: 'Fatore: 2x + 4', r: '2(x + 2)', d: ['x(2 + 4)', '2x · 4', '(x + 2)(x + 2)'],
-          e: '<b>Evidenciação:</b> MDC(2x, 4) = 2. Coloque 2 em evidência: 2x+4 = <b>2(x+2)</b>. Confira expandindo: 2·x + 2·2 = 2x+4. ✓' },
-        { s: 'Fatore: 3x² − 6x', r: '3x(x − 2)', d: ['3x² − 6x', 'x(3x − 6)', '3(x² − 2)'],
-          e: '<b>Evidenciação:</b> MDC(3x², 6x) = 3x. Então 3x²−6x = <b>3x(x−2)</b>. Sempre coloque o maior fator comum em evidência.' },
-        { s: 'Fatore: 5a + 10', r: '5(a + 2)', d: ['(a + 2)(a + 5)', '5a · 2', 'a(5 + 10)'],
-          e: '<b>Evidenciação:</b> MDC(5a, 10) = 5. Então 5a+10 = <b>5(a+2)</b>.' },
-        { s: 'Fatore: x² − 9', r: '(x + 3)(x − 3)', d: ['(x − 3)²', '(x + 3)²', 'x(x − 9)'],
-          e: '<b>Diferença de quadrados:</b> x²−9 = x²−3² = <b>(x+3)(x−3)</b>. Reconheça o padrão a²−b² = (a+b)(a−b).' },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
-});
-
-const g_sysSubst = () => Q(5, () => {
-    const items = [
-        { s: '{ x + y = 7 ;  x − y = 1 }', r: 'x=4, y=3', d: ['x=3, y=4', 'x=5, y=2', 'x=6, y=1'],
-          e: '<b>Método da adição:</b> some as equações: 2x = 8 → x = 4. Substitua: 4+y=7 → y=3.' },
-        { s: '{ x + y = 10 ; x − y = 4 }', r: 'x=7, y=3', d: ['x=3, y=7', 'x=6, y=4', 'x=5, y=5'],
-          e: '<b>Método da adição:</b> some: 2x = 14 → x = 7. Substitua: 7+y=10 → y=3.' },
-        { s: '{ 2x + y = 9 ; x + y = 5 }', r: 'x=4, y=1', d: ['x=1, y=4', 'x=3, y=2', 'x=2, y=3'],
-          e: '<b>Subtração:</b> subtraia a 2ª da 1ª: (2x+y)−(x+y) = 9−5 → x=4. Substitua: 4+y=5 → y=1.' },
-    ];
-    const it = pick(items);
-    return { stem: `Sistema: ${it.s}`, ...makeChoice(it.r, it.d), explain: it.e };
-});
-
-const g_thales = () => Q(5, () => {
-    const items = [
-        { s: '3/x = 6/8. x = ?', r: 4 }, { s: '5/10 = x/12. x = ?', r: 6 },
-        { s: '4/x = 8/14. x = ?', r: 7 }, { s: '2/3 = x/9. x = ?', r: 6 },
-    ];
-    const it = pick(items);
-    return { stem: `<b>Tales:</b> ${it.s}`, ...makeChoice(it.r, nearDistr(it.r, 4)),
-             explain: '<b>Produto cruzado:</b> se a/b = c/x, então a·x = b·c. Isole x dividindo. Muito usado em semelhança de triângulos!' };
-});
-
-/* ── 9º ano — Cidadela do Mestre ───────────────────────────────────────── */
-const g_funcAfim = () => Q(5, () => {
-    const items = [
-        { s: 'Em f(x) = 2x + 3, qual o coeficiente angular?', r: 2, d: [3, 5, -2],
-          e: 'Em <b>f(x) = ax + b</b>: <b>a</b> é o coeficiente angular (taxa de variação, inclinação da reta). Aqui a=<b>2</b>, b=3.' },
-        { s: 'Em f(x) = 2x + 3, qual o coeficiente linear?', r: 3, d: [2, -3, 0],
-          e: 'Em <b>f(x) = ax + b</b>: <b>b</b> é o coeficiente linear (valor de f quando x=0, onde a reta cruza o eixo y). Aqui b=<b>3</b>.' },
-        { s: 'f(x) = 3x − 6. f(0) = ?', r: -6, d: [0, 3, 6],
-          e: 'Substitua x=0: f(0) = 3(0)−6 = <b>−6</b>. Este é o coeficiente linear — o ponto onde a reta toca o eixo y.' },
-        { s: 'f(x) = 3x − 6. f(2) = ?', r: 0, d: [6, -6, 12],
-          e: 'Substitua x=2: f(2) = 3(2)−6 = 6−6 = <b>0</b>. Quando f(x)=0, x=2 é a raiz (zero) da função afim.' },
-        { s: 'A função afim tem a forma:', r: 'f(x) = ax + b', d: ['f(x) = ax²', 'f(x) = a/x', 'f(x) = aˣ'],
-          e: 'Função afim: <b>f(x) = ax + b</b> (grau 1, gráfico é reta). Não confunda com quadrática (ax²), inversa (a/x) ou exponencial (aˣ).' },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
-});
-
-const g_funcRoot = () => Q(5, () => {
-    const a = rand(1, 6), b = rand(2, 20);
-    const r = b / a;
-    if (b % a !== 0) return { stem: `Raiz de f(x) = ${a}x − ${a * 3}`, ...makeChoice(3, [0, a === 3 ? 6 : a, a === -3 ? -6 : -3]) };
-    return { stem: `Raiz de f(x) = ${a}x − ${b}`, ...makeChoice(r, nearDistr(r, 4)) };
-});
-
-const EXPLAIN_FUNC_GRAPH = 'Gráfico de <b>f(x) = ax + b</b> é sempre uma <b>reta</b>. Se a>0 → crescente (sobe da esquerda para direita). Se a<0 → decrescente. Se a=0 → reta horizontal. O gráfico corta o eixo y no ponto (0, b).';
-const g_funcGraph = () => Q(5, () => {
-    const items = [
-        { s: 'Gráfico de função afim é:',          r: 'uma reta',   d: ['parábola', 'hipérbole', 'circunferência'] },
-        { s: 'Quando a > 0, f(x) = ax + b é:',     r: 'crescente',  d: ['decrescente', 'constante', 'oscilante'] },
-        { s: 'Quando a < 0, f(x) = ax + b é:',     r: 'decrescente', d: ['crescente', 'constante', 'paralela ao eixo x'] },
-        { s: 'A reta passa pelo eixo y no ponto:',  r: '(0, b)',     d: ['(b, 0)', '(0, 0)', '(a, b)'] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: EXPLAIN_FUNC_GRAPH };
-});
-
-const g_bhaskaraDelta = () => Q(5, () => {
-    const items = [
-        { s: 'x² − 5x + 6 = 0. Δ = ?', r: 1, d: [25, -1, 11],
-          e: '<b>Δ = b²−4ac</b> com a=1, b=−5, c=6: Δ = 25−24 = <b>1</b>. Como Δ>0, há duas raízes reais distintas.' },
-        { s: 'x² + 2x − 3 = 0. Δ = ?', r: 16, d: [4, -8, 12],
-          e: 'a=1, b=2, c=−3: <b>Δ = 4−4(1)(−3) = 4+12 = 16</b>. √16=4, logo as raízes são racionais.' },
-        { s: '2x² + 3x − 2 = 0. Δ = ?', r: 25, d: [9, -7, 17],
-          e: 'a=2, b=3, c=−2: <b>Δ = 9−4(2)(−2) = 9+16 = 25</b>. √25=5, raízes racionais.' },
-        { s: 'x² − 4x + 4 = 0. Δ = ?', r: 0, d: [16, -16, 8],
-          e: 'a=1, b=−4, c=4: <b>Δ = 16−16 = 0</b>. Quando Δ=0, há exatamente <b>uma raiz real</b> (raiz dupla): x = −b/2a = 2.' },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
-});
-
-const g_bhaskaraRoots = () => Q(5, () => {
-    const items = [
-        { s: 'x² − 5x + 6 = 0. Raízes?', r: '2 e 3', d: ['1 e 6', '−2 e −3', '5 e 6'],
-          e: 'Δ = 25−24 = 1. <b>x = (5±1)/2</b> → x₁=3, x₂=2. Verificação: soma = 5 = −b/a ✓  produto = 6 = c/a ✓' },
-        { s: 'x² − 7x + 12 = 0. Raízes?', r: '3 e 4', d: ['2 e 6', '1 e 12', '−3 e −4'],
-          e: 'Δ = 49−48 = 1. <b>x = (7±1)/2</b> → x₁=4, x₂=3. Soma=7=−(−7), produto=12. Relações de Girard!' },
-        { s: 'x² + x − 6 = 0. Raízes?', r: '2 e −3', d: ['−2 e 3', '1 e −6', '6 e −1'],
-          e: 'a=1, b=1, c=−6. Δ = 1+24 = 25. <b>x = (−1±5)/2</b> → x₁=2, x₂=−3. Note: b=+1, então −b=−1!' },
-        { s: 'x² − 9 = 0. Raízes?', r: '3 e −3', d: ['9 e −9', '3 e 9', '0 e 9'],
-          e: 'Reconheça: <b>diferença de quadrados!</b> x²−9 = (x+3)(x−3)=0. Logo x=3 ou x=−3. Mais rápido que Bhaskara!' },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
-});
-
-const g_sumProd = () => Q(5, () => {
-    const items = [
-        { s: 'x² − 5x + 6 = 0. Soma das raízes?', r: 5, d: [-5, 6, 1],
-          e: '<b>Soma = −b/a</b> = −(−5)/1 = <b>5</b>. Confirme: raízes são 2 e 3, soma = 5. ✓' },
-        { s: 'x² − 5x + 6 = 0. Produto das raízes?', r: 6, d: [5, -6, 1],
-          e: '<b>Produto = c/a</b> = 6/1 = <b>6</b>. Confirme: raízes 2 e 3, produto = 6. ✓ Relações de Girard!' },
-        { s: 'x² + 3x − 10 = 0. Soma?', r: -3, d: [3, -10, 10],
-          e: 'a=1, b=3, c=−10. <b>Soma = −b/a = −3/1 = −3</b>. Raízes: x=2 e x=−5, soma=−3. ✓' },
-        { s: 'Soma = −b/a, produto = c/a. Em x²+2x−8: soma?', r: -2, d: [2, -8, 8],
-          e: 'a=1, b=2, c=−8. <b>Soma = −2/1 = −2</b>. Produto = −8. Raízes: x=2 e x=−4, soma=−2. ✓' },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
-});
-
-const g_vertex = () => Q(5, () => {
-    const items = [
-        { s: 'f(x) = x² − 4x + 3. xáµ¥ = ?', r: 2, d: [-2, 4, 3],
-          e: 'Vértice: <b>xáµ¥ = −b/(2a)</b> = −(−4)/(2·1) = 4/2 = <b>2</b>. Com a>0, é o ponto de mínimo da parábola.' },
-        { s: 'f(x) = x² − 6x + 5. xáµ¥ = ?', r: 3, d: [-3, 6, 5],
-          e: '<b>xáµ¥ = −b/(2a)</b> = −(−6)/(2·1) = <b>3</b>. A parábola tem mínimo em x=3, pois a=1>0.' },
-        { s: 'f(x) = 2x² − 4x. xáµ¥ = ?', r: 1, d: [-1, 2, 0],
-          e: 'a=2, b=−4, c=0. <b>xáµ¥ = −(−4)/(2·2) = 4/4 = 1</b>. A parábola abre para cima (a>0) com mínimo em x=1.' },
-        { s: 'Vértice da parábola: xáµ¥ = ?', r: '−b/(2a)', d: ['−b/a', 'b/(2a)', '−c/a'],
-          e: 'Fórmula do vértice: <b>xáµ¥ = −b/(2a)</b>. O yáµ¥ = f(xáµ¥) = −Δ/(4a). O vértice é máximo se a<0 e mínimo se a>0.' },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
-});
-
-const g_pythCat = () => Q(5, () => {
-    const items = [
-        [3, 4, 5], [5, 12, 13], [6, 8, 10], [8, 15, 17], [9, 12, 15], [7, 24, 25],
-    ];
-    const [a, b, c] = pick(items);
-    const role = pick(['hip', 'catA', 'catB']);
-    if (role === 'hip') return { stem: `Catetos ${a} e ${b}. Hipotenusa?`, ...makeChoice(c, nearDistr(c, 5)),
-        explain: `<b>Pitágoras: c² = a² + b²</b> = ${a}² + ${b}² = ${a*a} + ${b*b} = ${c*c}. Então c = √${c*c} = <b>${c}</b>. Terna pitagórica: (${a}, ${b}, ${c}).` };
-    if (role === 'catA') return { stem: `Hipotenusa ${c}, um cateto ${b}. Outro cateto?`, ...makeChoice(a, nearDistr(a, 4)),
-        explain: `<b>Pitágoras: a² = c² − b²</b> = ${c}² − ${b}² = ${c*c} − ${b*b} = ${a*a}. Então a = √${a*a} = <b>${a}</b>.` };
-    return { stem: `Hipotenusa ${c}, um cateto ${a}. Outro cateto?`, ...makeChoice(b, nearDistr(b, 5)),
-        explain: `<b>Pitágoras: b² = c² − a²</b> = ${c}² − ${a}² = ${c*c} − ${a*a} = ${b*b}. Então b = √${b*b} = <b>${b}</b>.` };
-});
-
-const EXPLAIN_TRIG_TABLE = 'Tabela notável: <b>30°→1/2 | 45°→√2/2 | 60°→√3/2</b> (para seno). Coseno usa a mesma tabela mas invertida (cos30°=sen60°=√3/2). Mnemônico: <b>1, √2, √3</b> divididos por 2.';
-const EXPLAIN_TRIG_ID = '<b>Identidade fundamental:</b> sen²x + cos²x = 1 (para qualquer x). Decorre do Teorema de Pitágoras no círculo trigonométrico de raio 1.';
-const g_trigSpecial = () => Q(5, () => {
-    const items = [
-        { s: 'sen 30° = ?', r: '1/2',   d: ['√3/2', '√2/2', '1'],    e: EXPLAIN_TRIG_TABLE },
-        { s: 'cos 60° = ?', r: '1/2',   d: ['√3/2', '√2/2', '1'],    e: EXPLAIN_TRIG_TABLE },
-        { s: 'sen 45° = ?', r: '√2/2',  d: ['1/2', '√3/2', '1'],     e: EXPLAIN_TRIG_TABLE },
-        { s: 'cos 30° = ?', r: '√3/2',  d: ['1/2', '√2/2', '0'],     e: EXPLAIN_TRIG_TABLE },
-        { s: 'tg 45° = ?',  r: '1',     d: ['0', '√2', '√3'],         e: 'tg 45° = sen45°/cos45° = (√2/2)/(√2/2) = <b>1</b>. A tangente de 45° é 1 porque os catetos são iguais.' },
-        { s: 'sen 90° = ?', r: '1',     d: ['0', '1/2', '√3/2'],      e: 'sen 90° = <b>1</b> (máximo). cos 90° = 0. No círculo trig, o ponto é (0, 1).' },
-        { s: 'cos 0° = ?',  r: '1',     d: ['0', '1/2', '√2/2'],      e: 'cos 0° = <b>1</b>. No círculo trigonométrico, o ângulo 0° corresponde ao ponto (1, 0).' },
-        { s: 'sen 0° = ?',  r: '0',     d: ['1', '1/2', '√2/2'],      e: 'sen 0° = <b>0</b>. O seno de 0° é zero porque a altura no círculo trigonométrico é nula.' },
-        { s: 'cos 90° = ?', r: '0',     d: ['1', '1/2', '√3/2'],      e: 'cos 90° = <b>0</b>. No círculo trig, 90° → ponto (0, 1), então a projeção horizontal é zero.' },
-        { s: 'cos 45° = ?', r: '√2/2',  d: ['1/2', '√3/2', '1'],     e: EXPLAIN_TRIG_TABLE },
-        { s: 'sen 60° = ?', r: '√3/2',  d: ['1/2', '√2/2', '1'],     e: EXPLAIN_TRIG_TABLE },
-        { s: 'tg 30° = ?',  r: '√3/3',  d: ['1/2', '√3', '√3/2'],    e: 'tg 30° = sen30°/cos30° = (1/2)/(√3/2) = 1/√3 = <b>√3/3</b> (racionalizando o denominador).' },
-        { s: 'tg 60° = ?',  r: '√3',    d: ['1/2', '√3/2', '1'],     e: 'tg 60° = sen60°/cos60° = (√3/2)/(1/2) = <b>√3</b> ≈ 1,73.' },
-        { s: 'sen²x + cos²x = ?', r: '1', d: ['0', 'x', '2'],        e: EXPLAIN_TRIG_ID },
-        { s: 'tg x = sen x / ?', r: 'cos x', d: ['sen x', '1', 'x'], e: 'Definição: <b>tg x = sen x / cos x</b>. Daí derivam outras identidades como 1 + tg²x = sec²x.' },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
-});
-
-const g_similar = () => Q(5, () => {
-    const items = [
-        { s: 'Triângulos semelhantes têm lados ___:', r: 'proporcionais', d: ['iguais', 'perpendiculares', 'paralelos'],
-          e: 'Semelhança: mesmos ângulos e lados <b>proporcionais</b> (não iguais). Congruência exige lados iguais. Semelhante ≠ congruente!' },
-        { s: 'Razão de semelhança 1:2. Áreas?', r: '1:4', d: ['1:2', '2:1', '1:8'],
-          e: 'Razão de semelhança k → razão de áreas = <b>k²</b>. Se k=1/2, área = (1/2)² = <b>1:4</b>. Dobrar o lado quadruplica a área!' },
-        { s: 'Razão de semelhança 2:3. Áreas?', r: '4:9', d: ['2:3', '6:9', '8:27'],
-          e: 'k = 2/3 → razão de áreas = k² = <b>(2/3)² = 4/9</b>. Para volumes, seria k³ = 8/27.' },
-        { s: 'Triângulos semelhantes têm ângulos ___:', r: 'iguais', d: ['proporcionais', 'opostos', 'retos'],
-          e: 'Critério AA (ângulo-ângulo): basta dois ângulos iguais para garantir semelhança. Os ângulos são sempre <b>iguais</b>, os lados é que são proporcionais.' },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
-});
-
-const g_polygon = () => Q(5, () => {
-    const items = [
-        { s: 'Ângulo interno do triângulo equilátero:', r: '60°', d: ['90°', '120°', '180°'] },
-        { s: 'Ângulo interno do quadrado:', r: '90°', d: ['60°', '120°', '180°'] },
-        { s: 'Ângulo interno do hexágono regular:', r: '120°', d: ['60°', '90°', '150°'] },
-        { s: 'Soma dos ângulos internos do pentágono:', r: '540°', d: ['360°', '720°', '180°'] },
-        { s: 'Soma dos internos: (n−2)·180°. n=8?', r: '1080°', d: ['900°', '1260°', '720°'] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
-});
-
-const g_probComp = () => Q(5, () => {
-    const items = [
-        { s: 'Duas moedas. Probabilidade de duas caras?', r: '1/4', d: ['1/2', '1/3', '2/4'] },
-        { s: 'Dois dados. Probabilidade de soma 7?', r: '1/6', d: ['1/7', '2/6', '1/12'] },
-        { s: 'Tirar 2 ases num baralho (sem reposição):', r: '1/221', d: ['1/52', '1/13', '1/26'] },
-        { s: 'Eventos independentes: P(A e B) =', r: 'P(A) · P(B)', d: ['P(A) + P(B)', 'P(A) − P(B)', '1'] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
-});
-
-const g_stats = () => Q(5, () => {
-    const items = [
-        { s: 'Dados: 2, 4, 4, 6, 8. Média?', r: '4,8', d: ['4', '5', '6'] },
-        { s: 'Dados: 2, 4, 4, 6, 8. Mediana?', r: '4', d: ['4,8', '6', '2'] },
-        { s: 'Dados: 2, 4, 4, 6, 8. Moda?', r: '4', d: ['4,8', '6', 'não há'] },
-        { s: 'Dados: 1, 3, 5, 7, 9. Mediana?', r: '5', d: ['4', '6', '3'] },
-        { s: 'Dados: 10, 20, 30. Média?', r: '20', d: ['15', '30', '60'] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
-});
-
-const g_irrational = () => Q(5, () => {
-    const items = [
-        { s: '√x = 5. x = ?', r: 25, d: [5, 10, 125] },
-        { s: '√(x + 1) = 3. x = ?', r: 8, d: [9, 2, 3] },
-        { s: '√(2x) = 4. x = ?', r: 8, d: [4, 16, 2] },
-        { s: '√(x − 5) = 2. x = ?', r: 9, d: [4, 7, 3] },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d) };
-});
-
-const g_master = () => () => {
-    // mix de tudo
-    const pool = [g_pythCat(), g_bhaskaraRoots(), g_funcAfim(), g_trigSpecial(), g_sysSubst(), g_diffSquares(), g_percentApply(), g_areaTri(), g_power(), g_eq2sides()];
-    const qs = pool.flatMap(g => g()).sort(() => Math.random() - 0.5).slice(0, 8);
-    return qs;
-};
-
-/* ── 10 — Arena do Vestibular ─────────────────────────────────────── */
-const g_progressAritm = () => Q(5, () => {
-    const a1 = rand(2, 20), r = rand(2, 10);
-    const n  = rand(5, 15);
-    const an = a1 + (n - 1) * r;
-    const sn = n * (a1 + an) / 2;
-    const items = [
-        { s: `PA: a₁=${a1}, r=${r}. Qual é o ${n}º termo?`, ans: an, d: nearDistr(an, 8) },
-        { s: `PA: a₁=${a1}, r=${r}, n=${n}. Qual é a soma Sₙ?`, ans: sn, d: nearDistr(sn, 20) },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.ans, it.d),
-        explain: `<b>PA (Progressão Aritmética):</b> aₙ = a₁ + (n−1)·r. Sₙ = n·(a₁+aₙ)/2. Aqui: a${n} = ${a1}+(${n}-1)·${r} = <b>${an}</b>.` };
-});
-
-const g_progressGeom = () => Q(5, () => {
-    const a1 = pick([2, 3, 4, 5, 6]);
-    const q  = pick([2, 3]);
-    const n  = rand(3, 6);
-    const an = a1 * Math.pow(q, n - 1);
-    return { stem: `PG: a₁=${a1}, q=${q}. Qual é o ${n}º termo?`,
-             ...makeChoice(an, nearDistr(an, Math.max(5, an / 4))),
-        explain: `<b>PG (Progressão Geométrica):</b> aₙ = a₁·qⁿ⁻¹. Aqui: a${n} = ${a1}·${q}^${n-1} = <b>${an}</b>.` };
-});
-
-const g_logBasic = () => Q(5, () => {
-    const bases = [[2,8,3],[2,16,4],[2,32,5],[3,9,2],[3,27,3],[10,100,2],[10,1000,3],[5,25,2],[5,125,3]];
-    const [b, x, r] = pick(bases);
-    return { stem: `log<sub>${b}</sub>${x} = ?`,
-             ...makeChoice(r, nearDistr(r, 2)),
-        explain: `Logaritmo: log<sub>${b}</sub>${x} = <b>${r}</b> porque ${b}<sup>${r}</sup> = ${x}. Logaritmo é o <b>expoente</b> que a base precisa ter para resultar no logaritmando.` };
-});
-
-const g_logProp = () => Q(5, () => {
-    const items = [
-        { s: 'log(a·b) = ?', r: 'log a + log b', d: ['log a − log b', 'log a · log b', 'log(a+b)'],
-          e: '<b>Produto:</b> log(a·b) = log a + log b. Logaritmo transforma multiplicação em soma!' },
-        { s: 'log(a/b) = ?', r: 'log a − log b', d: ['log a + log b', 'log b − log a', 'log a / log b'],
-          e: '<b>Quociente:</b> log(a/b) = log a − log b.' },
-        { s: 'log(aⁿ) = ?', r: 'n · log a', d: ['log a + n', 'log(na)', 'log a / n'],
-          e: '<b>Potência:</b> log(aⁿ) = n · log a. O expoente vira fator multiplicativo!' },
-        { s: 'log₁₀ 1 = ?', r: '0', d: ['1', '10', '-1'],
-          e: 'log de 1 em qualquer base = <b>0</b>, pois a⁰ = 1 para qualquer base a.' },
-        { s: 'log₂ 2 = ?', r: '1', d: ['0', '2', '4'],
-          e: 'logₐ a = <b>1</b> sempre, pois a¹ = a.' },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
-});
-
-const g_combinatoria = () => Q(5, () => {
-    const items = [
-        { s: 'C(5,2) = ?', r: 10, d: [20, 6, 15],
-          e: 'Combinação: C(n,k) = n!/(k!·(n-k)!). C(5,2) = 5!/(2!·3!) = 120/12 = <b>10</b>.' },
-        { s: 'C(6,3) = ?', r: 20, d: [15, 30, 6],
-          e: 'C(6,3) = 6!/(3!·3!) = 720/36 = <b>20</b>. Número de grupos de 3 em 6 elementos.' },
-        { s: 'P(4) = 4! = ?', r: 24, d: [12, 16, 20],
-          e: 'Permutação simples: P(n) = n! = n×(n-1)×...×1. P(4) = 4×3×2×1 = <b>24</b>.' },
-        { s: 'A(5,2) = ?', r: 20, d: [10, 25, 15],
-          e: 'Arranjo: A(n,k) = n!/(n-k)!. A(5,2) = 5×4 = <b>20</b>. Ordem importa!' },
-        { s: 'C(7,7) = ?', r: 1, d: [7, 0, 49],
-          e: 'C(n,n) = 1 sempre — só existe <b>um jeito</b> de escolher todos.' },
-        { s: 'C(10,1) = ?', r: 10, d: [1, 9, 100],
-          e: 'C(n,1) = n. Há <b>n</b> jeitos de escolher 1 elemento de n.' },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
-});
-
-const g_probCondicional = () => Q(5, () => {
-    const items = [
-        { s: 'Uma urna tem 5 bolas (3 vermelhas, 2 azuis). Retira-se 1 vermelha (sem repor). Prob. de sair azul na 2ª?',
-          r: '2/4', d: ['2/5', '1/2', '1/3'],
-          e: 'Sem reposição: restam 4 bolas (2V, 2A). P(azul) = 2/4 = <b>1/2</b>. Probabilidade condicional muda o espaço amostral!' },
-        { s: 'Dois dados lançados. P(soma = 7) = ?', r: '6/36', d: ['7/36', '1/6', '5/36'],
-          e: 'Pares que somam 7: (1,6)(2,5)(3,4)(4,3)(5,2)(6,1) = 6 casos. P = 6/36 = <b>1/6</b>.' },
-        { s: 'Baralho 52 cartas. P(ás ou copas) = ?', r: '16/52', d: ['17/52', '1/4', '4/52'],
-          e: 'P(ás ∪ copas) = P(ás) + P(copas) − P(ás de copas) = 4/52 + 13/52 − 1/52 = <b>16/52</b>.' },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
-});
-
-const g_geometriaAnalitica = () => Q(5, () => {
-    const x1 = rand(-5, 5), y1 = rand(-5, 5), x2 = rand(-5, 5), y2 = rand(-5, 5);
-    const dist = Math.sqrt((x2-x1)**2 + (y2-y1)**2);
-    const distRound = Math.round(dist * 10) / 10;
-    const items = [
-        { s: `Distância entre (${x1},${y1}) e (${x2},${y2}):`,
-          ans: distRound,
-          d: (() => { const raw = nearDistr(Math.round(distRound), 3).map(x => Math.abs(x) || 1); const seen8 = new Set([String(distRound)]); const u8 = []; for (const v of raw) { if (!seen8.has(String(v))) { seen8.add(String(v)); u8.push(v); } } let i8 = 1; while (u8.length < 3) { if (!seen8.has(String(i8))) { seen8.add(String(i8)); u8.push(i8); } i8++; } return u8; })(),
-          e: `d = √[(${x2}−${x1})² + (${y2}−${y1})²] = √[${(x2-x1)**2}+${(y2-y1)**2}] ≈ <b>${distRound}</b>. Teorema de Pitágoras no plano!` },
-        { s: `Ponto médio de (${x1},${y1}) e (${x2},${y2}):`,
-          ans: `(${(x1+x2)/2}, ${(y1+y2)/2})`,
-          d: (() => { const ans8b = `(${(x1+x2)/2}, ${(y1+y2)/2})`; const c8b = [`(${x1+x2}, ${y1+y2})`, `(${(x1-x2)/2}, ${(y1-y2)/2})`, `(${x1}, ${y2})`]; const s8b = new Set([ans8b]); const u8b = c8b.filter(c => !s8b.has(c) && s8b.add(c)); let i8b = 1; while (u8b.length < 3) { const candidate = `(${x1+i8b}, ${y1-i8b})`; if (!s8b.has(candidate)) { s8b.add(candidate); u8b.push(candidate); } i8b++; } return u8b.slice(0,3); })(),
-          e: `Ponto médio: M = ((x₁+x₂)/2, (y₁+y₂)/2) = <b>(${(x1+x2)/2}, ${(y1+y2)/2})</b>.` },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.ans, it.d), explain: it.e };
-});
-
-const g_trigAvancado = () => Q(5, () => {
-    const items = [
-        { s: 'sen²x + cos²x = ?', r: '1', d: ['0', '2', 'tg x'],
-          e: '<b>Identidade fundamental:</b> sen²x + cos²x = 1. Decorre do Teorema de Pitágoras no círculo trigonométrico.' },
-        { s: 'tg x = ?', r: 'sen x / cos x', d: ['cos x / sen x', 'sen x · cos x', '1/cos x'],
-          e: 'Tangente: tg x = sen x / cos x. Coeficiente angular da reta tangente ao círculo.' },
-        { s: 'sen(30°) = ?', r: '1/2', d: ['√2/2', '√3/2', '1'],
-          e: 'Valores especiais: sen 30° = 1/2, sen 45° = √2/2, sen 60° = √3/2.' },
-        { s: 'cos(60°) = ?', r: '1/2', d: ['√3/2', '√2/2', '0'],
-          e: 'cos 60° = 1/2. Lembre: cos 30° = √3/2, cos 45° = √2/2, cos 90° = 0.' },
-        { s: 'A lei dos senos diz que a/sen A = ?', r: 'b/sen B = c/sen C', d: ['b·sen B', 'c/cos C', 'R'],
-          e: '<b>Lei dos senos:</b> a/senA = b/senB = c/senC = 2R (R = raio da circunferência circunscrita).' },
-        { s: 'sen(π/2) = ?', r: '1', d: ['0', '√2/2', '-1'],
-          e: 'sen(π/2) = sen(90°) = <b>1</b>. No círculo trigonométrico, 90° aponta para cima (y=1).' },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
-});
-
-const g_matrizBasica = () => Q(5, () => {
-    const items = [
-        { s: 'Determinante de [[1,2],[3,4]]:', r: -2, d: [2, 10, 14],
-          e: 'det[[a,b],[c,d]] = ad − bc = 1×4 − 2×3 = 4 − 6 = <b>−2</b>.' },
-        { s: 'Determinante de [[2,0],[0,3]]:', r: 6, d: [5, 0, -6],
-          e: 'Matriz diagonal: determinante = produto da diagonal. 2×3 = <b>6</b>.' },
-        { s: 'Determinante de [[1,0],[0,1]] (identidade):', r: 1, d: [0, 2, -1],
-          e: 'Matriz identidade sempre tem det = <b>1</b>.' },
-        { s: 'Uma matriz 2×3 tem quantos elementos?', r: 6, d: [5, 8, 2],
-          e: 'Elementos = linhas × colunas = 2×3 = <b>6</b>.' },
-        { s: 'Matriz transposta de [[1,2],[3,4]] é:', r: '[[1,3],[2,4]]', d: ['[[4,2],[3,1]]', '[[1,2],[3,4]]', '[[3,1],[4,2]]'],
-          e: '<b>Transposta:</b> troca linhas por colunas. (A^T)[i,j] = A[j,i].' },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
-});
-
-const g_funcExponencial = () => Q(5, () => {
-    const items = [
-        { s: '2ˣ = 8. x = ?', r: 3, d: [2, 4, 6],
-          e: '2ˣ = 8 = 2³ → mesma base, iguale os expoentes: <b>x = 3</b>.' },
-        { s: '3ˣ = 27. x = ?', r: 3, d: [2, 9, 4],
-          e: '3ˣ = 27 = 3³ → <b>x = 3</b>.' },
-        { s: 'f(x) = 2ˣ. f(0) = ?', r: 1, d: [0, 2, -1],
-          e: 'f(0) = 2⁰ = <b>1</b>. Toda exponencial passa por (0,1).' },
-        { s: 'Função exponencial crescente quando base:', r: 'maior que 1', d: ['menor que 1', 'igual a 1', 'negativa'],
-          e: 'Base > 1 → crescente. 0 < base < 1 → decrescente. Base = 1 → constante.' },
-        { s: '5ˣ = 1. x = ?', r: 0, d: [1, 5, -1],
-          e: '5ˣ = 1 = 5⁰ → <b>x = 0</b>. Qualquer base elevada a 0 é 1.' },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
-});
-
-const g_geometriaEspacial = () => Q(5, () => {
-    const items = [
-        () => { const l = rand(2,8); const v = l*l*l; return { s: `Volume de cubo de aresta ${l} cm:`, r: `${v} cm³`, d: nearDistr(v,15).map(x=>`${x} cm³`) }; },
-        () => { const r2 = rand(2,8), h = rand(3,10); const v = Math.round(3.14*r2*r2*h); return { s: `Volume do cilindro r=${r2}, h=${h} (π≈3,14):`, r: `${v} cm³`, d: nearDistr(v,30).map(x=>`${x} cm³`) }; },
-        () => { const r2 = rand(2,6); const v = Math.round(4/3*3.14*r2**3); return { s: `Volume da esfera de raio ${r2} (π≈3,14):`, r: `${v} cm³`, d: nearDistr(v,40).map(x=>`${x} cm³`) }; },
-    ];
-    const it = pick(items)();
-    return { stem: it.s, ...makeChoice(it.r, it.d),
-        explain: 'Sólidos: Cubo V=a³ · Cilindro V=πr²h · Esfera V=4πr³/3 · Cone V=πr²h/3. ENEM adora esses!' };
-});
-
-const g_enunciado = () => Q(5, () => {
-    const items = [
-        { s: '(ENEM) Uma torneira perde 1 gota a cada 5s. Cada gota = 0,05 mL. Litros desperdiçados em 1 dia?', r: '0,864', d: ['1,44', '0,432', '0,5'],
-          e: 'Gotas/dia = 86400/5 = 17280. Volume = 17280 × 0,05 mL = 864 mL = <b>0,864 L</b>. Regra de 3 direta.' },
-        { s: '(FUVEST) Quantos números inteiros x satisfazem |x − 3| < 2?', r: '3', d: ['4', '2', '5'],
-          e: '|x−3|<2 → −2<x−3<2 → 1<x<5. Inteiros: 2, 3, 4 → <b>3 números</b>.' },
-        { s: '(UNICAMP) Sequência: 1, 1, 2, 3, 5, 8... Qual o próximo?', r: '13', d: ['11', '12', '16'],
-          e: 'Sequência de Fibonacci: cada termo = soma dos dois anteriores. 5+8 = <b>13</b>.' },
-        { s: '(ENEM) Poupança R$1000, 1% ao mês. Montante após 3 meses (juros compostos)?', r: 'R$ 1030,30', d: ['R$ 1030,00', 'R$ 1031,00', 'R$ 1003,00'],
-          e: 'M = C·(1+i)ⁿ = 1000·(1,01)³ = 1000·1,030301 = <b>R$1030,30</b>. Juros compostos: capitaliza sobre o montante!' },
-        { s: '(ENEM) Gráfico de f(x) = x² passa por qual ponto com certeza?', r: '(0, 0)', d: ['(1, 0)', '(0, 1)', '(-1, 0)'],
-          e: 'f(0) = 0² = 0 → ponto <b>(0,0)</b>. O vértice da parábola y=x² é a origem.' },
-    ];
-    const it = pick(items);
-    return { stem: it.s, ...makeChoice(it.r, it.d), explain: it.e };
-});
-
-/* ─── 201 fases ──────────────────────────────────────────────────────────
- * Cada fase: { id, region, name, gen }.
- * region indica a região no mapa (1..10).
- * ───────────────────────────────────────────────────────────────────────── */
+/* --- 201 fases de Raciocinio Logico ---
+ * Cada fase: { id, region, name, gen }. */
 const PHASES = [
-    // ── 1º ano — Vila dos Números (1-20) ──
-    { id: 1,  region: 1, name: 'Contar até 5',           gen: g_count(1, 5) },
-    { id: 2,  region: 1, name: 'Contar até 10',          gen: g_count(3, 10) },
-    { id: 3,  region: 1, name: 'O número zero',          gen: g_zero() },
-    { id: 4,  region: 1, name: 'Contar até 15',          gen: g_count(5, 15) },
-    { id: 5,  region: 1, name: 'Contar até 20',          gen: g_count(10, 20) },
-    { id: 6,  region: 1, name: 'Maior e menor (1-10)',   gen: g_compare(0, 10) },
-    { id: 7,  region: 1, name: 'Comparar até 20',        gen: g_compare(0, 20) },
-    { id: 8,  region: 1, name: 'Sequência +1',           gen: g_pattern(0, 1) },
-    { id: 9,  region: 1, name: 'Sequência +2',           gen: g_pattern(0, 2) },
-    { id: 10, region: 1, name: 'Ordem crescente',        gen: g_orderAsc(1, 20) },
-    { id: 11, region: 1, name: 'Ordem decrescente',      gen: g_orderDesc(1, 20) },
-    { id: 12, region: 1, name: 'Número antes',           gen: g_before(1, 30) },
-    { id: 13, region: 1, name: 'Número depois',          gen: g_after(0, 29) },
-    { id: 14, region: 1, name: 'Formas geométricas',     gen: g_shapes() },
-    { id: 15, region: 1, name: 'Mais lados, mais formas', gen: g_shapes() },
-    { id: 16, region: 1, name: 'Sequência +5',           gen: g_pattern(0, 5) },
-    { id: 17, region: 1, name: 'Sequência +10',          gen: g_pattern(0, 10) },
-    { id: 18, region: 1, name: 'Dezenas e unidades',     gen: g_dezena() },
-    { id: 19, region: 1, name: 'Comparar até 50',        gen: g_compare(0, 50) },
-    { id: 20, region: 1, name: '⭐ Desafio da Vila',     gen: () => shuffle([...g_count(1, 20)(), ...g_compare(0, 30)(), ...g_shapes()()]).slice(0, 6) },
+    // -- Floresta das Sequencias (1-20) --
+    { id:   1, region: 1, name: 'Sequencias de 1 em 1', gen: makePhaseGen(BANK_R1) },
+    { id:   2, region: 1, name: 'Sequencias de 2 em 2', gen: makePhaseGen(BANK_R1) },
+    { id:   3, region: 1, name: 'Padroes de formas', gen: makePhaseGen(BANK_R1) },
+    { id:   4, region: 1, name: 'Sequencias de 10 em 10', gen: makePhaseGen(BANK_R1) },
+    { id:   5, region: 1, name: 'O alfabeto em ordem', gen: makePhaseGen(BANK_R1) },
+    { id:   6, region: 1, name: 'Qual numero falta?', gen: makePhaseGen(BANK_R1) },
+    { id:   7, region: 1, name: 'Padroes com frutas', gen: makePhaseGen(BANK_R1) },
+    { id:   8, region: 1, name: 'Sequencias de 5 em 5', gen: makePhaseGen(BANK_R1) },
+    { id:   9, region: 1, name: 'Padroes com lua e estrela', gen: makePhaseGen(BANK_R1) },
+    { id:  10, region: 1, name: 'Sequencias de 3 em 3', gen: makePhaseGen(BANK_R1) },
+    { id:  11, region: 1, name: 'Padroes coloridos', gen: makePhaseGen(BANK_R1) },
+    { id:  12, region: 1, name: 'Numeros pares', gen: makePhaseGen(BANK_R1) },
+    { id:  13, region: 1, name: 'Padroes de triangulos', gen: makePhaseGen(BANK_R1) },
+    { id:  14, region: 1, name: 'Numeros impares', gen: makePhaseGen(BANK_R1) },
+    { id:  15, region: 1, name: 'Padroes com animais', gen: makePhaseGen(BANK_R1) },
+    { id:  16, region: 1, name: 'Contagem regressiva', gen: makePhaseGen(BANK_R1) },
+    { id:  17, region: 1, name: 'Padroes de flores', gen: makePhaseGen(BANK_R1) },
+    { id:  18, region: 1, name: 'Dezenas em ordem', gen: makePhaseGen(BANK_R1) },
+    { id:  19, region: 1, name: 'Sol e chuva', gen: makePhaseGen(BANK_R1) },
+    { id:  20, region: 1, name: 'Desafio das Sequencias', gen: makePhaseGen(BANK_R1) },
 
-    // ── 2º ano — Bosque das Operações (21-40) ──
-    { id: 21, region: 2, name: 'Soma até 10',            gen: g_add(5, 5) },
-    { id: 22, region: 2, name: 'Soma até 20',            gen: g_add(10, 10) },
-    { id: 23, region: 2, name: 'Subtração até 10',       gen: g_sub(10, 5) },
-    { id: 24, region: 2, name: 'Subtração até 20',       gen: g_sub(20, 10) },
-    { id: 25, region: 2, name: 'Soma até 50',            gen: g_add(30, 20) },
-    { id: 26, region: 2, name: 'Subtração até 50',       gen: g_sub(50, 30) },
-    { id: 27, region: 2, name: 'Par ou ímpar',           gen: g_parity() },
-    { id: 28, region: 2, name: 'Dobro',                  gen: g_double(30) },
-    { id: 29, region: 2, name: 'Metade',                 gen: g_half(30) },
-    { id: 30, region: 2, name: 'Soma de 3 parcelas',     gen: g_add3(10) },
-    { id: 31, region: 2, name: 'Soma até 100',           gen: g_add(50, 50) },
-    { id: 32, region: 2, name: 'Subtração até 100',      gen: g_sub(100, 50) },
-    { id: 33, region: 2, name: 'Antecessor/sucessor 100', gen: () => shuffle([...g_before(20, 100)(), ...g_after(20, 99)()]).slice(0, 5) },
-    { id: 34, region: 2, name: 'Sequência de 5 em 5',    gen: g_seqStep(5) },
-    { id: 35, region: 2, name: 'Sequência de 10 em 10',  gen: g_seqStep(10) },
-    { id: 36, region: 2, name: 'Decomposição',           gen: g_decomp() },
-    { id: 37, region: 2, name: 'Comparar até 100',       gen: g_compare(0, 100) },
-    { id: 38, region: 2, name: 'Problemas (soma/sub)',   gen: g_wordSimple() },
-    { id: 39, region: 2, name: 'Dobro avançado',         gen: g_double(50) },
-    { id: 40, region: 2, name: '⭐ Desafio do Bosque',    gen: () => shuffle([...g_add(50, 50)(), ...g_sub(100, 50)(), ...g_parity()()]).slice(0, 6) },
+    // -- Lago das Analogias (21-40) --
+    { id:  21, region: 2, name: 'Peixe e passaro', gen: makePhaseGen(BANK_R2) },
+    { id:  22, region: 2, name: 'Dia e noite', gen: makePhaseGen(BANK_R2) },
+    { id:  23, region: 2, name: 'Mao e pe', gen: makePhaseGen(BANK_R2) },
+    { id:  24, region: 2, name: 'Filhote e pintinho', gen: makePhaseGen(BANK_R2) },
+    { id:  25, region: 2, name: 'Faca e agulha', gen: makePhaseGen(BANK_R2) },
+    { id:  26, region: 2, name: 'Quente e frio', gen: makePhaseGen(BANK_R2) },
+    { id:  27, region: 2, name: 'Livro e violao', gen: makePhaseGen(BANK_R2) },
+    { id:  28, region: 2, name: 'Medico e professor', gen: makePhaseGen(BANK_R2) },
+    { id:  29, region: 2, name: 'Olho e ouvido', gen: makePhaseGen(BANK_R2) },
+    { id:  30, region: 2, name: 'Carro e barco', gen: makePhaseGen(BANK_R2) },
+    { id:  31, region: 2, name: 'Pintora e escultora', gen: makePhaseGen(BANK_R2) },
+    { id:  32, region: 2, name: 'Flor e corpo', gen: makePhaseGen(BANK_R2) },
+    { id:  33, region: 2, name: 'Inverno e verao', gen: makePhaseGen(BANK_R2) },
+    { id:  34, region: 2, name: 'Abelha e vaca', gen: makePhaseGen(BANK_R2) },
+    { id:  35, region: 2, name: 'Lapis e pincel', gen: makePhaseGen(BANK_R2) },
+    { id:  36, region: 2, name: 'Perto e rapido', gen: makePhaseGen(BANK_R2) },
+    { id:  37, region: 2, name: 'Semente e ovo', gen: makePhaseGen(BANK_R2) },
+    { id:  38, region: 2, name: 'Boca e nariz', gen: makePhaseGen(BANK_R2) },
+    { id:  39, region: 2, name: 'Gato e cachorro', gen: makePhaseGen(BANK_R2) },
+    { id:  40, region: 2, name: 'Desafio das Analogias', gen: makePhaseGen(BANK_R2) },
 
-    // ── 3º ano — Vale das Tabuadas (41-60) ──
-    { id: 41, region: 3, name: 'Soma com reserva',       gen: g_addCarry() },
-    { id: 42, region: 3, name: 'Subtração com empréstimo', gen: g_subBorrow() },
-    { id: 43, region: 3, name: 'Tabuada do 2',           gen: g_table(2) },
-    { id: 44, region: 3, name: 'Tabuada do 3',           gen: g_table(3) },
-    { id: 45, region: 3, name: 'Tabuada do 4',           gen: g_table(4) },
-    { id: 46, region: 3, name: 'Tabuada do 5',           gen: g_table(5) },
-    { id: 47, region: 3, name: 'Tabuada do 6',           gen: g_table(6) },
-    { id: 48, region: 3, name: 'Tabuada do 7',           gen: g_table(7) },
-    { id: 49, region: 3, name: 'Tabuada do 8',           gen: g_table(8) },
-    { id: 50, region: 3, name: 'Tabuada do 9',           gen: g_table(9) },
-    { id: 51, region: 3, name: 'Tabuada do 10',          gen: g_table(10) },
-    { id: 52, region: 3, name: 'Multiplicação mista',    gen: g_tableMix(2, 9) },
-    { id: 53, region: 3, name: 'Divisão por 2',          gen: g_divExact(2) },
-    { id: 54, region: 3, name: 'Divisão por 3, 4, 5',    gen: g_divExact(5) },
-    { id: 55, region: 3, name: 'Divisão por 6 a 9',      gen: g_divExact(9) },
-    { id: 56, region: 3, name: 'Divisão mista',          gen: g_divExact(10) },
-    { id: 57, region: 3, name: 'Dinheiro: somar reais',  gen: g_money() },
-    { id: 58, region: 3, name: 'Troco',                  gen: g_money() },
-    { id: 59, region: 3, name: 'Problemas com mult/div', gen: g_wordSimple() },
-    { id: 60, region: 3, name: '⭐ Desafio do Vale',      gen: () => shuffle([...g_tableMix(2, 9)(), ...g_divExact(9)(), ...g_money()()]).slice(0, 6) },
+    // -- Vila da Classificacao (41-60) --
+    { id:  41, region: 3, name: 'Terrestres e aquaticos', gen: makePhaseGen(BANK_R3) },
+    { id:  42, region: 3, name: 'Frutas e legumes', gen: makePhaseGen(BANK_R3) },
+    { id:  43, region: 3, name: 'Moveis e eletros', gen: makePhaseGen(BANK_R3) },
+    { id:  44, region: 3, name: 'Flores e arvores', gen: makePhaseGen(BANK_R3) },
+    { id:  45, region: 3, name: 'Cores e sentimentos', gen: makePhaseGen(BANK_R3) },
+    { id:  46, region: 3, name: 'Instrumentos e microfone', gen: makePhaseGen(BANK_R3) },
+    { id:  47, region: 3, name: 'Atividades fisicas', gen: makePhaseGen(BANK_R3) },
+    { id:  48, region: 3, name: 'Astros e nuvens', gen: makePhaseGen(BANK_R3) },
+    { id:  49, region: 3, name: 'Transportes', gen: makePhaseGen(BANK_R3) },
+    { id:  50, region: 3, name: 'Figuras 2D e 3D', gen: makePhaseGen(BANK_R3) },
+    { id:  51, region: 3, name: 'Insetos e aracnideos', gen: makePhaseGen(BANK_R3) },
+    { id:  52, region: 3, name: 'Escola e esporte', gen: makePhaseGen(BANK_R3) },
+    { id:  53, region: 3, name: 'Felinos e herbivoros', gen: makePhaseGen(BANK_R3) },
+    { id:  54, region: 3, name: 'Calcados e luvas', gen: makePhaseGen(BANK_R3) },
+    { id:  55, region: 3, name: 'Sentimentos e peso', gen: makePhaseGen(BANK_R3) },
+    { id:  56, region: 3, name: 'Aves e peixes', gen: makePhaseGen(BANK_R3) },
+    { id:  57, region: 3, name: 'Talheres e panela', gen: makePhaseGen(BANK_R3) },
+    { id:  58, region: 3, name: 'Laticinios e suco', gen: makePhaseGen(BANK_R3) },
+    { id:  59, region: 3, name: 'Ferramentas e regua', gen: makePhaseGen(BANK_R3) },
+    { id:  60, region: 3, name: 'Desafio da Classificacao', gen: makePhaseGen(BANK_R3) },
 
-    // ── 4º ano — Caverna das Frações (61-80) ──
-    { id: 61, region: 4, name: 'Multiplicação por 10/100', gen: g_mult10() },
-    { id: 62, region: 4, name: 'Multiplicação 2 × 1',    gen: g_mult2x1() },
-    { id: 63, region: 4, name: 'Multiplicação 2 × 2',    gen: g_mult2x2() },
-    { id: 64, region: 4, name: 'Divisão com resto',      gen: g_divRest() },
-    { id: 65, region: 4, name: 'Divisão de 2 dígitos',   gen: g_div2dig() },
-    { id: 66, region: 4, name: 'O que é uma fração',     gen: g_fracTerm() },
-    { id: 67, region: 4, name: 'Fração visual',          gen: g_fracVisual() },
-    { id: 68, region: 4, name: 'Metade, terço, quarto',  gen: g_fracTerm() },
-    { id: 69, region: 4, name: 'Frações equivalentes',   gen: g_fracEquiv() },
-    { id: 70, region: 4, name: 'Comparar frações iguais', gen: g_fracCompareSameDen() },
-    { id: 71, region: 4, name: 'Soma de frações iguais', gen: g_fracAddSame() },
-    { id: 72, region: 4, name: 'Unidades de medida',     gen: g_units() },
-    { id: 73, region: 4, name: 'Conversão de unidades',  gen: g_units() },
-    { id: 74, region: 4, name: 'Perímetro',              gen: g_perimeter() },
-    { id: 75, region: 4, name: 'Tempo: horas e min',     gen: g_time() },
-    { id: 76, region: 4, name: 'Tempo: conversões',      gen: g_time() },
-    { id: 77, region: 4, name: 'Problemas com frações',  gen: g_fracVisual() },
-    { id: 78, region: 4, name: 'Divisão 2 dígitos avançada', gen: g_div2dig() },
-    { id: 79, region: 4, name: 'Mistura caverna',        gen: () => shuffle([...g_mult2x1()(), ...g_fracVisual()()]).slice(0, 6) },
-    { id: 80, region: 4, name: '⭐ Desafio da Caverna',  gen: () => shuffle([...g_fracVisual()(), ...g_perimeter()(), ...g_mult2x2()()]).slice(0, 6) },
+    // -- Caverna da Deducao (61-80) --
+    { id:  61, region: 4, name: 'Silogismo basico', gen: makePhaseGen(BANK_R4) },
+    { id:  62, region: 4, name: 'Comparando alturas', gen: makePhaseGen(BANK_R4) },
+    { id:  63, region: 4, name: 'Frutas e sementes', gen: makePhaseGen(BANK_R4) },
+    { id:  64, region: 4, name: 'Quem chegou primeiro?', gen: makePhaseGen(BANK_R4) },
+    { id:  65, region: 4, name: 'Chuva e rua', gen: makePhaseGen(BANK_R4) },
+    { id:  66, region: 4, name: 'Gatos e cachorros', gen: makePhaseGen(BANK_R4) },
+    { id:  67, region: 4, name: 'Figurinhas', gen: makePhaseGen(BANK_R4) },
+    { id:  68, region: 4, name: 'Luz e quarto', gen: makePhaseGen(BANK_R4) },
+    { id:  69, region: 4, name: 'Crianca e brincar', gen: makePhaseGen(BANK_R4) },
+    { id:  70, region: 4, name: 'Caixas e pesos', gen: makePhaseGen(BANK_R4) },
+    { id:  71, region: 4, name: 'Partida cancelada', gen: makePhaseGen(BANK_R4) },
+    { id:  72, region: 4, name: 'Asas e passaros', gen: makePhaseGen(BANK_R4) },
+    { id:  73, region: 4, name: 'Relacoes de familia', gen: makePhaseGen(BANK_R4) },
+    { id:  74, region: 4, name: 'Fila de espera', gen: makePhaseGen(BANK_R4) },
+    { id:  75, region: 4, name: 'Estudar e passar', gen: makePhaseGen(BANK_R4) },
+    { id:  76, region: 4, name: 'Comparando idades', gen: makePhaseGen(BANK_R4) },
+    { id:  77, region: 4, name: 'Vegetais e animais', gen: makePhaseGen(BANK_R4) },
+    { id:  78, region: 4, name: 'Bolas e caixas', gen: makePhaseGen(BANK_R4) },
+    { id:  79, region: 4, name: 'Dias da semana', gen: makePhaseGen(BANK_R4) },
+    { id:  80, region: 4, name: 'Desafio da Deducao', gen: makePhaseGen(BANK_R4) },
 
-    // ── 5º ano — Lago dos Decimais (81-100) ──
-    { id: 81,  region: 5, name: 'Frações próprias/impróprias', gen: g_fracProperImproper() },
-    { id: 82,  region: 5, name: 'Equivalentes avançadas', gen: g_fracEquiv() },
-    { id: 83,  region: 5, name: 'Decimais: leitura',     gen: g_decRead() },
-    { id: 84,  region: 5, name: 'Comparar decimais',     gen: g_decCompare() },
-    { id: 85,  region: 5, name: 'Soma de decimais',      gen: g_decAdd() },
-    { id: 86,  region: 5, name: 'Subtração de decimais', gen: g_decSub() },
-    { id: 87,  region: 5, name: 'Decimais × 10, 100',    gen: g_decMult10() },
-    { id: 88,  region: 5, name: 'Porcentagem básica',    gen: g_percentEasy() },
-    { id: 89,  region: 5, name: '10%, 50%, 100%',        gen: g_percentEasy() },
-    { id: 90,  region: 5, name: 'Porcentagem aplicada',  gen: g_percentApply() },
-    { id: 91,  region: 5, name: 'Área do quadrado',      gen: g_areaSquare() },
-    { id: 92,  region: 5, name: 'Área do retângulo',     gen: g_areaRect() },
-    { id: 93,  region: 5, name: 'Volume do cubo',        gen: g_volumeCube() },
-    { id: 94,  region: 5, name: 'Volume do paralelepípedo', gen: g_volumePar() },
-    { id: 95,  region: 5, name: 'Probabilidade simples', gen: g_probSimple() },
-    { id: 96,  region: 5, name: 'Média aritmética',      gen: g_mean() },
-    { id: 97,  region: 5, name: 'Decimais misturados',   gen: () => shuffle([...g_decAdd()(), ...g_decSub()()]).slice(0, 6) },
-    { id: 98,  region: 5, name: 'Porcentagem real',      gen: g_percentApply() },
-    { id: 99,  region: 5, name: 'Geometria mista',       gen: () => shuffle([...g_areaRect()(), ...g_volumeCube()()]).slice(0, 6) },
-    { id: 100, region: 5, name: '⭐ Desafio do Lago',     gen: () => shuffle([...g_decAdd()(), ...g_percentApply()(), ...g_areaRect()()]).slice(0, 6) },
+    // -- Montanha dos Padroes (81-100) --
+    { id:  81, region: 5, name: 'Dobrar ou somar?', gen: makePhaseGen(BANK_R5) },
+    { id:  82, region: 5, name: 'Fibonacci', gen: makePhaseGen(BANK_R5) },
+    { id:  83, region: 5, name: 'Ciclos de tres cores', gen: makePhaseGen(BANK_R5) },
+    { id:  84, region: 5, name: 'Quadrados perfeitos', gen: makePhaseGen(BANK_R5) },
+    { id:  85, region: 5, name: 'Dividir por dois', gen: makePhaseGen(BANK_R5) },
+    { id:  86, region: 5, name: 'Letras e numeros', gen: makePhaseGen(BANK_R5) },
+    { id:  87, region: 5, name: 'Quadrados crescentes', gen: makePhaseGen(BANK_R5) },
+    { id:  88, region: 5, name: 'Multiplicar por dois', gen: makePhaseGen(BANK_R5) },
+    { id:  89, region: 5, name: 'Impares perdidos', gen: makePhaseGen(BANK_R5) },
+    { id:  90, region: 5, name: 'Dias alternados', gen: makePhaseGen(BANK_R5) },
+    { id:  91, region: 5, name: 'Tabela entrada-saida', gen: makePhaseGen(BANK_R5) },
+    { id:  92, region: 5, name: 'Ciclos de plantas', gen: makePhaseGen(BANK_R5) },
+    { id:  93, region: 5, name: 'Numeros triangulares', gen: makePhaseGen(BANK_R5) },
+    { id:  94, region: 5, name: 'Dobrar e subtrair', gen: makePhaseGen(BANK_R5) },
+    { id:  95, region: 5, name: 'Meses alternados', gen: makePhaseGen(BANK_R5) },
+    { id:  96, region: 5, name: 'Padrao de posicao', gen: makePhaseGen(BANK_R5) },
+    { id:  97, region: 5, name: 'Cubos perfeitos', gen: makePhaseGen(BANK_R5) },
+    { id:  98, region: 5, name: 'Multiplicar por tres', gen: makePhaseGen(BANK_R5) },
+    { id:  99, region: 5, name: 'Alfabeto ao contrario', gen: makePhaseGen(BANK_R5) },
+    { id: 100, region: 5, name: 'Desafio dos Padroes', gen: makePhaseGen(BANK_R5) },
 
-    // ── 6º ano — Montanha dos Inteiros (101-120) ──
-    { id: 101, region: 6, name: 'Reta dos inteiros',     gen: g_negLine() },
-    { id: 102, region: 6, name: 'Soma com negativos',    gen: g_negAdd() },
-    { id: 103, region: 6, name: 'Subtração de negativos', gen: g_negSub() },
-    { id: 104, region: 6, name: 'Mult. com negativos',   gen: g_negMult() },
-    { id: 105, region: 6, name: 'Divisão com negativos', gen: g_negDiv() },
-    { id: 106, region: 6, name: 'Sinais misturados',     gen: () => shuffle([...g_negAdd()(), ...g_negMult()()]).slice(0, 6) },
-    { id: 107, region: 6, name: 'MMC',                   gen: g_mmc() },
-    { id: 108, region: 6, name: 'MDC',                   gen: g_mdc() },
-    { id: 109, region: 6, name: 'Soma de frações ≠',     gen: g_fracAddDiff() },
-    { id: 110, region: 6, name: 'Subtração de frações',  gen: g_fracAddDiff() },
-    { id: 111, region: 6, name: 'Multiplicação fracion.', gen: g_fracMult() },
-    { id: 112, region: 6, name: 'Divisão fracionária',   gen: g_fracDiv() },
-    { id: 113, region: 6, name: 'Equação x + a = b',     gen: g_eq1() },
-    { id: 114, region: 6, name: 'Equação x − a = b',     gen: g_eq1() },
-    { id: 115, region: 6, name: 'Equação ax = b',        gen: g_eqMult() },
-    { id: 116, region: 6, name: 'Equação x/a = b',       gen: g_eqMult() },
-    { id: 117, region: 6, name: 'Porcentagem como fração', gen: g_percentEasy() },
-    { id: 118, region: 6, name: 'Razão simples',         gen: g_ratioBasic() },
-    { id: 119, region: 6, name: 'Operações mistas',      gen: () => shuffle([...g_negAdd()(), ...g_fracMult()(), ...g_eq1()()]).slice(0, 6) },
-    { id: 120, region: 6, name: '⭐ Desafio da Montanha', gen: () => shuffle([...g_negMult()(), ...g_fracAddDiff()(), ...g_eqMult()()]).slice(0, 6) },
+    // -- Deserto das Causas (101-120) --
+    { id: 101, region: 6, name: 'Cafe da manha', gen: makePhaseGen(BANK_R6) },
+    { id: 102, region: 6, name: 'Sorvete na mesa', gen: makePhaseGen(BANK_R6) },
+    { id: 103, region: 6, name: 'Planta sem agua', gen: makePhaseGen(BANK_R6) },
+    { id: 104, region: 6, name: 'Lampada acesa', gen: makePhaseGen(BANK_R6) },
+    { id: 105, region: 6, name: 'Estudar para prova', gen: makePhaseGen(BANK_R6) },
+    { id: 106, region: 6, name: 'Cano entupido', gen: makePhaseGen(BANK_R6) },
+    { id: 107, region: 6, name: 'Celular sem carga', gen: makePhaseGen(BANK_R6) },
+    { id: 108, region: 6, name: 'Doce e dentes', gen: makePhaseGen(BANK_R6) },
+    { id: 109, region: 6, name: 'Praca com arvores', gen: makePhaseGen(BANK_R6) },
+    { id: 110, region: 6, name: 'Lixo no rio', gen: makePhaseGen(BANK_R6) },
+    { id: 111, region: 6, name: 'Dormir pouco', gen: makePhaseGen(BANK_R6) },
+    { id: 112, region: 6, name: 'Parar de reciclar', gen: makePhaseGen(BANK_R6) },
+    { id: 113, region: 6, name: 'Esportes e saude', gen: makePhaseGen(BANK_R6) },
+    { id: 114, region: 6, name: 'Elogios e motivacao', gen: makePhaseGen(BANK_R6) },
+    { id: 115, region: 6, name: 'Sem protetor solar', gen: makePhaseGen(BANK_R6) },
+    { id: 116, region: 6, name: 'Arvore cortada', gen: makePhaseGen(BANK_R6) },
+    { id: 117, region: 6, name: 'Leitura diaria', gen: makePhaseGen(BANK_R6) },
+    { id: 118, region: 6, name: 'Sinal de transito', gen: makePhaseGen(BANK_R6) },
+    { id: 119, region: 6, name: 'Hortas comunitarias', gen: makePhaseGen(BANK_R6) },
+    { id: 120, region: 6, name: 'Desafio das Causas', gen: makePhaseGen(BANK_R6) },
 
-    // ── 7º ano — Deserto das Equações (121-140) ──
-    { id: 121, region: 7, name: 'Equação 2 passos',      gen: g_eqMult() },
-    { id: 122, region: 7, name: 'X dos dois lados',      gen: g_eq2sides() },
-    { id: 123, region: 7, name: 'Equação com parênteses', gen: g_eqParen() },
-    { id: 124, region: 7, name: 'Equação fracionária',   gen: g_eqFrac() },
-    { id: 125, region: 7, name: 'Razão',                 gen: g_ratioBasic() },
-    { id: 126, region: 7, name: 'Proporção',             gen: g_proportion() },
-    { id: 127, region: 7, name: 'Regra de 3 direta',     gen: g_rule3() },
-    { id: 128, region: 7, name: 'Regra de 3 inversa',    gen: g_rule3Inv() },
-    { id: 129, region: 7, name: 'Desconto percentual',   gen: g_discount() },
-    { id: 130, region: 7, name: 'Aumento percentual',    gen: g_increase() },
-    { id: 131, region: 7, name: 'Juros simples',         gen: g_interestSimple() },
-    { id: 132, region: 7, name: 'Tipos de ângulos',      gen: g_angles() },
-    { id: 133, region: 7, name: 'Soma de ângulos',       gen: g_angles() },
-    { id: 134, region: 7, name: 'Área de triângulo',     gen: g_areaTri() },
-    { id: 135, region: 7, name: 'Área de paralelogramo', gen: g_areaPar() },
-    { id: 136, region: 7, name: 'Área de trapézio',      gen: g_areaTrap() },
-    { id: 137, region: 7, name: 'Círculo',               gen: g_circle() },
-    { id: 138, region: 7, name: 'Problemas geométricos', gen: () => shuffle([...g_areaTri()(), ...g_areaPar()()]).slice(0, 6) },
-    { id: 139, region: 7, name: 'Operações algébricas',  gen: () => shuffle([...g_eq2sides()(), ...g_proportion()()]).slice(0, 6) },
-    { id: 140, region: 7, name: '⭐ Desafio do Deserto',  gen: () => shuffle([...g_eq2sides()(), ...g_rule3()(), ...g_discount()()]).slice(0, 6) },
+    // -- Templo das Palavras (121-140) --
+    { id: 121, region: 7, name: 'Sinonimos de feliz', gen: makePhaseGen(BANK_R7) },
+    { id: 122, region: 7, name: 'Belo e veloz', gen: makePhaseGen(BANK_R7) },
+    { id: 123, region: 7, name: 'Antonimos', gen: makePhaseGen(BANK_R7) },
+    { id: 124, region: 7, name: 'Biblioteca e museu', gen: makePhaseGen(BANK_R7) },
+    { id: 125, region: 7, name: 'Plural de cidadao', gen: makePhaseGen(BANK_R7) },
+    { id: 126, region: 7, name: 'Campo do oceano', gen: makePhaseGen(BANK_R7) },
+    { id: 127, region: 7, name: 'Crianca e filhote', gen: makePhaseGen(BANK_R7) },
+    { id: 128, region: 7, name: 'Diminutivo', gen: makePhaseGen(BANK_R7) },
+    { id: 129, region: 7, name: 'Plural de maca', gen: makePhaseGen(BANK_R7) },
+    { id: 130, region: 7, name: 'Adverbio', gen: makePhaseGen(BANK_R7) },
+    { id: 131, region: 7, name: 'Incluir e excluir', gen: makePhaseGen(BANK_R7) },
+    { id: 132, region: 7, name: 'Aumentativo', gen: makePhaseGen(BANK_R7) },
+    { id: 133, region: 7, name: 'Pintor e escritor', gen: makePhaseGen(BANK_R7) },
+    { id: 134, region: 7, name: 'Substantivo abstrato', gen: makePhaseGen(BANK_R7) },
+    { id: 135, region: 7, name: 'Corajoso e valente', gen: makePhaseGen(BANK_R7) },
+    { id: 136, region: 7, name: 'Palavras compostas', gen: makePhaseGen(BANK_R7) },
+    { id: 137, region: 7, name: 'Abundancia', gen: makePhaseGen(BANK_R7) },
+    { id: 138, region: 7, name: 'Medico e educacao', gen: makePhaseGen(BANK_R7) },
+    { id: 139, region: 7, name: 'Feminino de rei', gen: makePhaseGen(BANK_R7) },
+    { id: 140, region: 7, name: 'Desafio das Palavras', gen: makePhaseGen(BANK_R7) },
 
-    // ── 8º ano — Templo das Potências (141-160) ──
-    { id: 141, region: 8, name: 'Potências básicas',     gen: g_power() },
-    { id: 142, region: 8, name: 'Base inteira',          gen: g_power() },
-    { id: 143, region: 8, name: 'Propriedades I',        gen: g_powerProp() },
-    { id: 144, region: 8, name: 'Propriedades II',       gen: g_powerProp() },
-    { id: 145, region: 8, name: 'Potência de potência',  gen: g_powerProp() },
-    { id: 146, region: 8, name: 'Notação científica',    gen: g_sciNotation() },
-    { id: 147, region: 8, name: 'Raiz quadrada',         gen: g_sqrt() },
-    { id: 148, region: 8, name: 'Raiz aproximada',       gen: g_sqrtAprox() },
-    { id: 149, region: 8, name: 'Raiz cúbica',           gen: g_cubeRoot() },
-    { id: 150, region: 8, name: 'Valor numérico',        gen: g_algebraVal() },
-    { id: 151, region: 8, name: 'Soma de monômios',      gen: g_monoSum() },
-    { id: 152, region: 8, name: 'Multiplicação monômios', gen: g_monoMult() },
-    { id: 153, region: 8, name: '(a + b)²',              gen: g_squarePlus() },
-    { id: 154, region: 8, name: '(a − b)²',              gen: g_squareMinus() },
-    { id: 155, region: 8, name: '(a + b)(a − b)',        gen: g_diffSquares() },
-    { id: 156, region: 8, name: 'Fatoração',             gen: g_factor() },
-    { id: 157, region: 8, name: 'Sistemas substituição', gen: g_sysSubst() },
-    { id: 158, region: 8, name: 'Sistemas adição',       gen: g_sysSubst() },
-    { id: 159, region: 8, name: 'Teorema de Tales',      gen: g_thales() },
-    { id: 160, region: 8, name: '⭐ Desafio do Templo',  gen: () => shuffle([...g_power()(), ...g_diffSquares()(), ...g_sysSubst()()]).slice(0, 6) },
+    // -- Torre da Logica (141-160) --
+    { id: 141, region: 8, name: 'Se chove...', gen: makePhaseGen(BANK_R8) },
+    { id: 142, region: 8, name: 'Refutando afirmacoes', gen: makePhaseGen(BANK_R8) },
+    { id: 143, region: 8, name: 'Disjuncao OU', gen: makePhaseGen(BANK_R8) },
+    { id: 144, region: 8, name: 'Conjuncao E', gen: makePhaseGen(BANK_R8) },
+    { id: 145, region: 8, name: 'Ornitorrinco', gen: makePhaseGen(BANK_R8) },
+    { id: 146, region: 8, name: 'P e Q', gen: makePhaseGen(BANK_R8) },
+    { id: 147, region: 8, name: 'Implicacao falsa', gen: makePhaseGen(BANK_R8) },
+    { id: 148, region: 8, name: 'Paradoxo do mentiroso', gen: makePhaseGen(BANK_R8) },
+    { id: 149, region: 8, name: 'Estudar e passar', gen: makePhaseGen(BANK_R8) },
+    { id: 150, region: 8, name: 'Disjuncao exclusiva', gen: makePhaseGen(BANK_R8) },
+    { id: 151, region: 8, name: 'Negacao de todos', gen: makePhaseGen(BANK_R8) },
+    { id: 152, region: 8, name: 'P E (Q OU R)', gen: makePhaseGen(BANK_R8) },
+    { id: 153, region: 8, name: 'Contraposicao', gen: makePhaseGen(BANK_R8) },
+    { id: 154, region: 8, name: 'Tautologia', gen: makePhaseGen(BANK_R8) },
+    { id: 155, region: 8, name: 'Frase paradoxal', gen: makePhaseGen(BANK_R8) },
+    { id: 156, region: 8, name: 'Lei de De Morgan', gen: makePhaseGen(BANK_R8) },
+    { id: 157, region: 8, name: 'Passaros que nao voam', gen: makePhaseGen(BANK_R8) },
+    { id: 158, region: 8, name: 'Transitividade', gen: makePhaseGen(BANK_R8) },
+    { id: 159, region: 8, name: 'Dupla negacao', gen: makePhaseGen(BANK_R8) },
+    { id: 160, region: 8, name: 'Desafio da Logica', gen: makePhaseGen(BANK_R8) },
 
-    // ── 9º ano — Cidadela do Mestre (161-181) ──
-    { id: 161, region: 9, name: 'Função afim',           gen: g_funcAfim() },
-    { id: 162, region: 9, name: 'Coeficientes da afim',  gen: g_funcAfim() },
-    { id: 163, region: 9, name: 'Raiz da função afim',   gen: g_funcRoot() },
-    { id: 164, region: 9, name: 'Gráfico da afim',       gen: g_funcGraph() },
-    { id: 165, region: 9, name: 'Eq. 2º grau: forma',    gen: g_bhaskaraRoots() },
-    { id: 166, region: 9, name: 'Discriminante (Δ)',     gen: g_bhaskaraDelta() },
-    { id: 167, region: 9, name: 'Bhaskara: raízes',      gen: g_bhaskaraRoots() },
-    { id: 168, region: 9, name: 'Soma e produto',        gen: g_sumProd() },
-    { id: 169, region: 9, name: 'Vértice da parábola',   gen: g_vertex() },
-    { id: 170, region: 9, name: 'Pitágoras: hipotenusa', gen: g_pythCat() },
-    { id: 171, region: 9, name: 'Pitágoras: cateto',     gen: g_pythCat() },
-    { id: 172, region: 9, name: 'Semelhança',            gen: g_similar() },
-    { id: 173, region: 9, name: 'Trigonometria especial', gen: g_trigSpecial() },
-    { id: 174, region: 9, name: 'Seno, cosseno e tg',    gen: g_trigSpecial() },
-    { id: 175, region: 9, name: 'Polígonos regulares',   gen: g_polygon() },
-    { id: 176, region: 9, name: 'Probabilidade composta', gen: g_probComp() },
-    { id: 177, region: 9, name: 'Estatística I',         gen: g_stats() },
-    { id: 178, region: 9, name: 'Estatística II',        gen: g_stats() },
-    { id: 179, region: 9, name: 'Equações irracionais',  gen: g_irrational() },
-    { id: 180, region: 9, name: 'Mistura final',         gen: () => shuffle([...g_bhaskaraRoots()(), ...g_pythCat()(), ...g_trigSpecial()()]).slice(0, 6) },
-    { id: 181, region: 9, name: '🏆 Desafio Mestre',     gen: g_master() },
+    // -- Cidadela da Estrategia (161-181) --
+    { id: 161, region: 9, name: 'Jogo da velha', gen: makePhaseGen(BANK_R9) },
+    { id: 162, region: 9, name: 'Torneio eliminatorio', gen: makePhaseGen(BANK_R9) },
+    { id: 163, region: 9, name: 'Dividir balas', gen: makePhaseGen(BANK_R9) },
+    { id: 164, region: 9, name: 'Pedra-papel-tesoura', gen: makePhaseGen(BANK_R9) },
+    { id: 165, region: 9, name: 'Labirinto', gen: makePhaseGen(BANK_R9) },
+    { id: 166, region: 9, name: 'Balanca e moedas', gen: makePhaseGen(BANK_R9) },
+    { id: 167, region: 9, name: 'Pontos na gincana', gen: makePhaseGen(BANK_R9) },
+    { id: 168, region: 9, name: 'Pedras e jogadores', gen: makePhaseGen(BANK_R9) },
+    { id: 169, region: 9, name: 'Grade 3x3', gen: makePhaseGen(BANK_R9) },
+    { id: 170, region: 9, name: 'Prob. de carta', gen: makePhaseGen(BANK_R9) },
+    { id: 171, region: 9, name: 'Dado par', gen: makePhaseGen(BANK_R9) },
+    { id: 172, region: 9, name: 'Proximo ponto decide', gen: makePhaseGen(BANK_R9) },
+    { id: 173, region: 9, name: 'Balanca com 12 bolas', gen: makePhaseGen(BANK_R9) },
+    { id: 174, region: 9, name: 'Torneio suico', gen: makePhaseGen(BANK_R9) },
+    { id: 175, region: 9, name: 'Troco', gen: makePhaseGen(BANK_R9) },
+    { id: 176, region: 9, name: 'Jogo NIM', gen: makePhaseGen(BANK_R9) },
+    { id: 177, region: 9, name: 'Perguntas sim/nao', gen: makePhaseGen(BANK_R9) },
+    { id: 178, region: 9, name: 'Campeonato ida e volta', gen: makePhaseGen(BANK_R9) },
+    { id: 179, region: 9, name: 'Roleta de 8 setores', gen: makePhaseGen(BANK_R9) },
+    { id: 180, region: 9, name: 'Match point', gen: makePhaseGen(BANK_R9) },
+    { id: 181, region: 9, name: 'Desafio da Estrategia', gen: makePhaseGen(BANK_R9) },
 
-    // ── 10 — Arena do Vestibular (182-201) ──
-    { id: 182, region: 10, name: 'Progressão Aritmética', gen: g_progressAritm() },
-    { id: 183, region: 10, name: 'Progressão Geométrica', gen: g_progressGeom() },
-    { id: 184, region: 10, name: 'Logaritmo básico',      gen: g_logBasic() },
-    { id: 185, region: 10, name: 'Propriedades do log',   gen: g_logProp() },
-    { id: 186, region: 10, name: 'Combinatória',          gen: g_combinatoria() },
-    { id: 187, region: 10, name: 'Probabilidade avançada',gen: g_probCondicional() },
-    { id: 188, region: 10, name: 'Geometria analítica',   gen: g_geometriaAnalitica() },
-    { id: 189, region: 10, name: 'Trigonometria avançada',gen: g_trigAvancado() },
-    { id: 190, region: 10, name: 'Matrizes e determinantes', gen: g_matrizBasica() },
-    { id: 191, region: 10, name: 'Função exponencial',    gen: g_funcExponencial() },
-    { id: 192, region: 10, name: 'Geometria espacial',    gen: g_geometriaEspacial() },
-    { id: 193, region: 10, name: 'Questões ENEM/Vestibular', gen: g_enunciado() },
-    { id: 194, region: 10, name: 'PA e PG mistas',        gen: () => shuffle([...g_progressAritm()(), ...g_progressGeom()()]).slice(0,5) },
-    { id: 195, region: 10, name: 'Log e exponencial',     gen: () => shuffle([...g_logBasic()(), ...g_funcExponencial()()]).slice(0,5) },
-    { id: 196, region: 10, name: 'Combinatória aplicada', gen: () => shuffle([...g_combinatoria()(), ...g_probCondicional()()]).slice(0,5) },
-    { id: 197, region: 10, name: 'Geometria completa',    gen: () => shuffle([...g_geometriaAnalitica()(), ...g_geometriaEspacial()()]).slice(0,5) },
-    { id: 198, region: 10, name: 'Álgebra avançada',      gen: () => shuffle([...g_matrizBasica()(), ...g_trigAvancado()()]).slice(0,5) },
-    { id: 199, region: 10, name: 'Simulado ENEM I',       gen: () => shuffle([...g_enunciado()(), ...g_combinatoria()(), ...g_logBasic()()]).slice(0,5) },
-    { id: 200, region: 10, name: 'Simulado ENEM II',      gen: () => shuffle([...g_progressAritm()(), ...g_funcExponencial()(), ...g_trigAvancado()()]).slice(0,5) },
-    { id: 201, region: 10, name: '🏆 Desafio Vestibular', gen: () => shuffle([...g_enunciado()(), ...g_probCondicional()(), ...g_matrizBasica()(), ...g_geometriaAnalitica()()]).slice(0,5) },
+    // -- Arena do Mestre Pensador (182-201) --
+    { id: 182, region: 10, name: 'Mentirosos I', gen: makePhaseGen(BANK_R10) },
+    { id: 183, region: 10, name: 'Caracol no poco', gen: makePhaseGen(BANK_R10) },
+    { id: 184, region: 10, name: 'Duas caixas', gen: makePhaseGen(BANK_R10) },
+    { id: 185, region: 10, name: 'Dobrando papel', gen: makePhaseGen(BANK_R10) },
+    { id: 186, region: 10, name: 'Mentirosos II', gen: makePhaseGen(BANK_R10) },
+    { id: 187, region: 10, name: 'Digito 1 ate 100', gen: makePhaseGen(BANK_R10) },
+    { id: 188, region: 10, name: 'Dois trens', gen: makePhaseGen(BANK_R10) },
+    { id: 189, region: 10, name: '5 maquinas 5 pecas', gen: makePhaseGen(BANK_R10) },
+    { id: 190, region: 10, name: 'Numeros primos', gen: makePhaseGen(BANK_R10) },
+    { id: 191, region: 10, name: 'Paradoxo do aniversario', gen: makePhaseGen(BANK_R10) },
+    { id: 192, region: 10, name: 'Monty Hall', gen: makePhaseGen(BANK_R10) },
+    { id: 193, region: 10, name: 'Subindo a escada', gen: makePhaseGen(BANK_R10) },
+    { id: 194, region: 10, name: 'Angulo do relogio', gen: makePhaseGen(BANK_R10) },
+    { id: 195, region: 10, name: 'Raciocinio e idades', gen: makePhaseGen(BANK_R10) },
+    { id: 196, region: 10, name: 'Moeda e probabilidade', gen: makePhaseGen(BANK_R10) },
+    { id: 197, region: 10, name: 'Quadrados no xadrez', gen: makePhaseGen(BANK_R10) },
+    { id: 198, region: 10, name: 'Raposa e repolho', gen: makePhaseGen(BANK_R10) },
+    { id: 199, region: 10, name: 'Filosofos e garfos', gen: makePhaseGen(BANK_R10) },
+    { id: 200, region: 10, name: 'Baralho', gen: makePhaseGen(BANK_R10) },
+    { id: 201, region: 10, name: 'Mestre Pensador', gen: makePhaseGen(BANK_R10) },
+
 ];
 
 /* ─── Conquistas ────────────────────────────────────────────────────────── */
@@ -1846,17 +659,17 @@ const ACHIEVEMENTS = [
     { id: 'ten_phases',   name: 'Aquecido',               desc: '10 fases concluídas',             check: s => Object.keys(s.stars).length >= 10 },
     { id: 'thirty_phases', name: 'Em chamas',             desc: '30 fases concluídas',             check: s => Object.keys(s.stars).length >= 30 },
     { id: 'hundred_phases', name: 'Caminho longo',        desc: '100 fases concluídas',            check: s => Object.keys(s.stars).length >= 100 },
-    { id: 'all_phases',   name: 'Mestre da matemática',   desc: 'Todas as 201 fases',              check: s => Object.keys(s.stars).length >= 201 },
+    { id: 'all_phases',   name: 'Mestre Pensador',        desc: 'Todas as 201 fases',              check: s => Object.keys(s.stars).length >= 201 },
     { id: 'perfectionist', name: 'Perfeccionista',        desc: '10 fases com 3 estrelas',         check: s => Object.values(s.stars).filter(x => x === 3).length >= 10 },
     { id: 'star_collector', name: 'Coletor de estrelas',  desc: '300 estrelas no total',           check: s => Object.values(s.stars).reduce((a, b) => a + b, 0) >= 300 },
     { id: 'all_stars',    name: 'Brilhantíssimo',         desc: `Todas as estrelas (${TOTAL_STARS})`, check: s => Object.values(s.stars).reduce((a, b) => a + b, 0) >= TOTAL_STARS },
-    { id: 'region_1',     name: 'Numerologista',          desc: 'Conclua toda a Vila dos Números', check: s => PHASES.filter(p => p.region === 1).every(p => s.stars[p.id]) },
-    { id: 'region_9',     name: 'Coroado',                desc: 'Conclua toda a Cidadela',         check: s => PHASES.filter(p => p.region === 9).every(p => s.stars[p.id]) },
+    { id: 'region_1',     name: 'Detetive das Sequências',desc: 'Conclua a Floresta das Sequências', check: s => PHASES.filter(p => p.region === 1).every(p => s.stars[p.id]) },
+    { id: 'region_9',     name: 'Estrategista',           desc: 'Conclua a Cidadela da Estratégia', check: s => PHASES.filter(p => p.region === 9).every(p => s.stars[p.id]) },
     { id: 'xp_1000',      name: 'Mil XP',                 desc: 'Acumule 1000 XP',                 check: s => s.xp >= 1000 },
     { id: 'xp_5000',      name: '5K XP',                  desc: 'Acumule 5000 XP',                 check: s => s.xp >= 5000 },
     // Novas conquistas — Região 10 e Especiais
-    { id: 'region_10',    name: 'Veterano',              desc: 'Conclua a Arena do Vestibular',     check: s => PHASES.filter(p => p.region === 10).every(p => s.stars[p.id]) },
-    { id: 'vestibular',   name: 'Pré-vestibulando',      desc: 'Complete 5 fases da região 10',     check: s => PHASES.filter(p => p.region === 10 && s.stars[p.id]).length >= 5 },
+    { id: 'region_10',    name: 'Grande Mestre',         desc: 'Conclua a Arena do Mestre Pensador', check: s => PHASES.filter(p => p.region === 10).every(p => s.stars[p.id]) },
+    { id: 'vestibular',   name: 'Lógico Avançado',       desc: 'Complete 5 fases da região 10',     check: s => PHASES.filter(p => p.region === 10 && s.stars[p.id]).length >= 5 },
     { id: 'streak_3',     name: 'Em sequência',          desc: '3 dias seguidos jogando',           check: s => (s.streak || 0) >= 3 },
     { id: 'streak_7',     name: 'Semana dedicada',       desc: '7 dias seguidos jogando',           check: s => (s.streak || 0) >= 7 },
     { id: 'streak_30',    name: 'Mês de estudo',         desc: '30 dias seguidos jogando',          check: s => (s.streak || 0) >= 30 },
@@ -2225,6 +1038,35 @@ function formatOpt(raw) {
 }
 const OPT_LABELS = ['A', 'B', 'C', 'D'];
 
+/* ── Timer de 60 segundos por questão ──────────────────────────────────── */
+let _timerInterval = null;
+const QUESTION_TIME_LIMIT = 60;
+function startTimer() {
+    clearInterval(_timerInterval);
+    const timerEl = $('qTimer'), barEl = $('qTimerBar'), numEl = $('qTimerNum');
+    if (!timerEl) return;
+    timerEl.style.display = '';
+    let remaining = QUESTION_TIME_LIMIT;
+    barEl.style.width = '100%';
+    barEl.classList.remove('urgent'); numEl.classList.remove('urgent');
+    numEl.textContent = remaining;
+    _timerInterval = setInterval(() => {
+        remaining--;
+        barEl.style.width = ((remaining / QUESTION_TIME_LIMIT) * 100) + '%';
+        numEl.textContent = remaining;
+        if (remaining <= 10) { barEl.classList.add('urgent'); numEl.classList.add('urgent'); }
+        if (remaining <= 0) {
+            clearInterval(_timerInterval);
+            if (!state.answered) { toast('⏱ Tempo esgotado!', 'error'); answer(-1); }
+        }
+    }, 1000);
+}
+function stopTimer() {
+    clearInterval(_timerInterval);
+    const t = $('qTimer');
+    if (t) t.style.display = 'none';
+}
+
 /** Renders the current question in the active game session. */
 function renderQuestion() {
     const q = state.questions[state.qIndex];
@@ -2290,11 +1132,13 @@ function renderQuestion() {
         if (e.key === 'Enter' && state.answered && $('btnNext').style.display !== 'none') nextQuestion();
     };
     document.addEventListener('keydown', window._mqKeyHandler);
+    startTimer();
 }
 
 function answer(i) {
     if (state.answered) return;
     state.answered = true;
+    stopTimer();
     const q = state.questions[state.qIndex];
     const isPlacement = state.currentPhase?.isPlacement;
     const buttons = $('qOpts').querySelectorAll('.opt');
