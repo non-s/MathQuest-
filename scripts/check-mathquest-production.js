@@ -38,6 +38,8 @@ mustMatch("script.js", /localStorage\.setItem\('mq_class_code', codeRaw\);\s*awa
 mustMatch("index.html", /class_members'\)\.select\('user_id, joined_at'\)\.eq\('class_code', code\)\.limit\(200\)/, "roster membership reads must be bounded");
 mustMatch("index.html", /mathquest_progress'\)\.select\('user_id, nickname, xp, stars, achievements, updated_at'\)\.eq\('class_code', code\)\.limit\(200\)/, "teacher roster progress reads must be class-scoped and bounded");
 mustNotMatch("index.html", /id="tabSignup"|Criar conta/, "teacher panel must not expose public signup");
+mustMatch("index.html", /id="liveScoreboard"/, "live classroom mode must render a teacher scoreboard");
+mustMatch("index.html", /function renderLiveScoreboard\(/, "live classroom mode must aggregate session scores");
 
 mustMatch("firestore.rules", /function validMqProgress\(/, "rules must validate MathQuest progress schema");
 mustMatch("firestore.rules", /match \/profiles\/\{userId\}[\s\S]*allow create: if false;/, "teacher profiles must not be publicly creatable");

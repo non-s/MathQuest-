@@ -479,6 +479,7 @@
             <div class="t-live-status" id="liveStatus">Sessão pronta</div>
             <div id="liveQuestionPreview" class="t-live-question"></div>
             <div id="liveAnswerStats" class="t-live-stats"></div>
+            <div id="liveScoreboard" class="t-live-scoreboard"></div>
             <div class="t-confirm-actions">
                 <button id="btnNextLiveQuestion" class="btn-secondary" style="width:auto">Próxima</button>
                 <button id="btnEndLiveSession" class="btn-danger">Encerrar</button>
@@ -945,13 +946,13 @@
         const { data, error } = await sb.from('live_responses')
             .select('*')
             .eq('session_id', currentLiveSession.session_id)
-            .eq('question_index', currentLiveSession.question_index)
             .limit(1000);
         if (error) {
             $('liveAnswerStats').textContent = 'Erro lendo respostas: ' + error.message;
             return;
         }
-        (data || []).forEach(row => {
+        const rows = data || [];
+        rows.filter(row => row.question_index === currentLiveSession.question_index).forEach(row => {
             if (Number.isInteger(row.answer_index) && counts[row.answer_index] !== undefined) counts[row.answer_index]++;
         });
         counts.forEach((count, index) => {
@@ -961,6 +962,30 @@
         const total = counts.reduce((sum, count) => sum + count, 0);
         const correct = counts[q.correctIndex] || 0;
         $('liveAnswerStats').innerHTML = `<b>${total}</b> respostas · <b>${correct}</b> corretas`;
+        renderLiveScoreboard(rows);
+    }
+
+    function renderLiveScoreboard(rows) {
+        const scores = new Map();
+        rows.forEach(row => {
+            const key = row.user_id || row.nickname || 'anon';
+            const current = scores.get(key) || { nickname: row.nickname || 'Aluno', score: 0, correct: 0, answers: 0 };
+            current.score += Number(row.score_delta || 0);
+            current.correct += row.correct ? 1 : 0;
+            current.answers += 1;
+            scores.set(key, current);
+        });
+        const ranking = [...scores.values()].sort((a, b) => b.score - a.score || b.correct - a.correct).slice(0, 8);
+        if (!ranking.length) {
+            $('liveScoreboard').innerHTML = '<p class="t-live-empty">Aguardando respostas dos alunos...</p>';
+            return;
+        }
+        $('liveScoreboard').innerHTML = '<h4>Placar ao vivo</h4>' + ranking.map((row, index) => `
+            <div class="t-live-rank-row">
+                <span><b>${index + 1}</b> ${esc(row.nickname)}</span>
+                <span>${row.score} pts · ${row.correct}/${row.answers}</span>
+            </div>
+        `).join('');
     }
 
     async function startLiveSession() {
