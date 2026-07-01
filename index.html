@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MathQuest — Raciocínio Lógico</title>
     <meta name="description" content="Jogo educacional de raciocínio lógico. 10 regiões, 201 fases do iniciante ao Mestre Pensador.">
     <meta name="theme-color" content="#0d1117">
@@ -90,7 +90,8 @@
         <h1>Bem-vindo, aventureiro!</h1>
         <p class="welcome-sub">Explore 10 regiões de raciocínio lógico e desenvolva seu pensamento. 201 fases do iniciante ao Mestre Pensador.</p>
         <input id="nickInput" class="field" placeholder="Como devemos te chamar?" maxlength="30" autocomplete="off">
-        <input id="classCodeInput" class="field" placeholder="Código da turma (opcional)" maxlength="10" autocomplete="off">
+        <input id="classCodeInput" class="field" placeholder="Código da turma (opcional)" maxlength="10" autocomplete="off" aria-label="Código da turma fornecido pelo professor">
+        <p style="font-size:.78rem;color:var(--text-dim);margin:-0.5rem 0 .75rem;text-align:left">Seu professor vai te dar esse código. Não tem? É só deixar em branco!</p>
         <button id="btnStart" class="btn-primary">Começar a jornada</button>
         <p id="welcomeError" class="welcome-error"></p>
         <p class="welcome-tip">Tem código do(a) professor(a)? Digite aí. Senão, é só seguir.</p>
@@ -482,6 +483,18 @@
         toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
     }
 
+    function friendlyError(e) {
+        const code = e?.code || e?.message || '';
+        if (code.includes('network') || code.includes('offline'))   return 'Sem conexão. Verifique a internet e tente novamente.';
+        if (code.includes('wrong-password') || code.includes('invalid-credential')) return 'E-mail ou senha incorretos.';
+        if (code.includes('user-not-found'))  return 'Não encontrei uma conta com este e-mail.';
+        if (code.includes('email-already'))   return 'Já existe uma conta com este e-mail. Tente entrar.';
+        if (code.includes('too-many-reques')) return 'Muitas tentativas. Aguarde alguns minutos.';
+        if (code.includes('weak-password'))   return 'Senha muito fraca. Use pelo menos 8 caracteres.';
+        if (code.includes('permission'))      return 'Sem permissão para esta ação.';
+        return e?.message || 'Algo deu errado. Tente novamente.';
+    }
+
     function genCode() {
         const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
         let s = '';
@@ -548,7 +561,7 @@
                 showDash();
             }
         } catch (e) {
-            $('authError').textContent = e.message || 'Não consegui entrar.';
+            $('authError').textContent = friendlyError(e);
         } finally {
             $('btnAuth').disabled = false;
         }

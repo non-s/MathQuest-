@@ -1445,8 +1445,18 @@ function finishOnboarding() {
 /* ─── Inicialização ────────────────────────────────────────────────────── */
 async function init() {
     $('loader').style.display = '';
+    // Timeout de segurança: se Firebase travar, mostra tela de boas-vindas mesmo assim
+    const loaderTimeout = setTimeout(() => {
+        if ($('loader').style.display !== 'none') {
+            $('loader').style.display = 'none';
+            if (!state.nickname) showWelcome();
+            else { hideWelcome(); renderMap(); }
+            toast('A internet está lenta — jogando offline!', 'warn');
+        }
+    }, 12000);
     await initAuth();
     const remote = await loadRemote();
+    clearTimeout(loaderTimeout);
     if (!remote) loadLocal();
     updateStreak();
     if (!state.nickname) {
