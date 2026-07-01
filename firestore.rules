@@ -546,7 +546,7 @@ service cloud.firestore {
     }
 
     function mqLiveStatus(value) {
-      return value in ['lobby', 'question', 'ended'];
+      return value in ['lobby', 'question', 'review', 'ended'];
     }
 
     function mqOptionalLiveDuration(data) {
@@ -556,8 +556,15 @@ service cloud.firestore {
           && data.question_duration_sec <= 180);
     }
 
+    function mqOptionalRevealedAnswer(data) {
+      return !data.keys().hasAny(['revealed_answer_index'])
+        || (data.revealed_answer_index is int
+          && data.revealed_answer_index >= -1
+          && data.revealed_answer_index <= 9);
+    }
+
     function validMqLiveSession(data, sessionId) {
-      return data.keys().hasOnly(['session_id', 'class_code', 'teacher_id', 'title', 'status', 'phase_id', 'question_index', 'questions', 'question_duration_sec', 'question_started_at', 'question_deadline_at', 'created_at', 'updated_at', 'started_at', 'ended_at'])
+      return data.keys().hasOnly(['session_id', 'class_code', 'teacher_id', 'title', 'status', 'phase_id', 'question_index', 'questions', 'revealed_answer_index', 'question_duration_sec', 'question_started_at', 'question_deadline_at', 'created_at', 'updated_at', 'started_at', 'ended_at'])
         && data.session_id == sessionId
         && mqValidClassCode(data.class_code)
         && data.teacher_id == request.auth.uid
@@ -573,6 +580,7 @@ service cloud.firestore {
         && data.questions is list
         && data.questions.size() >= 1
         && data.questions.size() <= 10
+        && mqOptionalRevealedAnswer(data)
         && mqOptionalLiveDuration(data)
         && mqOptionalIsoString(data, 'question_started_at')
         && mqOptionalIsoString(data, 'question_deadline_at')

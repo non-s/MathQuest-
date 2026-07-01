@@ -1233,6 +1233,13 @@ body { font-size: calc(1rem * var(--font-scale, 1)); }
             border-color: var(--accent);
             background: color-mix(in srgb, var(--accent) 12%, var(--bg-soft));
         }
+        .mq-live-student-card .opt.correct {
+            border-color: var(--success);
+            background: color-mix(in srgb, var(--success) 15%, var(--bg-soft));
+        }
+        .mq-live-student-card .opt.muted {
+            opacity: .58;
+        }
         .mq-live-student-result {
             margin-top: 1rem;
             color: var(--text-dim);
@@ -1417,6 +1424,12 @@ body { font-size: calc(1rem * var(--font-scale, 1)); }
             font-size: 2rem;
             font-variant-numeric: tabular-nums;
         }
+        .proj-live-option.correct {
+            border-color: #3fb950;
+            box-shadow: 0 0 0 2px rgba(63, 185, 80, .25);
+        }
+        .proj-live-option.correct em { background: #3fb950; color: #07130a; }
+        .proj-live-option.muted { opacity: .55; }
         .proj-live-empty {
             color: #8b949e;
             font-size: 2rem;

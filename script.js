@@ -2116,29 +2116,47 @@ function liveQuestionExpired(session) {
 }
 
 function liveQuestionCountdownText(session) {
+    if (session?.status === 'review') return 'Resultado';
     const remaining = liveQuestionRemainingSeconds(session);
     if (remaining === null) return 'Sem limite de tempo';
     return remaining > 0 ? `${remaining}s restantes` : 'Tempo esgotado';
+}
+
+function liveSessionVisible(session) {
+    return ['question', 'review'].includes(session?.status);
+}
+
+function liveRevealedAnswerIndex(session) {
+    return Number.isInteger(session?.revealed_answer_index) && session.revealed_answer_index >= 0
+        ? session.revealed_answer_index
+        : null;
+}
+
+function liveSessionQuestionKey(session) {
+    return `${session.session_id}:${session.question_index}:${session.status}:${session.revealed_answer_index ?? -1}`;
 }
 
 function updateLiveStudentCountdown() {
     if (!currentLiveStudentSession) return;
     const text = liveQuestionCountdownText(currentLiveStudentSession);
     const expired = liveQuestionExpired(currentLiveStudentSession);
+    const deadlineExpired = currentLiveStudentSession.status !== 'review' && expired;
     const bannerCountdown = document.getElementById('mqLiveBannerCountdown');
     if (bannerCountdown) {
         bannerCountdown.textContent = text;
-        bannerCountdown.classList.toggle('expired', expired);
+        bannerCountdown.classList.toggle('expired', deadlineExpired);
     }
     const modalCountdown = document.getElementById('mqLiveStudentCountdown');
     if (modalCountdown) {
         modalCountdown.textContent = text;
-        modalCountdown.classList.toggle('expired', expired);
+        modalCountdown.classList.toggle('expired', deadlineExpired);
     }
-    if (expired) {
+    if (expired || currentLiveStudentSession.status === 'review') {
         document.querySelectorAll('#mqLiveOptions .opt').forEach(btn => { btn.disabled = true; });
         const result = document.getElementById('mqLiveResult');
-        if (result && !result.textContent) result.textContent = 'Tempo esgotado. Aguarde a proxima pergunta.';
+        if (result && !result.textContent) result.textContent = currentLiveStudentSession.status === 'review'
+            ? 'Resultado exibido. Aguarde a proxima pergunta.'
+            : 'Tempo esgotado. Aguarde a proxima pergunta.';
     }
 }
 
@@ -2199,7 +2217,7 @@ async function findActiveLiveSession() {
         .order('updated_at', { ascending: false })
         .limit(5);
     if (error || !data?.length) return null;
-    return data.find(session => session.status === 'question') || null;
+    return data.find(liveSessionVisible) || null;
 }
 
 async function checkLiveSession() {
@@ -2221,13 +2239,13 @@ function renderActiveLiveSession(session) {
     showLiveBanner(session);
     startLiveStudentCountdown(session);
     const openModal = document.getElementById('mqLiveStudentModal');
-    if (openModal && openModal.dataset.liveKey !== `${session.session_id}:${session.question_index}`) {
+    if (openModal && openModal.dataset.liveKey !== liveSessionQuestionKey(session)) {
         openLiveStudentModal(session);
     }
 }
 
 function handleLiveSessionRows(rows) {
-    renderActiveLiveSession((rows || []).find(session => session.status === 'question') || null);
+    renderActiveLiveSession((rows || []).find(liveSessionVisible) || null);
 }
 
 function startLiveSessionWatch() {
@@ -2258,13 +2276,16 @@ function openLiveStudentModal(session) {
     const responseId = liveResponseId(session, qIndex);
     const answered = state.liveResponses[responseId];
     const expired = liveQuestionExpired(session);
-    const resultText = answered
-        ? 'Resposta enviada. Aguarde a proxima pergunta.'
-        : (expired ? 'Tempo esgotado. Aguarde a proxima pergunta.' : '');
+    const revealedIndex = liveRevealedAnswerIndex(session);
+    const resultText = session.status === 'review'
+        ? 'Resultado exibido. Aguarde a proxima pergunta.'
+        : (answered
+            ? 'Resposta enviada. Aguarde a proxima pergunta.'
+            : (expired ? 'Tempo esgotado. Aguarde a proxima pergunta.' : ''));
     const modal = document.createElement('div');
     modal.id = 'mqLiveStudentModal';
     modal.className = 'mq-live-student-modal';
-    modal.dataset.liveKey = `${session.session_id}:${qIndex}`;
+    modal.dataset.liveKey = liveSessionQuestionKey(session);
     modal.innerHTML = `
         <div class="mq-live-student-card">
             <button class="t-modal-close" data-live-close style="float:right">✕</button>
@@ -2281,7 +2302,8 @@ function openLiveStudentModal(session) {
     (q.options || []).forEach((opt, index) => {
         const btn = document.createElement('button');
         btn.className = 'opt';
-        btn.disabled = Boolean(answered || expired);
+        if (revealedIndex !== null) btn.classList.add(index === revealedIndex ? 'correct' : 'muted');
+        btn.disabled = Boolean(answered || expired || session.status === 'review');
         btn.innerHTML = `<span class="opt-label-badge">${OPT_LABELS[index] || String(index + 1)}</span><span class="opt-text">${formatOpt(opt)}</span>`;
         btn.addEventListener('click', () => submitLiveAnswer(session, qIndex, index, q));
         options.appendChild(btn);
@@ -2292,6 +2314,12 @@ function openLiveStudentModal(session) {
 async function submitLiveAnswer(session, questionIndex, answerIndex, question) {
     const responseId = liveResponseId(session, questionIndex);
     if (state.liveResponses[responseId]) return;
+    if (session.status === 'review') {
+        document.querySelectorAll('#mqLiveOptions .opt').forEach(btn => { btn.disabled = true; });
+        const result = document.getElementById('mqLiveResult');
+        if (result) result.textContent = 'Resultado exibido. Aguarde a proxima pergunta.';
+        return;
+    }
     if (liveQuestionExpired(session)) {
         document.querySelectorAll('#mqLiveOptions .opt').forEach(btn => { btn.disabled = true; });
         const result = document.getElementById('mqLiveResult');

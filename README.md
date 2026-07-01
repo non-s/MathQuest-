@@ -35,7 +35,7 @@ Colecoes usadas no Firestore:
 - `live_answer_keys/{sessionId}`
 - `live_responses/{sessionId_uid_questionIndex}`
 
-O modo ao vivo armazena apenas perguntas/opcoes publicas em `live_sessions`, mantem gabaritos em `live_answer_keys`, usa um temporizador por pergunta e pode ser exibido no modo Projetor sem revelar o gabarito.
+O modo ao vivo armazena apenas perguntas/opcoes publicas em `live_sessions`, mantem gabaritos em `live_answer_keys`, usa um temporizador por pergunta e pode ser exibido no modo Projetor. O gabarito so entra no documento publico como `revealed_answer_index` quando o professor escolhe mostrar o resultado.
 
 ## Desenvolvimento local
 

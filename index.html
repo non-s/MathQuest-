@@ -492,6 +492,7 @@
             <div id="liveAnswerStats" class="t-live-stats"></div>
             <div id="liveScoreboard" class="t-live-scoreboard"></div>
             <div class="t-confirm-actions">
+                <button id="btnRevealLiveAnswer" class="btn-secondary" style="width:auto">Mostrar resultado</button>
                 <button id="btnNextLiveQuestion" class="btn-secondary" style="width:auto">Próxima</button>
                 <button id="btnEndLiveSession" class="btn-danger">Encerrar</button>
             </div>
@@ -919,6 +920,7 @@
     }
 
     function liveCountdownText(session) {
+        if (session?.status === 'review') return 'Resultado';
         const remaining = liveRemainingSeconds(session);
         if (remaining === null) return 'Sem limite';
         return remaining > 0 ? `${remaining}s` : 'Tempo esgotado';
@@ -982,12 +984,13 @@
         if (!el || !currentLiveSession) return;
         const remaining = liveRemainingSeconds(currentLiveSession);
         el.textContent = liveCountdownText(currentLiveSession);
-        el.classList.toggle('expired', remaining !== null && remaining <= 0);
+        el.classList.toggle('expired', currentLiveSession.status !== 'review' && remaining !== null && remaining <= 0);
     }
 
     function startLiveCountdown() {
         stopLiveCountdown();
         updateLiveCountdown();
+        if (currentLiveSession?.status === 'review') return;
         liveCountdownInterval = setInterval(updateLiveCountdown, 1000);
     }
 
@@ -1004,6 +1007,8 @@
         const correctIndex = currentLiveAnswerKey?.answers?.[currentLiveSession.question_index];
         const total = currentLiveSession.questions.length;
         $('liveStatus').textContent = `${currentClassName} · pergunta ${currentLiveSession.question_index + 1}/${total} · ${currentLiveSession.status}`;
+        $('btnRevealLiveAnswer').disabled = currentLiveSession.status === 'review';
+        $('btnRevealLiveAnswer').textContent = currentLiveSession.status === 'review' ? 'Resultado exibido' : 'Mostrar resultado';
         $('liveQuestionPreview').innerHTML = `<h4>${q.stem}</h4>` + q.options.map((opt, index) => {
             const correct = index === correctIndex ? ' correct' : '';
             return `<div class="t-live-option${correct}"><span>${esc(String.fromCharCode(65 + index))}. ${formatOpt(opt)}</span><b id="liveCount${index}">0</b></div>`;
@@ -1131,6 +1136,7 @@
             phase_id: phase.id,
             question_index: 0,
             questions,
+            revealed_answer_index: -1,
             question_duration_sec: questionDurationSec,
             question_started_at: now,
             question_deadline_at: liveQuestionDeadlineAt(now, questionDurationSec),
@@ -1179,6 +1185,22 @@
         currentLiveSession = payload;
     }
 
+    async function revealLiveAnswer() {
+        if (!currentLiveSession || !currentLiveAnswerKey) return;
+        const correctIndex = currentLiveAnswerKey.answers?.[currentLiveSession.question_index];
+        if (!Number.isInteger(correctIndex)) return;
+        try {
+            await saveLiveSession({
+                status: 'review',
+                revealed_answer_index: correctIndex,
+            });
+            stopLiveCountdown();
+            renderLiveTeacherControl();
+        } catch (error) {
+            toast('Erro exibindo resultado: ' + (error.message || error), 'error');
+        }
+    }
+
     async function nextLiveQuestion() {
         if (!currentLiveSession) return;
         const nextIndex = currentLiveSession.question_index + 1;
@@ -1192,6 +1214,7 @@
             await saveLiveSession({
                 status: 'question',
                 question_index: nextIndex,
+                revealed_answer_index: -1,
                 question_started_at: questionStartedAt,
                 question_deadline_at: liveQuestionDeadlineAt(questionStartedAt, duration),
             });
@@ -1265,7 +1288,7 @@
         const projectorTitleEl = document.getElementById('projTitle');
         const projectorRankEl = document.getElementById('projRanking');
         const projectorStatsEl = document.getElementById('projStats');
-        if (currentLiveSession?.status === 'question') {
+        if (['question', 'review'].includes(currentLiveSession?.status)) {
             if (projectorTitleEl) projectorTitleEl.textContent = currentClassName || 'Turma';
             if (projectorRankEl) projectorRankEl.style.display = 'none';
             if (projectorStatsEl) projectorStatsEl.style.display = 'none';
@@ -1306,18 +1329,23 @@
         });
         const totalAnswers = counts.reduce((sum, count) => sum + count, 0);
         const remaining = liveRemainingSeconds(currentLiveSession);
-        const timerClass = remaining !== null && remaining <= 0 ? ' expired' : '';
+        const timerText = currentLiveSession.status === 'review' ? 'Resultado' : liveCountdownText(currentLiveSession);
+        const timerClass = currentLiveSession.status !== 'review' && remaining !== null && remaining <= 0 ? ' expired' : '';
+        const revealedIndex = Number.isInteger(currentLiveSession.revealed_answer_index) && currentLiveSession.revealed_answer_index >= 0
+            ? currentLiveSession.revealed_answer_index
+            : null;
         const optionsHtml = (q.options || []).map((opt, index) => {
             const pct = totalAnswers ? Math.round((counts[index] || 0) / totalAnswers * 100) : 0;
-            return `<div class="proj-live-option"><i style="width:${pct}%"></i><span><em>${esc(String.fromCharCode(65 + index))}</em>${formatOpt(opt)}</span><b>${counts[index] || 0}</b></div>`;
+            const revealClass = revealedIndex === null ? '' : (index === revealedIndex ? ' correct' : ' muted');
+            return `<div class="proj-live-option${revealClass}"><i style="width:${pct}%"></i><span><em>${esc(String.fromCharCode(65 + index))}</em>${formatOpt(opt)}</span><b>${counts[index] || 0}</b></div>`;
         }).join('');
         container.innerHTML = `
             <div class="proj-live-meta">
                 <span>${esc(currentLiveSession.title || 'Desafio ao vivo')}</span>
-                <strong class="${timerClass}">${esc(liveCountdownText(currentLiveSession))}</strong>
+                <strong class="${timerClass}">${esc(timerText)}</strong>
                 <span>${totalAnswers} respostas</span>
             </div>
-            <div class="proj-live-progress">Pergunta ${qIndex + 1}/${currentLiveSession.questions.length}</div>
+            <div class="proj-live-progress">${revealedIndex === null ? 'Pergunta' : 'Resultado'} ${qIndex + 1}/${currentLiveSession.questions.length}</div>
             <div class="proj-live-question">${q.stem}</div>
             <div class="proj-live-options">${optionsHtml}</div>
         `;
@@ -1350,6 +1378,7 @@
     $('btnProjector').addEventListener('click', showProjector);
     $('btnLiveSession').addEventListener('click', openLiveSessionModal);
     $('btnStartLiveSession').addEventListener('click', startLiveSession);
+    $('btnRevealLiveAnswer').addEventListener('click', revealLiveAnswer);
     $('btnNextLiveQuestion').addEventListener('click', nextLiveQuestion);
     $('btnEndLiveSession').addEventListener('click', endLiveSession);
     $('btnSendClassMessage').addEventListener('click', sendClassMessage);

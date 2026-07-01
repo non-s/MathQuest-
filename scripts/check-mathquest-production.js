@@ -42,6 +42,8 @@ mustMatch("script.js", /localStorage\.setItem\('mq_class_code', codeRaw\);\s*awa
 mustMatch("script.js", /function startLiveSessionWatch\(/, "students must attach a live session watcher");
 mustMatch("script.js", /mqLive\.watchClassSessions/, "student live mode must subscribe to class sessions");
 mustMatch("script.js", /function liveQuestionRemainingSeconds\(/, "student live mode must render question countdowns");
+mustMatch("script.js", /function liveSessionVisible\(/, "student live mode must keep review sessions visible");
+mustMatch("script.js", /function liveRevealedAnswerIndex\(/, "student live mode must render revealed answers only after review");
 mustMatch("script.js", /mqLiveStudentCountdown/, "student live modal must show the question countdown");
 mustMatch("script.js", /function submitLiveAnswer\([\s\S]*liveQuestionExpired\(session\)/, "student live answers must be blocked after the visible deadline");
 mustMatch("script.js", /live_responses'\)\.insert\(/, "student live answers must be first-write-only inserts");
@@ -58,6 +60,10 @@ mustMatch("index.html", /live_answer_keys'\)\.insert\(/, "teacher live mode must
 mustMatch("index.html", /id="liveDurationSelect"/, "teacher live mode must allow a per-question timer");
 mustMatch("index.html", /question_duration_sec:\s*questionDurationSec/, "live sessions must persist the per-question duration");
 mustMatch("index.html", /question_deadline_at:\s*liveQuestionDeadlineAt/, "live sessions must persist question deadlines");
+mustMatch("index.html", /id="btnRevealLiveAnswer"/, "teacher live mode must include a result reveal control");
+mustMatch("index.html", /async function revealLiveAnswer\(/, "teacher live mode must reveal results explicitly");
+mustMatch("index.html", /status:\s*'review'/, "revealing a live answer must move the session into review");
+mustMatch("index.html", /revealed_answer_index:\s*-1/, "new live questions must reset public revealed answers");
 mustMatch("index.html", /function renderProjectorLive\(/, "projector mode must render live classroom questions");
 mustMatch("index.html", /id="projLive"/, "projector overlay must include a live challenge region");
 mustMatch("index.html", /currentLiveRows\.filter\(row => row\.question_index === qIndex\)/, "projector live view must aggregate current question responses");
@@ -77,6 +83,8 @@ mustMatch("firestore.rules", /function validMqLiveSession\(/, "rules must valida
 mustMatch("firestore.rules", /function validMqLiveAnswerKey\(/, "rules must validate private live answer keys");
 mustMatch("firestore.rules", /function validMqLiveResponse\(/, "rules must validate live response schema");
 mustMatch("firestore.rules", /function mqOptionalLiveDuration\(/, "rules must validate live question timer bounds");
+mustMatch("firestore.rules", /function mqOptionalRevealedAnswer\(/, "rules must validate revealed answer bounds");
+mustMatch("firestore.rules", /'review'/, "rules must allow explicit live review state");
 mustMatch("firestore.rules", /question_deadline_at/, "rules must allow validated live question deadlines");
 mustMatch("firestore.rules", /match \/live_sessions\/\{sessionId\}/, "rules must protect live sessions");
 mustMatch("firestore.rules", /match \/live_answer_keys\/\{sessionId\}[\s\S]*allow read: if mqLiveSessionOwnedByTeacher\(sessionId\);/, "live answer keys must be teacher-only");
