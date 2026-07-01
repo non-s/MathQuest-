@@ -1,0 +1,58 @@
+# MathQuest Production Checklist
+
+## Deploy targets
+
+- GitHub Pages serves production from `main`: `https://non-s.github.io/MathQuest-/`.
+- Firebase project: `non-s-firebase-20260621`.
+- Firestore rules and indexes deploy from `.github/workflows/firebase-deploy.yml` when `.firebaserc`, `firebase.json`, `firestore.rules`, or `firestore.indexes.json` changes on `main`.
+
+## Required GitHub secret
+
+Configure this repository secret before merging Firestore changes to `main`:
+
+- `SERVICE_ACCOUNT_JSON`: JSON for a Firebase service account from project `non-s-firebase-20260621`.
+
+The deploy workflow intentionally skips Firebase deployment when the secret is missing or belongs to another project.
+
+## Teacher provisioning
+
+Public teacher signup is disabled. To add a teacher:
+
+1. Create the teacher in Firebase Authentication with Email/Password.
+2. Create or update `profiles/{uid}` in Firestore:
+
+```json
+{
+  "user_id": "<uid>",
+  "email": "teacher@example.com",
+  "role": "teacher",
+  "created_at": "2026-07-01T00:00:00.000Z",
+  "updated_at": "2026-07-01T00:00:00.000Z"
+}
+```
+
+## Pre-merge checks
+
+Run locally:
+
+```bash
+node scripts/check-html-assets.js
+node scripts/check-mathquest-production.js
+node scripts/check-repo-contracts.js
+node scripts/check-workflows.js
+node scripts/test-question-bank.js
+node scripts/validate-firebase-config.js
+```
+
+Then verify GitHub Actions on the PR:
+
+- Quality / static checks
+- CodeQL
+- Firebase deploy after merge to `main`
+
+## Live classroom MVP notes
+
+- Teachers can start a live phase challenge from a class roster.
+- Students in the class see a live challenge banner and answer in-browser.
+- The teacher sees answer counts and an accumulated live scoreboard.
+- Current scoring is client-side. For high-stakes anti-cheat, move scoring to a trusted backend such as Cloud Functions.
