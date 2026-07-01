@@ -32,6 +32,7 @@ const state = {
     wrongCount:    0,
     failStreak:    {},
     teacherUnlocks: [],
+    liveResponses: {},
     avatar:        '🎓',
 };
 
@@ -2091,6 +2092,134 @@ async function checkClassMessages() {
     } catch(e) { /* ignora erros de rede */ }
 }
 
+/* ── Desafio ao vivo (modo sala tipo Kahoot) ────────────────────────── */
+let livePollTimer = null;
+
+function liveResponseId(session, questionIndex) {
+    return `${session.session_id}_${state.userId}_${questionIndex}`;
+}
+
+function removeLiveBanner() {
+    document.getElementById('mqLiveBanner')?.remove();
+}
+
+function removeLiveStudentModal() {
+    document.getElementById('mqLiveStudentModal')?.remove();
+}
+
+function showLiveBanner(session) {
+    let banner = document.getElementById('mqLiveBanner');
+    if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'mqLiveBanner';
+        banner.className = 'mq-live-banner';
+        document.body.appendChild(banner);
+    }
+    banner.innerHTML = `<div><strong>Desafio ao vivo da turma</strong><span>${esc(session.title || 'Raciocínio lógico')} · pergunta ${Number(session.question_index || 0) + 1}</span></div><button id="btnOpenLiveStudent">Entrar</button>`;
+    banner.querySelector('#btnOpenLiveStudent').addEventListener('click', () => openLiveStudentModal(session));
+}
+
+async function findActiveLiveSession() {
+    if (!localStorage.getItem('mq_lgpd_ok') || !state.userId || !state.classCode || !window.sb || !BACKEND_CONFIGURED) return null;
+    const { data, error } = await sb.from('live_sessions')
+        .select('*')
+        .eq('class_code', state.classCode)
+        .order('updated_at', { ascending: false })
+        .limit(5);
+    if (error || !data?.length) return null;
+    return data.find(session => session.status === 'question') || null;
+}
+
+async function checkLiveSession() {
+    try {
+        const session = await findActiveLiveSession();
+        if (!session) {
+            removeLiveBanner();
+            removeLiveStudentModal();
+            return;
+        }
+        showLiveBanner(session);
+        const openModal = document.getElementById('mqLiveStudentModal');
+        if (openModal && openModal.dataset.liveKey !== `${session.session_id}:${session.question_index}`) {
+            openLiveStudentModal(session);
+        }
+    } catch (_) {
+        /* modo ao vivo não deve interromper o jogo normal */
+    }
+}
+
+function openLiveStudentModal(session) {
+    const qIndex = Number(session.question_index || 0);
+    const q = session.questions?.[qIndex];
+    if (!q) return;
+    removeLiveStudentModal();
+    const responseId = liveResponseId(session, qIndex);
+    const answered = state.liveResponses[responseId];
+    const modal = document.createElement('div');
+    modal.id = 'mqLiveStudentModal';
+    modal.className = 'mq-live-student-modal';
+    modal.dataset.liveKey = `${session.session_id}:${qIndex}`;
+    modal.innerHTML = `
+        <div class="mq-live-student-card">
+            <button class="t-modal-close" data-live-close style="float:right">✕</button>
+            <h3>${esc(session.title || 'Desafio ao vivo')}</h3>
+            <div class="q-stem">${q.stem}</div>
+            <div id="mqLiveOptions"></div>
+            <div id="mqLiveResult" class="mq-live-student-result">${answered ? 'Resposta enviada. Aguarde a próxima pergunta.' : ''}</div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.querySelector('[data-live-close]').addEventListener('click', removeLiveStudentModal);
+    const options = modal.querySelector('#mqLiveOptions');
+    (q.options || []).forEach((opt, index) => {
+        const btn = document.createElement('button');
+        btn.className = 'opt';
+        btn.disabled = Boolean(answered);
+        btn.innerHTML = `<span class="opt-label-badge">${OPT_LABELS[index] || String(index + 1)}</span><span class="opt-text">${formatOpt(opt)}</span>`;
+        btn.addEventListener('click', () => submitLiveAnswer(session, qIndex, index, q));
+        options.appendChild(btn);
+    });
+}
+
+async function submitLiveAnswer(session, questionIndex, answerIndex, question) {
+    const responseId = liveResponseId(session, questionIndex);
+    if (state.liveResponses[responseId]) return;
+    const correct = answerIndex === Number(question.correctIndex);
+    state.liveResponses[responseId] = true;
+    document.querySelectorAll('#mqLiveOptions .opt').forEach((btn, idx) => {
+        btn.disabled = true;
+        if (idx === Number(question.correctIndex)) btn.classList.add('correct');
+        if (idx === answerIndex && !correct) btn.classList.add('wrong');
+    });
+    const result = document.getElementById('mqLiveResult');
+    if (result) result.textContent = correct ? 'Resposta enviada: correta!' : 'Resposta enviada.';
+    try {
+        const questionKey = String(questionIndex);
+        const { error } = await sb.from('live_responses').upsert({
+            response_id: responseId,
+            session_id: session.session_id,
+            class_code: session.class_code,
+            user_id: state.userId,
+            nickname: state.nickname || 'Aluno',
+            question_key: questionKey,
+            question_index: questionIndex,
+            answer_index: answerIndex,
+            correct,
+            score_delta: correct ? 1000 : 0,
+            updated_at: new Date().toISOString(),
+        });
+        if (error) throw error;
+    } catch (error) {
+        state.liveResponses[responseId] = false;
+        document.querySelectorAll('#mqLiveOptions .opt').forEach(btn => {
+            btn.disabled = false;
+            btn.classList.remove('correct', 'wrong');
+        });
+        if (result) result.textContent = 'Não consegui enviar. Tente novamente.';
+        toast('Erro no desafio ao vivo: ' + (error.message || error), 'error');
+    }
+}
+
 /* ── Inicialização ──────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
     // Gems HUD element (se não existir, adiciona)
@@ -2121,6 +2250,10 @@ document.addEventListener('DOMContentLoaded', () => {
     setTimeout(checkClassMessages, 3000);
     setInterval(checkClassMessages, 5 * 60 * 1000);
 
+    // Desafio ao vivo (checa com frequência curta para uso em sala)
+    setTimeout(checkLiveSession, 3500);
+    livePollTimer = setInterval(checkLiveSession, 4000);
+
     // Evento semanal: mostra banner ao abrir o mapa
     const _origRenderMap = window.renderMap;
     if (_origRenderMap) {
@@ -2138,8 +2271,8 @@ window.showQRCode  = showQRCode;
 window.getCurrentWeeklyEvent = getCurrentWeeklyEvent;
 window.$ = $;
 window.esc = esc;
+window.formatOpt = formatOpt;
 window.REGIONS = REGIONS;
+window.PHASES = PHASES;
 window.sb = sb;
 window.MQ_BACKEND_CONFIGURED = BACKEND_CONFIGURED;
-
-

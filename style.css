@@ -1002,6 +1002,16 @@ body { font-size: calc(1rem * var(--font-scale, 1)); }
         .t-refresh-btn.spinning span { display: inline-block; animation: spin 1s linear infinite; }
         @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
         .t-last-sync { color: var(--text-dim); font-size: .75rem; }
+        .t-live-btn {
+            padding: .55rem 1rem;
+            background: var(--success);
+            color: #07130a;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .t-live-btn:hover { filter: brightness(1.08); }
 
         .t-table { width: 100%; border-collapse: collapse; }
         .t-table th, .t-table td {
@@ -1065,6 +1075,92 @@ body { font-size: calc(1rem * var(--font-scale, 1)); }
         .t-drill-phase .stars { color: #f0c419; font-size: .7rem; }
         .t-drill-phase.done { border-color: var(--success); }
         .t-drill-phase.locked { opacity: .3; }
+        .t-live-modal-card { max-width: 720px; }
+        .t-live-status {
+            color: var(--text-dim);
+            font-size: .85rem;
+            margin-bottom: .75rem;
+        }
+        .t-live-question {
+            background: var(--bg-soft);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        .t-live-question h4 { margin-bottom: .75rem; font-size: 1rem; }
+        .t-live-option {
+            display: flex;
+            justify-content: space-between;
+            gap: .75rem;
+            padding: .5rem .65rem;
+            border-radius: 6px;
+            background: #0d1117;
+            border: 1px solid var(--border);
+            margin-top: .4rem;
+            font-size: .9rem;
+        }
+        .t-live-option.correct { border-color: var(--success); }
+        .t-live-stats {
+            display: grid;
+            gap: .5rem;
+            margin-bottom: 1rem;
+        }
+        .mq-live-banner {
+            position: fixed;
+            left: 50%;
+            bottom: 1rem;
+            transform: translateX(-50%);
+            z-index: 45;
+            width: min(92vw, 520px);
+            background: #102019;
+            border: 1px solid var(--success);
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            padding: .85rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: .75rem;
+        }
+        .mq-live-banner strong { display: block; font-size: .95rem; }
+        .mq-live-banner span { color: var(--text-dim); font-size: .8rem; }
+        .mq-live-banner button {
+            background: var(--success);
+            color: #07130a;
+            border-radius: 8px;
+            font-weight: 700;
+            padding: .55rem .85rem;
+            white-space: nowrap;
+        }
+        .mq-live-student-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 60;
+            background: rgba(0, 0, 0, .68);
+            display: grid;
+            place-items: center;
+            padding: 1rem;
+        }
+        .mq-live-student-card {
+            width: min(92vw, 620px);
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: var(--shadow);
+        }
+        .mq-live-student-card h3 { margin-bottom: .75rem; }
+        .mq-live-student-card .opt {
+            width: 100%;
+            margin-top: .55rem;
+            text-align: left;
+        }
+        .mq-live-student-result {
+            margin-top: 1rem;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
         .t-foot {
             margin-top: 2.5rem; padding-top: 1.5rem;
             border-top: 1px solid var(--border);
