@@ -775,7 +775,15 @@
         if (opts.initial) tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-dim)">Carregando…</td></tr>';
         const { data: members, error: e1 } = await sb.from('class_members').select('user_id, joined_at').eq('class_code', code).limit(200);
         if (e1) { tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger)">${esc(e1.message)}</td></tr>`; return; }
-        if (!members.length) { tbody.innerHTML = ''; $('rosterEmpty').style.display = ''; $('lastSync').textContent = 'Atualizado agora'; return; }
+        if (!members.length) {
+            tbody.innerHTML = '';
+            $('rosterEmpty').style.display = '';
+            roster = [];
+            lastRosterUserIds = new Set();
+            updateRosterStats(); renderStuckStudents(); renderBarChart(); renderRegionAnalysis(); renderLiveLobbyIfVisible();
+            $('lastSync').textContent = 'Atualizado agora';
+            return;
+        }
         $('rosterEmpty').style.display = 'none';
         const userIds = members.map(m => m.user_id);
         const { data: progress, error: e2 } = await sb.from('mathquest_progress').select('user_id, nickname, xp, stars, achievements, updated_at').eq('class_code', code).limit(200);
@@ -799,7 +807,7 @@
         });
         if (justArrived.length && lastRosterUserIds.size > 0) toast(`${justArrived.length} aluno${justArrived.length === 1 ? ' entrou' : 's entraram'} agora!`, 'success');
         roster = rows.map(r => { const phases = Object.keys(r.stars).length; const totalStars = Object.values(r.stars).reduce((a, b) => a + b, 0); return { ...r, phases, totalStars, last: r.updated_at, rawStars: r.stars || {} }; });
-        updateRosterStats(); renderStuckStudents(); renderBarChart(); renderRegionAnalysis();
+        updateRosterStats(); renderStuckStudents(); renderBarChart(); renderRegionAnalysis(); renderLiveLobbyIfVisible();
         lastRosterUserIds = newIds;
         $('lastSync').textContent = 'Atualizado agora';
         clearTimeout($('lastSync')._t);
@@ -1021,6 +1029,32 @@
         stopLiveCountdown();
     }
 
+    function liveLobbyCountText() {
+        const count = roster.length;
+        return count === 1 ? '1 aluno no lobby' : `${count} alunos no lobby`;
+    }
+
+    function liveLobbyStudents(limit = 16) {
+        return [...roster]
+            .sort((a, b) => (b.joined_at || b.last || '').localeCompare(a.joined_at || a.last || ''))
+            .slice(0, limit);
+    }
+
+    function liveLobbyListHtml(listClass, itemClass, limit = 16, emptyClass = 't-live-empty') {
+        const students = liveLobbyStudents(limit);
+        if (!students.length) return `<p class="${emptyClass}">Nenhum aluno entrou ainda. Deixe o QR Code visivel no projetor.</p>`;
+        const extra = Math.max(roster.length - students.length, 0);
+        const names = students.map(student => `<span class="${itemClass}">${esc(student.nickname || 'entrou agora')}</span>`).join('');
+        const suffix = extra ? `<span class="${itemClass} muted">+${extra}</span>` : '';
+        return `<div class="${listClass}">${names}${suffix}</div>`;
+    }
+
+    function renderLiveLobbyIfVisible() {
+        if (!currentLiveSession || currentLiveSession.status !== 'lobby') return;
+        if ($('liveSessionModal')?.classList.contains('open')) renderLiveTeacherControl();
+        renderProjector();
+    }
+
     function renderLiveTeacherControl() {
         if (!currentLiveSession) return;
         $('liveSetup').style.display = 'none';
@@ -1036,8 +1070,8 @@
         $('btnNextLiveQuestion').textContent = currentLiveSession.status === 'lobby' ? 'Comecar perguntas' : 'Proxima';
         if (currentLiveSession.status === 'lobby') {
             $('btnRevealLiveAnswer').disabled = true;
-            $('liveQuestionPreview').innerHTML = `<h4>${esc(currentLiveSession.title || 'Desafio ao vivo')}</h4><p class="t-live-empty">Lobby aberto. Mostre o projetor para os alunos entrarem com o QR Code ou codigo da turma.</p>`;
-            $('liveAnswerStats').innerHTML = `<b>${roster.length}</b> alunos na turma · aguardando inicio`;
+            $('liveQuestionPreview').innerHTML = `<h4>${esc(currentLiveSession.title || 'Desafio ao vivo')}</h4><p class="t-live-empty">Lobby aberto. Mostre o projetor para os alunos entrarem com o QR Code ou codigo da turma.</p>${liveLobbyListHtml('t-live-lobby-list', 't-live-lobby-name', 18)}`;
+            $('liveAnswerStats').innerHTML = `${esc(liveLobbyCountText())} - aguardando inicio`;
             $('liveScoreboard').innerHTML = '<p class="t-live-empty">O placar aparece depois da primeira pergunta.</p>';
             stopLiveTeacherUiUpdates();
             renderProjector();
@@ -1486,10 +1520,11 @@
             <div class="proj-live-meta">
                 <span>${esc(currentLiveSession.title || 'Desafio ao vivo')}</span>
                 <strong>Aguardando</strong>
-                <span>${roster.length} alunos na turma</span>
+                <span>${esc(liveLobbyCountText())}</span>
             </div>
             <div class="proj-live-progress">Lobby da turma</div>
             <div class="proj-live-question">Entre pelo QR Code e aguarde o professor iniciar</div>
+            ${liveLobbyListHtml('proj-lobby-list', 'proj-lobby-name', 24, 'proj-live-empty')}
             <div class="proj-live-empty">Quando todos estiverem prontos, a primeira pergunta aparece aqui.</div>
         `;
     }
@@ -1508,7 +1543,11 @@
 
     function renderRegionAnalysis() {
         const analysisEl = document.getElementById('regionAnalysis');
-        if (!analysisEl || !roster.length) return;
+        if (!analysisEl) return;
+        if (!roster.length) {
+            analysisEl.innerHTML = '';
+            return;
+        }
         const regionData = REGIONS.map(reg => {
             const regId = reg.id;
             const [regionStart, regionEnd] = reg.range;

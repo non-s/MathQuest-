@@ -1158,6 +1158,28 @@ body { font-size: calc(1rem * var(--font-scale, 1)); }
             color: var(--text-dim);
             font-size: .85rem;
         }
+        .t-live-lobby-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: .45rem;
+            margin-top: .85rem;
+        }
+        .t-live-lobby-name {
+            max-width: 11rem;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: .35rem .55rem;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            background: #0d1117;
+            color: var(--text);
+            font-size: .82rem;
+            font-weight: 700;
+        }
+        .t-live-lobby-name.muted {
+            color: var(--text-dim);
+        }
         .mq-live-banner {
             position: fixed;
             left: 50%;
@@ -1471,6 +1493,28 @@ body { font-size: calc(1rem * var(--font-scale, 1)); }
             color: #8b949e;
             font-size: 2rem;
             text-align: center;
+        }
+        .proj-lobby-list {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: .75rem;
+        }
+        .proj-lobby-name {
+            max-width: min(18rem, 42vw);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            padding: .65rem 1rem;
+            border: 1px solid #30363d;
+            border-radius: 999px;
+            background: #161b22;
+            color: #e6edf3;
+            font-size: clamp(1rem, 2vw, 1.45rem);
+            font-weight: 800;
+        }
+        .proj-lobby-name.muted {
+            color: #8b949e;
         }
         .projector-ranking { width: 100%; max-width: 700px; display: grid; gap: 1rem; }
         .proj-row {

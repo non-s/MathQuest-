@@ -79,7 +79,10 @@ mustMatch("index.html", /await closeExistingLiveSessions\(currentClassCode\);/, 
 mustMatch("index.html", /live_answer_keys'\)\.insert\(/, "teacher live mode must store answer keys outside public sessions");
 mustMatch("index.html", /status:\s*'lobby'/, "teacher live mode must create a lobby before the first question");
 mustMatch("index.html", /currentLiveSession\.status === 'lobby' \? 'Comecar perguntas'/, "teacher live mode must expose a start-from-lobby control");
+mustMatch("index.html", /function liveLobbyListHtml\(/, "live lobby must render joined students before the first question");
+mustMatch("index.html", /function renderLiveLobbyIfVisible\(/, "teacher roster refreshes must redraw visible live lobbies");
 mustMatch("index.html", /function renderProjectorLobby\(/, "projector mode must render the live lobby");
+mustMatch("index.html", /proj-lobby-list/, "projector lobby must show joined student names");
 mustMatch("index.html", /currentLiveSession\.status !== 'lobby'\) refreshLiveStats\(\)/, "projector polling must not read responses while the session is in lobby");
 mustMatch("index.html", /id="liveDurationSelect"/, "teacher live mode must allow a per-question timer");
 mustMatch("index.html", /question_duration_sec:\s*questionDurationSec/, "live sessions must persist the per-question duration");
