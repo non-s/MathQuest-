@@ -1,7 +1,7 @@
 {
   "name": "MathQuest",
   "short_name": "MathQuest",
-  "description": "Aprenda matematica jogando, do 1o ano ao vestibular.",
+  "description": "Raciocínio lógico em 201 fases. Do iniciante ao Mestre Pensador.",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#0d1117",
