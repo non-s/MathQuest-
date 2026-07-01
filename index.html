@@ -1303,6 +1303,28 @@
         }
     }
 
+    function studentJoinUrl() {
+        const url = new URL(location.href.split('?')[0].replace('teacher.html', 'index.html'));
+        if (currentClassCode) url.searchParams.set('class', currentClassCode);
+        return url.toString();
+    }
+
+    function renderProjectorJoin() {
+        const el = document.getElementById('projJoin');
+        if (!el || !currentClassCode) return;
+        const url = studentJoinUrl();
+        const qr = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(url)}`;
+        el.innerHTML = `
+            <div class="proj-join-code"><span>Codigo da turma</span><b>${esc(currentClassCode)}</b></div>
+            <div class="proj-join-url">${esc(url)}</div>
+            <div class="proj-join-qr" id="projJoinQr"></div>
+        `;
+        const img = document.createElement('img');
+        img.src = qr;
+        img.alt = `QR Code para entrar na turma ${currentClassCode}`;
+        document.getElementById('projJoinQr')?.appendChild(img);
+    }
+
     document.querySelectorAll('[data-close]').forEach(b => { b.addEventListener('click', () => $(b.dataset.close).classList.remove('open')); });
     document.querySelectorAll('.t-modal').forEach(m => { m.addEventListener('click', e => { if (e.target === m) m.classList.remove('open'); }); });
     document.querySelector('[data-close="liveSessionModal"]').addEventListener('click', stopLiveTeacherUiUpdates);
@@ -1330,7 +1352,7 @@
         const overlay = document.createElement('div');
         overlay.className = 'projector-overlay';
         overlay.id = 'projectorOverlay';
-        overlay.innerHTML = `<button class="proj-close" id="projClose" title="Fechar">x</button><div class="projector-title" id="projTitle">${esc(currentClassName || 'Turma')}</div><div class="projector-live" id="projLive"></div><div class="projector-ranking" id="projRanking"></div><div class="projector-stats" id="projStats"></div>`;
+        overlay.innerHTML = `<button class="proj-close" id="projClose" title="Fechar">x</button><div class="projector-title" id="projTitle">${esc(currentClassName || 'Turma')}</div><div class="projector-join" id="projJoin"></div><div class="projector-live" id="projLive"></div><div class="projector-ranking" id="projRanking"></div><div class="projector-stats" id="projStats"></div>`;
         document.body.appendChild(overlay);
         document.getElementById('projClose')?.addEventListener('click', () => overlay.remove());
         overlay.requestFullscreen?.().catch(() => {});
@@ -1346,6 +1368,7 @@
     }
 
     function renderProjector() {
+        renderProjectorJoin();
         const projectorLiveEl = document.getElementById('projLive');
         const projectorTitleEl = document.getElementById('projTitle');
         const projectorRankEl = document.getElementById('projRanking');

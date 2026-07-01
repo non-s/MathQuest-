@@ -1335,6 +1335,43 @@ body { font-size: calc(1rem * var(--font-scale, 1)); }
             padding: 2rem;
         }
         .projector-title { font-size: 3rem; font-weight: 700; color: #f0883e; }
+        .projector-join {
+            width: min(1000px, 94vw);
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 1.25rem;
+            padding: 1rem 1.25rem;
+            border: 1px solid #30363d;
+            border-radius: 14px;
+            background: #161b22;
+        }
+        .proj-join-code span {
+            display: block;
+            color: #8b949e;
+            font-size: .85rem;
+            font-weight: 800;
+            text-transform: uppercase;
+        }
+        .proj-join-code b {
+            display: block;
+            color: #3fb950;
+            font-family: 'Fira Code', monospace;
+            font-size: clamp(2.2rem, 5vw, 4.2rem);
+            letter-spacing: .12em;
+            line-height: 1;
+        }
+        .proj-join-url {
+            color: #e6edf3;
+            font-size: clamp(.9rem, 1.3vw, 1.25rem);
+            word-break: break-all;
+        }
+        .projector-join img {
+            width: 96px;
+            height: 96px;
+            border-radius: 10px;
+            background: #fff;
+        }
         .projector-live {
             width: min(1100px, 94vw);
             display: grid;
@@ -1458,6 +1495,8 @@ body { font-size: calc(1rem * var(--font-scale, 1)); }
         @media (max-width: 760px) {
             .projector-overlay { justify-content: flex-start; padding-top: 4.5rem; }
             .projector-title { font-size: 2rem; }
+            .projector-join { grid-template-columns: 1fr; text-align: center; }
+            .projector-join img { margin: 0 auto; }
             .proj-live-meta { align-items: flex-start; flex-direction: column; }
             .proj-live-options { grid-template-columns: 1fr; }
             .proj-live-option { min-height: 4.8rem; }

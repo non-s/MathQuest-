@@ -44,6 +44,16 @@ const esc = s => String(s ?? '')
 const rand    = (a, b) => Math.floor(Math.random() * (b - a + 1)) + a;
 const pick    = arr   => arr[Math.floor(Math.random() * arr.length)];
 const shuffle = arr   => { const a = [...arr]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+function classCodeFromUrl() {
+    try {
+        const params = new URLSearchParams(location.search);
+        const raw = params.get('class') || params.get('turma') || params.get('code');
+        return raw ? raw.trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10) : '';
+    } catch (_) {
+        return '';
+    }
+}
 const sleep   = ms    => new Promise(r => setTimeout(r, ms));
 
 /* ─── Toast ─────────────────────────────────────────────────────────────── */
@@ -1369,6 +1379,10 @@ function logout() {
 function showWelcome() {
     $('welcome').style.display = '';
     $('app').style.display     = 'none';
+    const codeFromUrl = classCodeFromUrl();
+    if (codeFromUrl && $('classCodeInput') && !$('classCodeInput').value) {
+        $('classCodeInput').value = codeFromUrl;
+    }
 }
 
 function hideWelcome() {
@@ -1447,6 +1461,7 @@ function finishOnboarding() {
 /* ─── Inicialização ────────────────────────────────────────────────────── */
 async function init() {
     $('loader').style.display = '';
+    const urlClassCode = classCodeFromUrl();
     // Timeout de segurança: se Firebase travar, mostra tela de boas-vindas mesmo assim
     const loaderTimeout = setTimeout(() => {
         if ($('loader').style.display !== 'none') {
@@ -1460,6 +1475,14 @@ async function init() {
     const remote = await loadRemote();
     clearTimeout(loaderTimeout);
     if (!remote) loadLocal();
+    if (urlClassCode && state.nickname && state.classCode !== urlClassCode) {
+        const joined = await joinClass(urlClassCode);
+        if (joined) {
+            state.classCode = urlClassCode;
+            localStorage.setItem('mq_class_code', urlClassCode);
+            await persistAwait();
+        }
+    }
     updateStreak();
     if (!state.nickname) {
         $('loader').style.display = 'none';

@@ -38,6 +38,9 @@ mustMatch("config.js", /teacher_id:\s*cls\.teacher_id/, "class membership must p
 mustMatch("script.js", /class_code:\s*state\.classCode\s*\|\|\s*''/, "progress saves must include class_code");
 mustMatch("script.js", /select\('nickname, xp, stars, achievements, class_code'\)/, "remote progress load must restore class_code");
 mustMatch("script.js", /teacher_unlocks'\)\.select\('region'\)\.eq\('user_id', state\.userId\)\.limit\(500\)/, "teacher unlock reads must be bounded");
+mustMatch("script.js", /function classCodeFromUrl\(/, "students must accept classroom join codes from URLs");
+mustMatch("script.js", /params\.get\('class'\).*params\.get\('turma'\).*params\.get\('code'\)/s, "classroom join URLs must support class, turma, and code params");
+mustMatch("script.js", /if \(urlClassCode && state\.nickname && state\.classCode !== urlClassCode\)/, "returning students must auto-join classes from projector URLs");
 mustMatch("script.js", /localStorage\.setItem\('mq_class_code', codeRaw\);\s*await persistAwait\(\);/s, "joining a class must flush progress with class_code");
 mustMatch("script.js", /function startLiveSessionWatch\(/, "students must attach a live session watcher");
 mustMatch("script.js", /mqLive\.watchClassSessions/, "student live mode must subscribe to class sessions");
@@ -53,6 +56,9 @@ mustMatch("index.html", /class_members'\)\.select\('user_id, joined_at'\)\.eq\('
 mustMatch("index.html", /mathquest_progress'\)\.select\('user_id, nickname, xp, stars, achievements, updated_at'\)\.eq\('class_code', code\)\.limit\(200\)/, "teacher roster progress reads must be class-scoped and bounded");
 mustNotMatch("index.html", /id="tabSignup"|Criar conta/, "teacher panel must not expose public signup");
 mustMatch("index.html", /id="liveScoreboard"/, "live classroom mode must render a teacher scoreboard");
+mustMatch("index.html", /function studentJoinUrl\(/, "teacher projector must generate student join URLs");
+mustMatch("index.html", /id="projJoin"/, "teacher projector must show class join code and QR");
+mustMatch("index.html", /api\.qrserver\.com\/v1\/create-qr-code/, "teacher projector must render a scannable join QR code");
 mustMatch("index.html", /function renderLiveScoreboard\(/, "live classroom mode must aggregate session scores");
 mustMatch("index.html", /mqLive\.watchSessionResponses/, "teacher live scoreboard must subscribe to session responses");
 mustMatch("index.html", /function liveResponseReadLimit\(/, "teacher live fallback reads must use the central live response limit");

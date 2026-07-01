@@ -37,6 +37,8 @@ Colecoes usadas no Firestore:
 
 O modo ao vivo armazena apenas perguntas/opcoes publicas em `live_sessions`, mantem gabaritos em `live_answer_keys`, usa um temporizador por pergunta e pode ser exibido no modo Projetor. O gabarito so entra no documento publico como `revealed_answer_index` quando o professor escolhe mostrar o resultado. Ao reabrir uma turma, o painel do professor recupera a sessao ao vivo ativa e o gabarito privado. As regras do Firestore recusam respostas apos `question_deadline_ms`, e leituras de respostas ao vivo sao limitadas a 2.500 linhas para cobrir uma turma de 200 alunos em 10 perguntas.
 
+Links de entrada aceitam `?class=CODIGO`, `?turma=CODIGO` ou `?code=CODIGO`; o modo Projetor exibe esse link com QR Code para entrada rapida em sala.
+
 ## Desenvolvimento local
 
 Sirva por HTTP:
